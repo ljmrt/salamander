@@ -1,10 +1,18 @@
 <h1 align="center">
     <br>
-    <a><img src="https://github.com/ljmrt/salamander/blob/ee50dac4b6d9a2d4f5200d80055a1c4f4d843450/assets/branding/logo3000x1688.png" alt="Salamander" width="750" height="422"></a>
+    <img src="https://github.com/ljmrt/salamander/blob/ee50dac4b6d9a2d4f5200d80055a1c4f4d843450/assets/branding/logo3000x1688.png" alt="Salamander" width="750" height="422">
+    <br>
+    Salamander
     <br>
 </h1>
-
-<h4 align="center">Modern Vulkan based real-time renderer written in C++17.</h4>
+<p align="center">
+    <img src="https://img.shields.io/static/v1?label=release-version&message=0.0.0&color=green">
+    <img src="https://img.shields.io/static/v1?label=build-version&message=0.0.0&color=green">
+    <img src="https://img.shields.io/static/v1?label=language&message=C%2B%2B17&color=green">
+    <img src="https://img.shields.io/static/v1?label=platform&message=Linux&color=green">
+    <img src="https://img.shields.io/static/v1?label=status&message=WIP&color=green">
+</p>
+<p align="center">Modern Vulkan based real-time renderer written in C++17.</p>
 
 ## Features
 
