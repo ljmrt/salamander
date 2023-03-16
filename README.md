@@ -1,6 +1,6 @@
 <h1 align="center">
     <br>
-    <a><img src="https://github.com/ljmrt/salamander/blob/fea747fa9859b1cd7fb44902192b749f065488fa/assets/branding/logo5000x5000.png" alt="Salamander" width="1280" height="1024"></a>
+    <a><img src="https://github.com/ljmrt/salamander/blob/fea747fa9859b1cd7fb44902192b749f065488fa/assets/branding/logo3000x1688.png" alt="Salamander" width="750" height="422"></a>
     <br>
 </h1>
 
