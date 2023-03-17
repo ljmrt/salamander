@@ -31,7 +31,7 @@ WIP
 WIP
 
 ## Project structure
-```c++
+```diff
 .
 ├── assets
 │   ├── branding    # Logos, screenshots, etc.
