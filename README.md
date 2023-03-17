@@ -32,10 +32,23 @@ WIP
 
 ## Project structure
 ```c++
-salamander
-|
-|-- WIP
-|
+.
+├── assets
+│   ├── branding    # Logos, screenshots, etc.
+│   ├── models      # Meshes with and without textures.
+│   └── textures    # Standalone textures(images).
+├── bin             # Project binaries.
+│   ├── debug       # Debug/development builds.
+│   └── release     # Release/stable builds.
+├── build           # Build scripts.
+├── include         # Project header files.
+│   └── config      # Project configuration/settings.
+├── libs            # Third-party libraries/dependencies.
+├── src             # C++ implementation files.
+│   ├── core        # Fundamental engine files(windowing, texturing, etc.).
+│   ├── extensions  # Features built on top of the core(GUI, image loading, etc.).
+│   └── util        # Utility functions and features.
+└── test            # Unit tests, etc.
 ```
 
 ## Third-party libraries
