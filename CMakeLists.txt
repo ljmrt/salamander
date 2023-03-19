@@ -32,8 +32,11 @@ add_subdirectory(${GLFW_DIR} EXCLUDE_FROM_ALL)
 set(GLM_DIR "${PROJECT_LIBRARIES_DIR}/glm")
 add_subdirectory(${GLM_DIR} EXCLUDE_FROM_ALL)
 
+include_directories(${PROJECT_SOURCE_DIR})
+
 add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/main.cpp
+    ${PROJECT_SOURCE_DIR}/core/renderer/renderer.cpp
 )
 
 target_link_directories(${PROJECT_NAME}
