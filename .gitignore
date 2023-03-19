@@ -30,3 +30,9 @@
 # Emacs
 #*#
 *~
+
+# Misc
+bin/
+CMakeFiles/
+CMakeCache.txt
+Makefile
