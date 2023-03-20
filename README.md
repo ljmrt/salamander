@@ -65,6 +65,11 @@ WIP
 ```
 Built binaries can be found in the bin directory.
 
+## References
+[Vulkan Tutorial](https://vulkan-tutorial.com/): Vulkan guidance.
+
+[SaferGo/CroissantVulkanRenderer](https://github.com/SaferGo/CroissantVulkanRenderer): Project inspiration.
+
 ## Included assets
 WIP
 
