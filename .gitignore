@@ -31,8 +31,10 @@
 #*#
 *~
 
-# Misc
+# Build
 bin/
-CMakeFiles/
-CMakeCache.txt
-Makefile
+build/CMakeFiles/
+build/CMakeCache.txt
+build/Makefile
+build/CMakeDoxyfile.in
+build/CMakeDoxygenDefaults.cmake
