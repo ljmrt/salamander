@@ -38,3 +38,4 @@ build/CMakeCache.txt
 build/Makefile
 build/CMakeDoxyfile.in
 build/CMakeDoxygenDefaults.cmake
+build/libs/

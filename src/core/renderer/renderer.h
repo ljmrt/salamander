@@ -1,7 +1,7 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 
@@ -16,22 +16,25 @@ private:
     const uint32_t WINDOW_WIDTH = 800;
     const uint32_t WINDOW_HEIGHT = 600;
     const char *WINDOW_NAME = "Salamander";
-    // current window in renderer context.
-    GLFWwindow *m_window;
+    GLFWwindow *m_window;  // current window in renderer context.
+
+    VkInstance m_instance;  // current vulkan instance.
     
     
     // initialize GLFW and create a window.
     void windowInit();
     
-    // initialize vulkan.
+    // initialize Vulkan.
     void vulkanInit();
+    // create Vulkan instance.
+    void vulkanCreateInstance();
     
     // render/main loop.
     void render();
     // process incoming input to the window.
     //
     // uses the currently assigned window.
-    void render_process_input();
+    void renderProcessInput();
     
     // terminates/destroys libraries, frees memory, etc.
     void cleanup();
