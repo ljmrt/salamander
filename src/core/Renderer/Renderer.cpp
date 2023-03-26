@@ -29,6 +29,7 @@ void renderer::windowInit()
 void renderer::vulkanInit()
 {
     m_vkInstance = VulkanInstance(WINDOW_NAME);
+    DebugMessenger::createDebugMessenger(&m_debugMessenger);
 }
 
 void renderer::render()
@@ -48,6 +49,10 @@ void renderer::renderProcessInput()
 
 void renderer::cleanup()
 {
+    if (supportUtils::DEBUG_ENABLED) {
+        DebugMessenger::DestroyDebugUtilsMessengerEXT(m_vkInstance.m_instance, m_vkInstance.m_debugMessenger, nullptr);
+    }
+    
     vkDestroyInstance(m_vkInstance.m_instance, nullptr);
     
     glfwDestroyWindow(m_window);

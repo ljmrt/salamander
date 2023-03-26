@@ -10,6 +10,9 @@ class VulkanInstance
 {
 public:
     VkInstance m_instance;
+    
+    VkDebugUtilsMessengerEXT m_debugMessenger;
+    
 
     VulkanInstance(const char *instanceApplicationName);
 };

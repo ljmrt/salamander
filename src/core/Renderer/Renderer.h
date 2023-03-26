@@ -17,9 +17,9 @@ public:
     // handles vulkan initialization, rendering, and cleanup.
     void run();
 private:
-    const uint32_t WINDOW_WIDTH = 800;
-    const uint32_t WINDOW_HEIGHT = 600;
-    const char *WINDOW_NAME = "Salamander";
+    const uint32_t WINDOW_WIDTH = 800;  // height of the displayed window;
+    const uint32_t WINDOW_HEIGHT = 600;  // width of the displayed window;
+    const char *WINDOW_NAME = "Salamander";  // name to be displayed and used in the application.
     GLFWwindow *m_window;  // current window in renderer context.
 
     VulkanInstance m_vkInstance;  // current vulkan instance **class**.

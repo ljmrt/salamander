@@ -3,6 +3,8 @@
 
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/VulkanInstance/supportUtils.h>
+#include <core/Logging/ErrorLogger.h>
+#include <core/Logging/DebugMessenger.h>
 
 #include <cstdint>
 #include <iostream>
@@ -11,7 +13,7 @@
 VulkanInstance::VulkanInstance(const char *instanceApplicationName)
 {
     if (supportUtils::enableValidationLayers && !supportUtils::checkValidationLayerSupport()) {
-        throw std::runtime_error("validation layers requested but not availible!");  // TODO: runtime error helper with line and file number.
+        throwDebugException("Validation layers requested but not availible.");
     }
     
     VkApplicationInfo applicationInfo{};
@@ -30,15 +32,23 @@ VulkanInstance::VulkanInstance(const char *instanceApplicationName)
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
     if (supportUtils::enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(supportUtils::validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
+
+        populateDebugMessengerCreateInfo(debugCreateInfo);
+        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
     } else {
         createInfo.enabledLayerCount = 0;
+
+        createInfo.pNext = nullptr;
     }
 
     VkResult instanceResult = vkCreateInstance(&createInfo, nullptr, &m_instance);
     if (instanceResult != VK_SUCCESS) {
-        throw std::runtime_error("failed to create vulkan instance!");
+        throwDebugException("Failed to create vulkan instance.");
     }
+
+    DebugMessenger::createDebugMessenger(m_debugMessenger);
 }
