@@ -1,4 +1,4 @@
-#include <core/renderer/renderer.h>
+#include <core/Renderer/Renderer.h>
 
 #include <iostream>
 #include <stdexcept>

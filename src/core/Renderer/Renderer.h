@@ -1,8 +1,12 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
+// TODO: defaults namespace(window name, height[?] width[?])
+#include <core/VulkanInstance/VulkanInstance.h>
 
 
 class renderer
@@ -18,7 +22,7 @@ private:
     const char *WINDOW_NAME = "Salamander";
     GLFWwindow *m_window;  // current window in renderer context.
 
-    VkInstance m_instance;  // current vulkan instance.
+    VulkanInstance m_vkInstance;  // current vulkan instance **class**.
     
     
     // initialize GLFW and create a window.
@@ -26,8 +30,6 @@ private:
     
     // initialize Vulkan.
     void vulkanInit();
-    // create Vulkan instance.
-    void vulkanCreateInstance();
     
     // render/main loop.
     void render();
