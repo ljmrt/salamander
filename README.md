@@ -7,7 +7,7 @@
 </h1>
 <p align="center">
     <img src="https://img.shields.io/static/v1?label=release-version&message=0.0.0&color=green">
-    <img src="https://img.shields.io/static/v1?label=build-version&message=0.0.0&color=green">
+    <img src="https://img.shields.io/static/v1?label=build-version&message=0.2.0&color=green">
     <img src="https://img.shields.io/static/v1?label=language&message=C%2B%2B17&color=green">
     <img src="https://img.shields.io/static/v1?label=platform&message=Linux&color=green">
     <img src="https://img.shields.io/static/v1?label=status&message=WIP&color=green">
