@@ -8,20 +8,21 @@
 
 ErrorLogger::debugException::debugException(const std::string &arg, const char *file, int line) : std::runtime_error(arg)
 {
-    std::ostringstream << "Logging::"
-                       << file
-                       << "::"
-                       << line
-                       << "::\""
-                       << arg
-                       << "\"";
+    std::ostringstream o;
+    o << "Logging::"
+      << file
+      << "::"
+      << line
+      << "::\""
+      << arg
+      << "\"";
 }
 
-ErrorLogger::debugException::~debugException()
+ErrorLogger::debugException::~debugException() throw()
 {
 }
 
-ErrorLogger::debugException::const char *what() const throw()
+const char *ErrorLogger::debugException::what() const throw()
 {
     return msg.c_str();
 }

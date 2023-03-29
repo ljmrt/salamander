@@ -13,7 +13,7 @@ namespace ErrorLogger
     private:
         std::string msg;
     public:
-        debugException(const std::string &arg, const char *file, int line) : std::runtime_error(arg);
+        debugException(const std::string &arg, const char *file, int line);
         ~debugException();
 
         const char *what() const throw();
@@ -22,4 +22,4 @@ namespace ErrorLogger
 #define throwDebugException(arg) throw ErrorLogger::debugException(arg, __FILE__, __LINE__);
 
 
-#endif ERRORLOGGER_H
+#endif  // ERRORLOGGER_H

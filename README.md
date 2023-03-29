@@ -31,47 +31,57 @@ WIP
 WIP
 
 ## Project structure
+
 ```diff
 .
 ├── assets
-│   ├── branding    # Logos, screenshots, etc.
-│   ├── models      # Meshes with and without textures.
-│   └── textures    # Standalone textures(images).
-├── bin             # Project binaries.
-│   ├── debug       # Debug/development builds.
-│   └── release     # Release/stable builds.
-├── build           # Build scripts.
-├── include         # Project header files.
-│   └── config      # Project configuration/settings.
-├── libs            # Third-party libraries/dependencies.
-├── src             # C++ implementation files.
-│   ├── core        # Fundamental engine files(windowing, texturing, etc.).
-│   ├── extensions  # Features built on top of the core(GUI, image loading, etc.).
-│   └── util        # Utility functions and features.
-└── test            # Unit tests, etc.
+│   ├── branding
+│   ├── models
+│   └── textures
+├── build
+├── include                  # Project configuration or read-from files.
+│   └── config               # Configuration files.
+├── libs                     # Third-party libraries/dependencies.
+│   ├── glfw                 # GLFW: Used for windowing and input support.
+│   └── glm                  # GLM: Used for mathematics and useful graphics functions.
+├── src                      # C++ implementation files.
+│   ├── core                 # Fundamental engine code/files(rendering, logging, etc.).
+│   │   ├── Callbacks        # Windowing, input, rendering, etc. callbacks.
+│   │   ├── Logging          # Core error logging and handling system(only enabled in debug builds).
+│   │   ├── Renderer         # The core renderer.
+│   │   ├── VulkanExtensions # Functions not included-by-default in Vulkan(but are loaded in).
+│   │   └── VulkanInstance   # Vulkan instancing code.
+│   └── extensions           # Features built on top of the core(GUI, image loading, etc.).
 ```
 
 ## Third-party libraries
+
 * WIP
 
 ## Building
+
 Currently Linux only, not many plans to move this elsewhere.
 ### Linux
 #### Dependencies
-WIP
+GLFW and GLM are currently included in the project's source code as git submodules. No prerequesites are necessary.
 #### Build commands
 ```diff
+
 WIP
+
 ```
-Built binaries can be found in the bin directory.
+Built binaries should be found in the bin directory.
 
 ## References
+
 [Vulkan Tutorial](https://vulkan-tutorial.com/): Vulkan guidance.
 
 [SaferGo/CroissantVulkanRenderer](https://github.com/SaferGo/CroissantVulkanRenderer): Project inspiration.
 
 ## Included assets
+
 WIP
 
 ## License
+
 Distributed under the MIT License. See ['LICENSE'](https://github.com/ljmrt/salamander/blob/master/LICENSE) for more info.

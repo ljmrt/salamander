@@ -3,30 +3,13 @@
 
 #include <core/Logging/DebugMessenger.h>
 #include <core/VulkanInstance/VulkanInstance.h>
+#include <core/VulkanInstance/supportUtils.h>
 #include <core/Logging/ErrorLogger.h>
+#include <core/VulkanExtensions/VulkanExtensions.h>
+#include <core/Callbacks/Callbacks.h>
 
 
-VkResult DebugMessenger::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
-{
-    auto loadedFunction = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");  // lookup vkCreateDebugUtilsMessengerEXT function.
-
-    if (loadedFunction != nullptr) {
-        return loadedFunction(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-void DebugMessenger::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
-{
-    auto loadedFunction = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-
-    if (loadedFunction != nullptr) {
-        loadedFunction(instance, debugMessenger, pAllocator);
-    }
-}
-
-void DebugMessenger::populateDebugMessenger(VkDebugUtilsMessengerCreateInfoEXT& resultCreateInfo)
+void DebugMessenger::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& resultCreateInfo)
 {
     resultCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     
@@ -40,20 +23,20 @@ void DebugMessenger::populateDebugMessenger(VkDebugUtilsMessengerCreateInfoEXT& 
         | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
     resultCreateInfo.pfnUserCallback = Callbacks::debugCallback;
-    createInfo.pUserData = nullptr;
+    resultCreateInfo.pUserData = nullptr;
 }
 
-void DebugMessender::createDebugMessenger(VulkanInstance vulkanInstance, VkDebugUtilsMessengerEXT& resultDebugMessenger)
+void DebugMessenger::createDebugMessenger(VkInstance vkInstance, VkDebugUtilsMessengerEXT& resultDebugMessenger)
 {
-    if (supportUtils::DEBUG_ENABLED == FALSE) {
+    if (supportUtils::DEBUG_ENABLED == false) {
         return;
     }
     
-    VkDebugUtilsMessengerCreateInfo createInfo;
-    populateDebugMessenger(createInfo);
+    VkDebugUtilsMessengerCreateInfoEXT createInfo;
+    DebugMessenger::populateDebugMessengerCreateInfo(createInfo);
     
-    int creationResult = CreateDebugUtilsMessengerEXT(vulkanInstance.m_instance, &createInfo, nullptr, &resultDebugMessenger);
+    int creationResult = VulkanExtensions::CreateDebugUtilsMessengerEXT(vkInstance, &createInfo, nullptr, &resultDebugMessenger);
     if (creationResult != VK_SUCCESS) {
-        ErrorLogger::throwDebugException("Failed to set up debug messenger.");
+        throwDebugException("Failed to set up debug messenger.");
     }
 }

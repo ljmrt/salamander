@@ -7,7 +7,7 @@
 
 int main()
 {
-    renderer application;
+    Renderer application;
 
     try {
         application.run();

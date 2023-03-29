@@ -17,8 +17,8 @@ namespace Callbacks
 // @param pCallbackData VkDebugUtilsMessengerCallbackDataEXT struct containing message details.
 // @param pUserData pointer specified during callback setup.
 // @return indication of causing Vulkan call abortion(always VK_FALSE for our case).
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                    VkDebugUtilsMessagbeTypeFlagsEXT messageType,
+VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
                                                     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                     void *pUserData);
 };

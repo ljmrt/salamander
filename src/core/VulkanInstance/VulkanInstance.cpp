@@ -10,9 +10,14 @@
 #include <iostream>
 
 
+VulkanInstance::VulkanInstance()
+{
+    // TODO: put anything here?
+}
+
 VulkanInstance::VulkanInstance(const char *instanceApplicationName)
 {
-    if (supportUtils::enableValidationLayers && !supportUtils::checkValidationLayerSupport()) {
+    if (supportUtils::m_enableValidationLayers && !supportUtils::checkValidationLayerSupport()) {
         throwDebugException("Validation layers requested but not availible.");
     }
     
@@ -33,11 +38,11 @@ VulkanInstance::VulkanInstance(const char *instanceApplicationName)
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-    if (supportUtils::enableValidationLayers) {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(supportUtils::validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
+    if (supportUtils::m_enableValidationLayers) {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(supportUtils::m_validationLayers.size());
+        createInfo.ppEnabledLayerNames = supportUtils::m_validationLayers.data();
 
-        populateDebugMessengerCreateInfo(debugCreateInfo);
+        DebugMessenger::populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
     } else {
         createInfo.enabledLayerCount = 0;
@@ -45,10 +50,10 @@ VulkanInstance::VulkanInstance(const char *instanceApplicationName)
         createInfo.pNext = nullptr;
     }
 
-    VkResult instanceResult = vkCreateInstance(&createInfo, nullptr, &m_instance);
+    VkResult instanceResult = vkCreateInstance(&createInfo, nullptr, &vkInstance);
     if (instanceResult != VK_SUCCESS) {
         throwDebugException("Failed to create vulkan instance.");
     }
 
-    DebugMessenger::createDebugMessenger(m_debugMessenger);
+    DebugMessenger::createDebugMessenger(vkInstance, debugMessenger);
 }

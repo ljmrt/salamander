@@ -4,14 +4,14 @@ project(salamander)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wextra -O2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wextra -O2 -Wno-unused-parameter")
 
-set(CMAKE_BINARY_DIR "${CMAKE_SOURCE_DIR}/bin")
+set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(PROJECT_OUTPUT_DIR ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_OUTPUT_DIR})
-set(PROJECT_SOURCE_DIR "${CMAKE_SOURCE_DIR}/src")
-set(PROJECT_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/include")
-set(PROJECT_LIBRARIES_DIR "${CMAKE_SOURCE_DIR}/libs")
+set(PROJECT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
+set(PROJECT_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+set(PROJECT_LIBRARIES_DIR ${CMAKE_SOURCE_DIR}/libs)
 
 set(CMAKE_SKIP_INSTALL_RULES True)
 
@@ -35,8 +35,14 @@ add_subdirectory(${GLM_DIR} EXCLUDE_FROM_ALL)
 include_directories(${PROJECT_SOURCE_DIR})
 
 add_executable(${PROJECT_NAME}
+    ${PROJECT_SOURCE_DIR}/core/Logging/ErrorLogger.cpp
+    ${PROJECT_SOURCE_DIR}/core/Logging/DebugMessenger.cpp
+    ${PROJECT_SOURCE_DIR}/core/Renderer/Renderer.cpp
+    ${PROJECT_SOURCE_DIR}/core/VulkanExtensions/VulkanExtensions.cpp
+    ${PROJECT_SOURCE_DIR}/core/VulkanInstance/supportUtils.cpp
+    ${PROJECT_SOURCE_DIR}/core/VulkanInstance/VulkanInstance.cpp
+    ${PROJECT_SOURCE_DIR}/core/Callbacks/Callbacks.cpp
     ${PROJECT_SOURCE_DIR}/main.cpp
-    ${PROJECT_SOURCE_DIR}/core/renderer/renderer.cpp
 )
 
 target_link_directories(${PROJECT_NAME}

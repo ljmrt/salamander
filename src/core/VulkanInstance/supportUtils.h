@@ -16,6 +16,7 @@ namespace supportUtils
     #else
         const bool DEBUG_ENABLED = true;
     #endif
+    
     const std::vector<const char *> m_validationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };

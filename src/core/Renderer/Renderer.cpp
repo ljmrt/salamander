@@ -3,12 +3,14 @@
 
 #include <core/Renderer/Renderer.h>
 #include <core/VulkanInstance/VulkanInstance.h>
+#include <core/VulkanInstance/supportUtils.h>
+#include <core/VulkanExtensions/VulkanExtensions.h>
 
 #include <cstdint>
 #include <iostream>
 
 
-void renderer::run()
+void Renderer::run()
 {
     windowInit();
     vulkanInit();
@@ -16,7 +18,7 @@ void renderer::run()
     cleanup();
 }
 
-void renderer::windowInit()
+void Renderer::windowInit()
 {
     glfwInit();
     
@@ -26,13 +28,12 @@ void renderer::windowInit()
     m_window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME, nullptr, nullptr);
 }
 
-void renderer::vulkanInit()
+void Renderer::vulkanInit()
 {
-    m_vkInstance = VulkanInstance(WINDOW_NAME);
-    DebugMessenger::createDebugMessenger(&m_debugMessenger);
+    m_instance = VulkanInstance(WINDOW_NAME);
 }
 
-void renderer::render()
+void Renderer::render()
 {
     while (!glfwWindowShouldClose(m_window)) {
         renderProcessInput();
@@ -40,20 +41,20 @@ void renderer::render()
     }
 }
 
-void renderer::renderProcessInput()
+void Renderer::renderProcessInput()
 {
     if (GLFW_PRESS == glfwGetKey(m_window, GLFW_KEY_X)) {
         glfwSetWindowShouldClose(m_window, true);
     }
 }
 
-void renderer::cleanup()
+void Renderer::cleanup()
 {
     if (supportUtils::DEBUG_ENABLED) {
-        DebugMessenger::DestroyDebugUtilsMessengerEXT(m_vkInstance.m_instance, m_vkInstance.m_debugMessenger, nullptr);
+        VulkanExtensions::DestroyDebugUtilsMessengerEXT(m_instance.vkInstance, m_instance.debugMessenger, nullptr);
     }
     
-    vkDestroyInstance(m_vkInstance.m_instance, nullptr);
+    vkDestroyInstance(m_instance.vkInstance, nullptr);
     
     glfwDestroyWindow(m_window);
     glfwTerminate();
