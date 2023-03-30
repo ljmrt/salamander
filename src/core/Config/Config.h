@@ -2,34 +2,35 @@
 #define CONFIG_H
 
 #include <vector>
+#include <string>
 
 
 class ConfigDB
 {
 private:
     struct m_lookupPair {
-        const char *key;  // key name before the value.
+        std::string key;  // key name before the value.
         void *value;  // key generic value.
     };
     
-    std::vector<struct lookupPair> m_configDatabase;
+    std::vector<struct m_lookupPair> m_configDatabase;
 public:
-    const char *m_configPath = "CONFIG NOT SET";
+    std::string m_configPath = "CONFIG NOT SET";
     
     
     ConfigDB();
-    ConfigDB(const char *filePath);
+    ConfigDB(std::string filePath);
     
     // load a .scfg file as the current database.
     //
     // @param filePath path of the desired file to load.
-    void loadConfig(const char *filePath);
+    void loadConfig(std::string filePath);
     // lookup a key's value in the database.
     //
     // @param key key to lookup the value of.
     // @return key value.
-    void *lookupKey(const char *key);
+    void *lookupKey(std::string key);
 };
 
 
-#endif CONFIG_H
+#endif  // CONFIG_H
