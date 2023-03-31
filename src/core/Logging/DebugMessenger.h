@@ -6,13 +6,19 @@
 #include <GLFW/glfw3.h>
 
 #include <core/VulkanInstance/VulkanInstance.h>
+#include <core/Config/Config.h>
 
 
 namespace DebugMessenger
-{   
+{
+    namespace
+    {
+        ConfigDB m_loggingConfig("/home/lucas/programming/salamander-engine/include/config/logging.scfg");
+    }
+    
     // populate a debug messenger's create info.
     //
-    // hardcoded filters.
+    // configurable filters.
     //
     // @param resultCreateInfo stored create info from function.
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& resultCreateInfo);

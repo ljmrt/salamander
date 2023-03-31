@@ -1,4 +1,5 @@
-KEY : VALUE  # COMMENT
-WINDOW_WIDTH : 800
-WINDOW_HEIGHT : 600
-WINDOW_NAME : Salamander
+# Application window configuration file.
+
+WINDOW_WIDTH : 800  # Application window width.
+WINDOW_HEIGHT : 600  # Application window height.
+WINDOW_NAME : "Salamander"  # Application window name.

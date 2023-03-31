@@ -5,15 +5,22 @@
 #include <string>
 
 
+// TODO: customizable config file locations.
+// TODO: GUI config.
+// TODO: customize common configs through GUI.
+// TODO: comment logging, display on GUI.
 class ConfigDB
 {
 private:
     struct m_lookupPair {
         std::string key;  // key name before the value.
-        void *value;  // key generic value.
+        std::string value;  // key generic value(has to be casted).
     };
     
     std::vector<struct m_lookupPair> m_configDatabase;
+
+    // dump the config database into std::cout formatted as a .scfg file.
+    void dumpDatabase();
 public:
     std::string m_configPath = "CONFIG NOT SET";
     
@@ -29,7 +36,7 @@ public:
     //
     // @param key key to lookup the value of.
     // @return key value.
-    void *lookupKey(std::string key);
+    std::string lookupKey(std::string key);
 };
 
 

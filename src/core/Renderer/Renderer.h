@@ -5,17 +5,20 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-// TODO: defaults namespace(window name, height[?] width[?])
 #include <core/VulkanInstance/VulkanInstance.h>
+#include <core/Config/Config.h>
 
 
 class Renderer
 {
 private:
-    const uint32_t WINDOW_WIDTH = 800;  // height of the displayed window;
-    const uint32_t WINDOW_HEIGHT = 600;  // width of the displayed window;
-    const char *WINDOW_NAME = "Salamander";  // name to be displayed and used in the application.
+    uint32_t WINDOW_WIDTH;  // height of the displayed window;
+    uint32_t WINDOW_HEIGHT;  // width of the displayed window;
+    std::string WINDOW_NAME;  // name to be displayed and used in the application.
     GLFWwindow *m_window;  // current window in renderer context.
+    
+    ConfigDB m_windowConfig;  // window configuration database.
+    
 
     VulkanInstance m_instance;  // current vulkan instance **class**.
     
@@ -41,6 +44,7 @@ public:
     // handles vulkan initialization, rendering, and cleanup.
     void run();
 
+    Renderer();
 };
 
 

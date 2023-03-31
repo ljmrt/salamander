@@ -15,7 +15,7 @@ VulkanInstance::VulkanInstance()
     // TODO: put anything here?
 }
 
-VulkanInstance::VulkanInstance(const char *instanceApplicationName)
+VulkanInstance::VulkanInstance(std::string instanceApplicationName)
 {
     if (supportUtils::m_enableValidationLayers && !supportUtils::checkValidationLayerSupport()) {
         throwDebugException("Validation layers requested but not availible.");
@@ -23,7 +23,7 @@ VulkanInstance::VulkanInstance(const char *instanceApplicationName)
     
     VkApplicationInfo applicationInfo{};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    applicationInfo.pApplicationName = instanceApplicationName;
+    applicationInfo.pApplicationName = instanceApplicationName.c_str();
     applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.pEngineName = "No Engine";
     applicationInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);

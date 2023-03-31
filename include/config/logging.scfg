@@ -1,0 +1,13 @@
+# Logging configuration file.
+# Note: Automatically enabled in debug builds.
+
+# Displayed message severities, 1 = enabled 0 = disabled.
+SEVERITY_VERBOSE : 1  # Diagnostic messages.
+SEVERITY_INFO : 1  # Informational messages(ex: creation of a resource).
+SEVERITY_WARNING : 1  # Messages without explicit errors, but rather bugs or similar.
+SEVERITY_ERROR : 1  # Messages about invalid and possible crash-causing behavior.
+
+# Displayed message types, 1 = enabled 0 = disabled.
+TYPE_GENERAL : 1  # Messages unrelated to specification or performance.
+TYPE_VALIDATION : 1  # Specification violation or possible mistake.
+TYPE_PERFORMANCE : 1  # Potential non-optimal Vulkan use.

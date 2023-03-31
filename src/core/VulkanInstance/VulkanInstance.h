@@ -5,6 +5,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <string>
+
 
 class VulkanInstance
 {
@@ -15,7 +17,7 @@ public:
     
 
     VulkanInstance();
-    VulkanInstance(const char *instanceApplicationName);
+    VulkanInstance(std::string instanceApplicationName);
 };
 
 
