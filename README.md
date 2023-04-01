@@ -7,10 +7,10 @@
 </h1>
 <p align="center">
     <img src="https://img.shields.io/static/v1?label=release-version&message=0.0.0&color=green">
-    <img src="https://img.shields.io/static/v1?label=build-version&message=0.3.0&color=green">
+    <img src="https://img.shields.io/static/v1?label=build-version&message=0.4.0&color=green">
     <img src="https://img.shields.io/static/v1?label=language&message=C%2B%2B17&color=green">
     <img src="https://img.shields.io/static/v1?label=platform&message=Linux&color=green">
-    <img src="https://img.shields.io/static/v1?label=status&message=WIP&color=green">
+    <img src="https://img.shields.io/static/v1?label=development&message=Active&color=green">
 </p>
 <p align="center">Modern Vulkan based real-time renderer written in C++17.</p>
 

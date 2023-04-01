@@ -9,6 +9,7 @@
 // TODO: GUI config.
 // TODO: customize common configs through GUI.
 // TODO: comment logging, display on GUI.
+// TODO: configurable logging colors.
 class ConfigDB
 {
 private:
