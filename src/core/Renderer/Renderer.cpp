@@ -58,6 +58,8 @@ void Renderer::renderProcessInput()
 
 void Renderer::cleanup()
 {
+    vkDestroyDevice(m_instance.m_logicalDevice, nullptr);
+    
     if (supportUtils::DEBUG_ENABLED) {
         VulkanExtensions::DestroyDebugUtilsMessengerEXT(m_instance.m_vkInstance, m_instance.m_debugMessenger, nullptr);
     }

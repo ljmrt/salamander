@@ -5,19 +5,26 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <core/VulkanInstance/deviceHandler.h>
+
 #include <string>
 
 
 class VulkanInstance
 {
 private:
+    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    
+    
     void createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance);
 public:
     VkInstance m_vkInstance;
     
     VkDebugUtilsMessengerEXT m_debugMessenger;
 
-    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    deviceHandler::QueueFamilyIndices m_familyIndices;
+    VkQueue m_graphicsQueue;
+    VkDevice m_logicalDevice;
     
 
     VulkanInstance();

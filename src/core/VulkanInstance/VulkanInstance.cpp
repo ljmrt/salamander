@@ -21,7 +21,9 @@ VulkanInstance::VulkanInstance(std::string instanceApplicationName)
 {
     createVkInstance(instanceApplicationName, m_vkInstance);
     DebugMessenger::createDebugMessenger(m_vkInstance, m_debugMessenger);
-    deviceHandler::pickPhysicalDevice(m_vkInstance, m_physicalDevice);
+    deviceHandler::pickPhysicalDevice(m_vkInstance, m_familyIndices, m_physicalDevice);
+    deviceHandler::createLogicalDevice(m_physicalDevice, m_familyIndices, m_logicalDevice);
+    vkGetDeviceQueue(m_logicalDevice, m_familyIndices.graphicsFamily.value(), 0, &m_graphicsQueue);
 }
 
 void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance)
