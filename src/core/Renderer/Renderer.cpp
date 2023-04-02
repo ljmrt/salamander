@@ -59,10 +59,10 @@ void Renderer::renderProcessInput()
 void Renderer::cleanup()
 {
     if (supportUtils::DEBUG_ENABLED) {
-        VulkanExtensions::DestroyDebugUtilsMessengerEXT(m_instance.vkInstance, m_instance.debugMessenger, nullptr);
+        VulkanExtensions::DestroyDebugUtilsMessengerEXT(m_instance.m_vkInstance, m_instance.m_debugMessenger, nullptr);
     }
     
-    vkDestroyInstance(m_instance.vkInstance, nullptr);
+    vkDestroyInstance(m_instance.m_vkInstance, nullptr);
     
     glfwDestroyWindow(m_window);
     glfwTerminate();

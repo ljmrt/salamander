@@ -3,11 +3,13 @@
 
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/VulkanInstance/supportUtils.h>
+#include <core/VulkanInstance/deviceHandler.h>
 #include <core/Logging/ErrorLogger.h>
 #include <core/Logging/DebugMessenger.h>
 
 #include <cstdint>
 #include <iostream>
+#include <string>
 
 
 VulkanInstance::VulkanInstance()
@@ -16,6 +18,13 @@ VulkanInstance::VulkanInstance()
 }
 
 VulkanInstance::VulkanInstance(std::string instanceApplicationName)
+{
+    createVkInstance(instanceApplicationName, m_vkInstance);
+    DebugMessenger::createDebugMessenger(m_vkInstance, m_debugMessenger);
+    deviceHandler::pickPhysicalDevice(m_vkInstance, m_physicalDevice);
+}
+
+void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance)
 {
     if (supportUtils::m_enableValidationLayers && !supportUtils::checkValidationLayerSupport()) {
         throwDebugException("Validation layers requested but not availible.");
@@ -50,10 +59,8 @@ VulkanInstance::VulkanInstance(std::string instanceApplicationName)
         createInfo.pNext = nullptr;
     }
 
-    VkResult instanceResult = vkCreateInstance(&createInfo, nullptr, &vkInstance);
+    VkResult instanceResult = vkCreateInstance(&createInfo, nullptr, &resultInstance);
     if (instanceResult != VK_SUCCESS) {
         throwDebugException("Failed to create vulkan instance.");
     }
-
-    DebugMessenger::createDebugMessenger(vkInstance, debugMessenger);
 }

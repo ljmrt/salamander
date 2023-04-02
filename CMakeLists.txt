@@ -40,6 +40,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Renderer/Renderer.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanExtensions/VulkanExtensions.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanInstance/supportUtils.cpp
+    ${PROJECT_SOURCE_DIR}/core/VulkanInstance/deviceHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanInstance/VulkanInstance.cpp
     ${PROJECT_SOURCE_DIR}/core/Callbacks/Callbacks.cpp
     ${PROJECT_SOURCE_DIR}/core/Config/Config.cpp

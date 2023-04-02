@@ -27,6 +27,7 @@ namespace supportUtils
     //
     // @return vector containing extension names.
     std::vector<const char *> getRequiredExtensions();
+    
     // checks if all the required validation layers are supported.
     //
     // @return validation layer support.

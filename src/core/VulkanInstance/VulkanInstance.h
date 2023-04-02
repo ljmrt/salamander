@@ -10,10 +10,14 @@
 
 class VulkanInstance
 {
+private:
+    void createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance);
 public:
-    VkInstance vkInstance;
+    VkInstance m_vkInstance;
     
-    VkDebugUtilsMessengerEXT debugMessenger;
+    VkDebugUtilsMessengerEXT m_debugMessenger;
+
+    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     
 
     VulkanInstance();
