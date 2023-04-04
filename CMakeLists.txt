@@ -43,6 +43,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/VulkanInstance/supportUtils.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanInstance/deviceHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanInstance/VulkanInstance.cpp
+    ${PROJECT_SOURCE_DIR}/core/Queue/Queue.cpp
     ${PROJECT_SOURCE_DIR}/core/Callbacks/Callbacks.cpp
     ${PROJECT_SOURCE_DIR}/core/Config/Config.cpp
     ${PROJECT_SOURCE_DIR}/core/Defaults/Defaults.cpp

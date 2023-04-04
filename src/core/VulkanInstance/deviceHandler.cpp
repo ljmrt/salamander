@@ -4,13 +4,14 @@
 #include <core/VulkanInstance/deviceHandler.h>
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/VulkanInstance/supportUtils.h>
+#include <core/Queue/Queue.h>
 #include <core/Logging/ErrorLogger.h>
 
 #include <vector>
 #include <set>
 
 
-void deviceHandler::pickPhysicalDevice(VulkanInstance instance, VulkanInstance::QueueFamilyIndices& resultFamilyIndices, VkPhysicalDevice& resultPhysicalDevice)
+void deviceHandler::pickPhysicalDevice(VulkanInstance instance, Queue::QueueFamilyIndices& resultFamilyIndices, VkPhysicalDevice& resultPhysicalDevice)
 {
     uint32_t physicalDeviceCount = 0;
     vkEnumeratePhysicalDevices(instance.m_vkInstance, &physicalDeviceCount, nullptr);
@@ -32,60 +33,16 @@ void deviceHandler::pickPhysicalDevice(VulkanInstance instance, VulkanInstance::
     }
 }
 
-bool deviceHandler::deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, VulkanInstance::QueueFamilyIndices& resultFamilyIndices) {
+bool deviceHandler::deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& resultFamilyIndices) {
     // TODO: ranking system depending on necessary features, if the device is a dedicated graphics card, etc.
-    std::vector<VkQueueFamilyProperties> queueFamilies;
-    deviceHandler::getSupportedQueueFamilies(physicalDevice, queueFamilies);
-
-    int i = 0;
-    for (VkQueueFamilyProperties queueFamily : queueFamilies) {
-        if (resultFamilyIndices.isAssigned()) {
-            break;
-        }
-        
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {  // if this queue family supports graphics operations.
-            resultFamilyIndices.graphicsFamily = i;
-        }
-
-        // if this queue family supports presentation operations.
-        VkBool32 presentationSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, windowSurface, &presentationSupport);
-        if (presentationSupport) {
-            resultFamilyIndices.presentationFamily = i;
-        }
-        
-        i += 1;
-    }
-    
-    return resultFamilyIndices.isAssigned();  // check whether the family is assigned rather than comparing to 0 as family location could be 0.
+    return Queue::deviceQueueFamiliesSuitable(physicalDevice, windowSurface, resultFamilyIndices);  // only consideration currently is if all required queue families are supported.
 }
 
-void deviceHandler::getSupportedQueueFamilies(VkPhysicalDevice device, std::vector<VkQueueFamilyProperties>& resultQueueFamilies)
+void deviceHandler::createLogicalDevice(VkPhysicalDevice physicalDevice, Queue::QueueFamilyIndices familyIndices, VkDevice& resultLogicalDevice)
 {
-    uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-    resultQueueFamilies = std::vector<VkQueueFamilyProperties>(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, resultQueueFamilies.data());
-}
-
-void deviceHandler::createLogicalDevice(VkPhysicalDevice physicalDevice, VulkanInstance::QueueFamilyIndices familyIndices, VkDevice& resultLogicalDevice)
-{
-    // create queue families specified in QueueFamilyIndices.
     std::vector<VkDeviceQueueCreateInfo> familyCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {familyIndices.graphicsFamily.value(), familyIndices.presentationFamily.value()};
-
-    float queuePriority = 1.0f;
-    for (uint32_t queueFamily : uniqueQueueFamilies) {
-        VkDeviceQueueCreateInfo familyCreateInfo{};
-        familyCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        familyCreateInfo.queueFamilyIndex = queueFamily;
-        familyCreateInfo.queueCount = 1;
-        familyCreateInfo.pQueuePriorities = &queuePriority;
-
-        familyCreateInfos.push_back(familyCreateInfo);
-    }
-
+    Queue::getFamilyCreateInfos(familyIndices, familyCreateInfos);
+    
     VkPhysicalDeviceFeatures deviceFeatures{};
 
     VkDeviceCreateInfo logicalCreateInfo{};

@@ -5,8 +5,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <core/Queue/Queue.h>
+
 #include <string>
-#include <optional>
 
 
 class VulkanInstance
@@ -17,22 +18,13 @@ private:
     
     void createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance);
 public:
-    struct QueueFamilyIndices {
-        std::optional<uint32_t> graphicsFamily;
-        std::optional<uint32_t> presentationFamily;
-
-        bool isAssigned() {
-            return graphicsFamily.has_value() && presentationFamily.has_value();
-        }
-    };
-    
     VkInstance m_vkInstance;  // actual Vulkan instance.
     
     VkDebugUtilsMessengerEXT m_debugMessenger;  // debug/logging messenger.
     
     VkSurfaceKHR m_windowSurface;  // window/presentation surface.
 
-    QueueFamilyIndices m_familyIndices;
+    Queue::QueueFamilyIndices m_familyIndices;
     VkQueue m_graphicsQueue;
     VkQueue m_presentationQueue;
     
