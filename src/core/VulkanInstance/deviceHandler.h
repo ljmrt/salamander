@@ -5,34 +5,29 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <optional>
+#include <core/VulkanInstance/VulkanInstance.h>
+
 #include <vector>
 
 
 namespace deviceHandler
-{
-    // TODO: move to seperate file/directory when used more.
-    struct QueueFamilyIndices {
-        std::optional<uint32_t> graphicsFamily;
-
-        bool isAssigned() {
-            return graphicsFamily.has_value();
-        }
-    };
-    
+{    
     // pick a suitable graphics card for the application.
     //
-    // @param vkInstance Vulkan instance to use.
+    // @param instance Vulkan instance **class** to use in selection.
     // @param resultFamilyIndices result indices of requested queue families.
     // @param resultPhysicalDevice result chosen device.
-    void pickPhysicalDevice(VkInstance vkInstance, QueueFamilyIndices& resultFamilyIndices, VkPhysicalDevice& resultPhysicalDevice);
+    void pickPhysicalDevice(VulkanInstance instance, VulkanInstance::QueueFamilyIndices& resultFamilyIndices, VkPhysicalDevice& resultPhysicalDevice);
 
     // check if a VkPhysicalDevice is suitable for the application.
     //
     // @param device device to check.
+    // @param windowSurface window surface to use in suitability checks.
     // @param resultFamilyIndices result indices of requested queue families.
     // @return true/false on if the device is suitable.
-    bool deviceSuitable(VkPhysicalDevice device, QueueFamilyIndices& resultFamilyIndices);
+    bool deviceSuitable(VkPhysicalDevice device, VkSurfaceKHR windowSurface, VulkanInstance::QueueFamilyIndices& resultFamilyIndices);
+
+    // TODO: move queue family functions elsewhere.
 
     // get the supported queue families from a physical device.
     //
@@ -45,7 +40,7 @@ namespace deviceHandler
     // @param physicalDevice physical device to use in logical device creation.
     // @param indices indices to use in logical device creation.
     // @param resultLogicalDevice created logical device.
-    void createLogicalDevice(VkPhysicalDevice physicalDevice, QueueFamilyIndices indices, VkDevice& resultLogicalDevice);
+    void createLogicalDevice(VkPhysicalDevice physicalDevice, VulkanInstance::QueueFamilyIndices indices, VkDevice& resultLogicalDevice);
 };
 
 

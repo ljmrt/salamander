@@ -4,8 +4,10 @@
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/VulkanInstance/supportUtils.h>
 #include <core/VulkanInstance/deviceHandler.h>
+#include <core/Renderer/DisplayManager.h>
 #include <core/Logging/ErrorLogger.h>
 #include <core/Logging/DebugMessenger.h>
+#include <core/VulkanExtensions/VulkanExtensions.h>
 
 #include <cstdint>
 #include <iostream>
@@ -17,13 +19,17 @@ VulkanInstance::VulkanInstance()
     // TODO: put anything here?
 }
 
-VulkanInstance::VulkanInstance(std::string instanceApplicationName)
+VulkanInstance::VulkanInstance(std::string instanceApplicationName, GLFWwindow *rendererWindow)
 {
     createVkInstance(instanceApplicationName, m_vkInstance);
+    
     DebugMessenger::createDebugMessenger(m_vkInstance, m_debugMessenger);
-    deviceHandler::pickPhysicalDevice(m_vkInstance, m_familyIndices, m_physicalDevice);
+    DisplayManager::createWindowSurface(m_vkInstance, rendererWindow, m_windowSurface);
+    deviceHandler::pickPhysicalDevice(*this, m_familyIndices, m_physicalDevice);
+    
     deviceHandler::createLogicalDevice(m_physicalDevice, m_familyIndices, m_logicalDevice);
     vkGetDeviceQueue(m_logicalDevice, m_familyIndices.graphicsFamily.value(), 0, &m_graphicsQueue);
+    vkGetDeviceQueue(m_logicalDevice, m_familyIndices.presentationFamily.value(), 0, &m_presentationQueue);
 }
 
 void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance)
@@ -65,4 +71,17 @@ void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkIns
     if (instanceResult != VK_SUCCESS) {
         throwDebugException("Failed to create vulkan instance.");
     }
+}
+
+void VulkanInstance::cleanupInstance()
+{
+    vkDestroyDevice(m_logicalDevice, nullptr);
+    
+    if (supportUtils::DEBUG_ENABLED) {
+        VulkanExtensions::DestroyDebugUtilsMessengerEXT(m_vkInstance, m_debugMessenger, nullptr);
+    }
+
+    vkDestroySurfaceKHR(m_vkInstance, m_windowSurface, nullptr);
+    
+    vkDestroyInstance(m_vkInstance, nullptr);
 }

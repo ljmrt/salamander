@@ -1,4 +1,5 @@
 #include <core/Renderer/Renderer.h>
+#include <core/Defaults/Defaults.h>
 
 #include <iostream>
 #include <stdexcept>
@@ -10,6 +11,7 @@ int main()
     Renderer application;
 
     try {
+        Defaults::initializeDefaults();
         application.run();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;

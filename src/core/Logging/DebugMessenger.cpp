@@ -2,11 +2,12 @@
 #include <GLFW/glfw3.h>
 
 #include <core/Logging/DebugMessenger.h>
+#include <core/Logging/ErrorLogger.h>
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/VulkanInstance/supportUtils.h>
-#include <core/Logging/ErrorLogger.h>
 #include <core/VulkanExtensions/VulkanExtensions.h>
 #include <core/Callbacks/Callbacks.h>
+#include <core/Defaults/Defaults.h>
 
 
 void DebugMessenger::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& resultCreateInfo)

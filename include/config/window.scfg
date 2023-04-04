@@ -1,5 +1,5 @@
 # Application window configuration file.
 
-WINDOW_WIDTH : 800  # Application window width.
-WINDOW_HEIGHT : 600  # Application window height.
-WINDOW_NAME : "Salamander"  # Application window name.
+MAIN_WINDOW_WIDTH : 800  # Application main window width.
+MAIN_WINDOW_HEIGHT : 600  # Application main window height.
+MAIN_WINDOW_NAME : "Salamander"  # Application main window name.

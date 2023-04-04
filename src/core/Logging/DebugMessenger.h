@@ -10,12 +10,7 @@
 
 
 namespace DebugMessenger
-{
-    namespace
-    {
-        ConfigDB m_loggingConfig("/home/lucas/programming/salamander-engine/include/config/logging.scfg");
-    }
-    
+{   
     // populate a debug messenger's create info.
     //
     // configurable filters.

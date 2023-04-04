@@ -2,70 +2,44 @@
 #include <GLFW/glfw3.h>
 
 #include <core/Renderer/Renderer.h>
+#include <core/Renderer/DisplayManager.h>
 #include <core/VulkanInstance/VulkanInstance.h>
-#include <core/VulkanInstance/supportUtils.h>
-#include <core/VulkanExtensions/VulkanExtensions.h>
+#include <core/Defaults/Defaults.h>
 
 #include <cstdint>
 #include <iostream>
 #include <string>
 
 
-Renderer::Renderer() : m_windowConfig("/home/lucas/programming/graphics/salamander-engine/include/config/window.scfg")
+Renderer::Renderer()
 {
-    WINDOW_WIDTH = static_cast<uint32_t>(std::stoul(m_windowConfig.lookupKey("WINDOW_WIDTH")));
-    WINDOW_HEIGHT = static_cast<uint32_t>(std::stoul(m_windowConfig.lookupKey("WINDOW_HEIGHT")));
-    WINDOW_NAME = m_windowConfig.lookupKey("WINDOW_NAME");
+    
 }
 
 void Renderer::run()
 {
-    windowInit();
-    vulkanInit();
-    render();
-    cleanup();
-}
-
-void Renderer::windowInit()
-{
-    glfwInit();
+    DisplayManager::initializeGLFW();
+    DisplayManager::createWindow(Defaults::windowDefaults.MAIN_WINDOW_WIDTH, Defaults::windowDefaults.MAIN_WINDOW_HEIGHT, Defaults::windowDefaults.MAIN_WINDOW_NAME, m_window);
     
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);  // don't create an OpenGL context.
-    // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    m_window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_NAME.c_str(), nullptr, nullptr);
+    Renderer::vulkanInit();
+    
+    Renderer::render();
+    
+    Renderer::cleanup();
 }
 
 void Renderer::vulkanInit()
 {
-    m_instance = VulkanInstance(WINDOW_NAME);
+    m_instance = VulkanInstance(Defaults::windowDefaults.MAIN_WINDOW_NAME, m_window);
 }
 
 void Renderer::render()
 {
-    while (!glfwWindowShouldClose(m_window)) {
-        renderProcessInput();
-        glfwPollEvents();
-    }
-}
-
-void Renderer::renderProcessInput()
-{
-    if (GLFW_PRESS == glfwGetKey(m_window, GLFW_KEY_X)) {
-        glfwSetWindowShouldClose(m_window, true);
-    }
+    DisplayManager::stallWindow(m_window);
 }
 
 void Renderer::cleanup()
 {
-    vkDestroyDevice(m_instance.m_logicalDevice, nullptr);
-    
-    if (supportUtils::DEBUG_ENABLED) {
-        VulkanExtensions::DestroyDebugUtilsMessengerEXT(m_instance.m_vkInstance, m_instance.m_debugMessenger, nullptr);
-    }
-    
-    vkDestroyInstance(m_instance.m_vkInstance, nullptr);
-    
-    glfwDestroyWindow(m_window);
-    glfwTerminate();
+    m_instance.cleanupInstance();
+    DisplayManager::cleanupGLFW(m_window);
 }

@@ -17,7 +17,7 @@ Below is an example of a Salamander configuration file(file extension ".scfg").
 KEY:VALUE#EOL COMMENT
 # NOTE: SEPERATOR(':') AND EOL INDENTATION ARE ALLOWED
 KEY : VALUE  # EOL COMMENT
-WINDOW_WIDTH : 800  # Application window width.
+MAIN_WINDOW_WIDTH : 800  # Application main window width.
 ```
 
 ##
