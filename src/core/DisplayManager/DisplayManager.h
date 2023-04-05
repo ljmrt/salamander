@@ -5,10 +5,22 @@
 #include <GLFW/glfw3.h>
 
 #include <string>
+#include <vector>
 
 
 namespace DisplayManager
 {
+    struct DisplayDetails {
+        GLFWwindow *glfwWindow;
+        VkSurfaceKHR windowSurface;
+
+        VkSwapchainKHR swapchain;
+        std::vector<VkImage> swapchainImages;
+        VkFormat swapchainImageFormat;
+        VkExtent2D swapchainExtent;
+    };
+    
+    
     // initialize and setup GLFW.
     void initializeGLFW();
     

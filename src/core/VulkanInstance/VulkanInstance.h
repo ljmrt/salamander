@@ -5,6 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <core/DisplayManager/DisplayManager.h>
 #include <core/Queue/Queue.h>
 
 #include <string>
@@ -22,7 +23,7 @@ public:
     
     VkDebugUtilsMessengerEXT m_debugMessenger;  // debug/logging messenger.
     
-    VkSurfaceKHR m_windowSurface;  // window/presentation surface.
+    DisplayManager::DisplayDetails m_displayDetails;  // glfw window, window surface, swap chain, swap chain images, etc.
 
     Queue::QueueFamilyIndices m_familyIndices;
     VkQueue m_graphicsQueue;

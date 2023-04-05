@@ -26,6 +26,7 @@ namespace Queue
     // @return struct with indices of the supported queue families.
     void getSupportedQueueFamilies(VkPhysicalDevice device, std::vector<VkQueueFamilyProperties>& resultQueueFamilies);
 
+    // TODO: refactor this function for ease-of-use(extract QueueFamilyIndices setting).
     // test whether the device supports all required queue families(specified in QueueFamilyIndices).
     //
     // @param physicalDevice physical device to check support of.

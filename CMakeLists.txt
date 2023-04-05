@@ -38,7 +38,8 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Logging/ErrorLogger.cpp
     ${PROJECT_SOURCE_DIR}/core/Logging/DebugMessenger.cpp
     ${PROJECT_SOURCE_DIR}/core/Renderer/Renderer.cpp
-    ${PROJECT_SOURCE_DIR}/core/Renderer/DisplayManager.cpp
+    ${PROJECT_SOURCE_DIR}/core/DisplayManager/DisplayManager.cpp
+    ${PROJECT_SOURCE_DIR}/core/DisplayManager/swapChainHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanExtensions/VulkanExtensions.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanInstance/supportUtils.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanInstance/deviceHandler.cpp

@@ -4,6 +4,7 @@
 #include <core/VulkanInstance/deviceHandler.h>
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/VulkanInstance/supportUtils.h>
+#include <core/DisplayManager/swapChainHandler.h>
 #include <core/Queue/Queue.h>
 #include <core/Logging/ErrorLogger.h>
 
@@ -22,7 +23,7 @@ void deviceHandler::pickPhysicalDevice(VulkanInstance instance, Queue::QueueFami
     std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
     vkEnumeratePhysicalDevices(instance.m_vkInstance, &physicalDeviceCount, physicalDevices.data());
     for (VkPhysicalDevice device : physicalDevices) {
-        if (deviceHandler::deviceSuitable(device, instance.m_windowSurface, resultFamilyIndices)) {
+        if (deviceHandler::deviceSuitable(device, instance.m_displayDetails.windowSurface, resultFamilyIndices)) {
             resultPhysicalDevice = device;
             break;
         }
@@ -33,9 +34,37 @@ void deviceHandler::pickPhysicalDevice(VulkanInstance instance, Queue::QueueFami
     }
 }
 
-bool deviceHandler::deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& resultFamilyIndices) {
+bool deviceHandler::deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& resultFamilyIndices)
+{
     // TODO: ranking system depending on necessary features, if the device is a dedicated graphics card, etc.
-    return Queue::deviceQueueFamiliesSuitable(physicalDevice, windowSurface, resultFamilyIndices);  // only consideration currently is if all required queue families are supported.
+    bool extensionsSupported = deviceHandler::deviceExtensionsSuitable(physicalDevice);
+
+    bool swapChainDetailsComplete = false;
+    if (extensionsSupported) {
+        swapChainHandler::SwapChainSupportDetails swapChainSupportDetails;
+        swapChainHandler::querySwapChainSupportDetails(physicalDevice, windowSurface, swapChainSupportDetails);
+        swapChainDetailsComplete = !swapChainSupportDetails.supportedFormats.empty() && !swapChainSupportDetails.supportedPresentationModes.empty();
+    }
+    
+    bool queueFamiliesSupported = Queue::deviceQueueFamiliesSuitable(physicalDevice, windowSurface, resultFamilyIndices);
+    
+    return extensionSupported && swapChainDetailsComplete && queueFamiliesSupported;
+}
+
+bool deviceHandler::deviceExtensionsSuitable(VkPhysicalDevice physicalDevice)
+{
+    uint32_t supportedDeviceExtensionCount;
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, supportedDeviceExtensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> supportedDeviceExtensions(supportedDeviceExtensionCount);
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, supportedDeviceExtensionCount, supportedDeviceExtensions.data());
+
+    std::set<std::string> requiredExtensions(requiredDeviceExtensions.begin(), requiredDeviceExtensions.end());
+    for (VkExtensionProperties extensionProperties : supportedDeviceExtensions) {
+        requiredExtensions.erase(extensionProperties.extensionName);  // remove the required extension from the required extensions copy if matching.
+    }
+
+    return requiredExtensions.empty();  // if all the required extensions were found(removed individually from required extensions list.
 }
 
 void deviceHandler::createLogicalDevice(VkPhysicalDevice physicalDevice, Queue::QueueFamilyIndices familyIndices, VkDevice& resultLogicalDevice)
@@ -50,7 +79,8 @@ void deviceHandler::createLogicalDevice(VkPhysicalDevice physicalDevice, Queue::
     logicalCreateInfo.pQueueCreateInfos = familyCreateInfos.data();
     logicalCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(familyCreateInfos.size());
     logicalCreateInfo.pEnabledFeatures = &deviceFeatures;
-    logicalCreateInfo.enabledExtensionCount = 0;
+    logicalCreateInfo.enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtensions.size());
+    logicalCreateInfo.ppEnabledExtensionNames = requiredDeviceExtensions.data();
 
     if (supportUtils::m_enableValidationLayers) {
         logicalCreateInfo.enabledLayerCount = static_cast<uint32_t>(supportUtils::m_validationLayers.size());

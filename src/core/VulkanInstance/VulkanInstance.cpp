@@ -23,13 +23,17 @@ VulkanInstance::VulkanInstance(std::string instanceApplicationName, GLFWwindow *
 {
     createVkInstance(instanceApplicationName, m_vkInstance);
     
+    m_displayDetails.glfwWindow = rendererWindow;
+    
     DebugMessenger::createDebugMessenger(m_vkInstance, m_debugMessenger);
-    DisplayManager::createWindowSurface(m_vkInstance, rendererWindow, m_windowSurface);
+    DisplayManager::createWindowSurface(m_vkInstance, rendererWindow, m_displayDetails.windowSurface);
     deviceHandler::pickPhysicalDevice(*this, m_familyIndices, m_physicalDevice);
     
     deviceHandler::createLogicalDevice(m_physicalDevice, m_familyIndices, m_logicalDevice);
     vkGetDeviceQueue(m_logicalDevice, m_familyIndices.graphicsFamily.value(), 0, &m_graphicsQueue);
     vkGetDeviceQueue(m_logicalDevice, m_familyIndices.presentationFamily.value(), 0, &m_presentationQueue);
+
+    swapChainHandler::createSwapchain(m_physicalDevice, m_displayDetails.windowSurface, m_displayDetails.swapchain, m_displayDetails.swapchainImages, m_displayDetails.swapchainImageFormat, m_displayDetails.swapchainExtent);
 }
 
 void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance)

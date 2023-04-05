@@ -12,7 +12,12 @@
 
 
 namespace deviceHandler
-{    
+{
+private:
+    const std::vector<const char *> requiredDeviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+public:
     // pick a suitable graphics card for the application.
     //
     // @param instance Vulkan instance **class** to use in selection.
@@ -26,7 +31,13 @@ namespace deviceHandler
     // @param windowSurface window surface to use in suitability checks.
     // @param resultFamilyIndices result indices of requested queue families.
     // @return true/false on if the device is suitable.
-    bool deviceSuitable(VkPhysicalDevice device, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& resultFamilyIndices);
+    bool deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& resultFamilyIndices);
+
+    // check if a physical device supports the required extensions.
+    //
+    // @param physicalDevice physical device to check compatability of.
+    // @return suitabilty of device.
+    bool deviceExtensionsSuitable(VkPhysicalDevice physicalDevice);
 
     // create a logical device using the specified queue family indices.
     //
