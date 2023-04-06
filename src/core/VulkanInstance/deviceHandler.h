@@ -13,11 +13,11 @@
 
 namespace deviceHandler
 {
-private:
     const std::vector<const char *> requiredDeviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
-public:
+
+    
     // pick a suitable graphics card for the application.
     //
     // @param instance Vulkan instance **class** to use in selection.

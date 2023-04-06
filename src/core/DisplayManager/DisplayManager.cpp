@@ -1,7 +1,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <core/Renderer/DisplayManager.h>
+#include <core/DisplayManager/DisplayManager.h>
 #include <core/Logging/ErrorLogger.h>
 
 #include <string>

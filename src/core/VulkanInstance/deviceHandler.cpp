@@ -4,7 +4,7 @@
 #include <core/VulkanInstance/deviceHandler.h>
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/VulkanInstance/supportUtils.h>
-#include <core/DisplayManager/swapChainHandler.h>
+#include <core/DisplayManager/swapchainHandler.h>
 #include <core/Queue/Queue.h>
 #include <core/Logging/ErrorLogger.h>
 
@@ -39,25 +39,25 @@ bool deviceHandler::deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR
     // TODO: ranking system depending on necessary features, if the device is a dedicated graphics card, etc.
     bool extensionsSupported = deviceHandler::deviceExtensionsSuitable(physicalDevice);
 
-    bool swapChainDetailsComplete = false;
+    bool swapchainDetailsComplete = false;
     if (extensionsSupported) {
-        swapChainHandler::SwapChainSupportDetails swapChainSupportDetails;
-        swapChainHandler::querySwapChainSupportDetails(physicalDevice, windowSurface, swapChainSupportDetails);
-        swapChainDetailsComplete = !swapChainSupportDetails.supportedFormats.empty() && !swapChainSupportDetails.supportedPresentationModes.empty();
+        swapchainHandler::SwapchainSupportDetails swapchainSupportDetails;
+        swapchainHandler::querySwapchainSupportDetails(physicalDevice, windowSurface, swapchainSupportDetails);
+        swapchainDetailsComplete = !swapchainSupportDetails.supportedSurfaceFormats.empty() && !swapchainSupportDetails.supportedPresentationModes.empty();
     }
     
     bool queueFamiliesSupported = Queue::deviceQueueFamiliesSuitable(physicalDevice, windowSurface, resultFamilyIndices);
     
-    return extensionSupported && swapChainDetailsComplete && queueFamiliesSupported;
+    return extensionsSupported && swapchainDetailsComplete && queueFamiliesSupported;
 }
 
 bool deviceHandler::deviceExtensionsSuitable(VkPhysicalDevice physicalDevice)
 {
     uint32_t supportedDeviceExtensionCount;
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, supportedDeviceExtensionCount, nullptr);
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &supportedDeviceExtensionCount, nullptr);
 
     std::vector<VkExtensionProperties> supportedDeviceExtensions(supportedDeviceExtensionCount);
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, supportedDeviceExtensionCount, supportedDeviceExtensions.data());
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &supportedDeviceExtensionCount, supportedDeviceExtensions.data());
 
     std::set<std::string> requiredExtensions(requiredDeviceExtensions.begin(), requiredDeviceExtensions.end());
     for (VkExtensionProperties extensionProperties : supportedDeviceExtensions) {

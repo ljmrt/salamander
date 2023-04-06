@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 
 #include <core/Renderer/Renderer.h>
-#include <core/Renderer/DisplayManager.h>
+#include <core/DisplayManager/DisplayManager.h>
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/Defaults/Defaults.h>
 
@@ -19,7 +19,7 @@ Renderer::Renderer()
 void Renderer::run()
 {
     DisplayManager::initializeGLFW();
-    DisplayManager::createWindow(Defaults::windowDefaults.MAIN_WINDOW_WIDTH, Defaults::windowDefaults.MAIN_WINDOW_HEIGHT, Defaults::windowDefaults.MAIN_WINDOW_NAME, m_window);
+    DisplayManager::createWindow(Defaults::windowDefaults.MAIN_WINDOW_WIDTH, Defaults::windowDefaults.MAIN_WINDOW_HEIGHT, Defaults::windowDefaults.MAIN_WINDOW_NAME, m_instance.m_displayDetails.glfwWindow);
     
     Renderer::vulkanInit();
     
@@ -30,16 +30,16 @@ void Renderer::run()
 
 void Renderer::vulkanInit()
 {
-    m_instance = VulkanInstance(Defaults::windowDefaults.MAIN_WINDOW_NAME, m_window);
+    m_instance = VulkanInstance(Defaults::windowDefaults.MAIN_WINDOW_NAME, m_instance.m_displayDetails.glfwWindow);
 }
 
 void Renderer::render()
 {
-    DisplayManager::stallWindow(m_window);
+    DisplayManager::stallWindow(m_instance.m_displayDetails.glfwWindow);
 }
 
 void Renderer::cleanup()
 {
     m_instance.cleanupInstance();
-    DisplayManager::cleanupGLFW(m_window);
+    DisplayManager::cleanupGLFW(m_instance.m_displayDetails.glfwWindow);
 }

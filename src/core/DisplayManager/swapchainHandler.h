@@ -45,12 +45,14 @@ namespace swapchainHandler
     // create a swap chain using the supplied parameters.
     //
     // @param physicalDevice physical device to use in swap chain creation.
+    // @param logicalDevice logical device to use in swap chain creation.
+    // @param glfwWindow GLFW window to use in swap chain creation.
     // @param windowSurface window surface to use in swap chain creation.
     // @param resultSwapchain stored created swap chain.
     // @param resultSwapchainImages stored created swap chain images.
     // @param resultSwapchainImageFormat stored swap chain image format.
     // @param resultSwapchainExtent stored swap chain extent.
-    void createSwapchain(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, VkSwapchainKHR& resultSwapchain, std::vector<VkImage> resultSwapchainImages, VkFormat& resultSwapchainImageFormat, VkExtent2D& resultSwapchainExtent);
+    void createSwapchain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, GLFWwindow *glfwWindow, VkSurfaceKHR windowSurface, VkSwapchainKHR& resultSwapchain, std::vector<VkImage> resultSwapchainImages, VkFormat& resultSwapchainImageFormat, VkExtent2D& resultSwapchainExtent);
 }
 
 

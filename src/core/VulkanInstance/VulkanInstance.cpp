@@ -4,7 +4,8 @@
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/VulkanInstance/supportUtils.h>
 #include <core/VulkanInstance/deviceHandler.h>
-#include <core/Renderer/DisplayManager.h>
+#include <core/DisplayManager/DisplayManager.h>
+#include <core/DisplayManager/swapchainHandler.h>
 #include <core/Logging/ErrorLogger.h>
 #include <core/Logging/DebugMessenger.h>
 #include <core/VulkanExtensions/VulkanExtensions.h>
@@ -33,7 +34,14 @@ VulkanInstance::VulkanInstance(std::string instanceApplicationName, GLFWwindow *
     vkGetDeviceQueue(m_logicalDevice, m_familyIndices.graphicsFamily.value(), 0, &m_graphicsQueue);
     vkGetDeviceQueue(m_logicalDevice, m_familyIndices.presentationFamily.value(), 0, &m_presentationQueue);
 
-    swapChainHandler::createSwapchain(m_physicalDevice, m_displayDetails.windowSurface, m_displayDetails.swapchain, m_displayDetails.swapchainImages, m_displayDetails.swapchainImageFormat, m_displayDetails.swapchainExtent);
+    swapchainHandler::createSwapchain(m_physicalDevice,
+                                      m_logicalDevice,
+                                      m_displayDetails.glfwWindow,
+                                      m_displayDetails.windowSurface,
+                                      m_displayDetails.swapchain,
+                                      m_displayDetails.swapchainImages,
+                                      m_displayDetails.swapchainImageFormat,
+                                      m_displayDetails.swapchainExtent);
 }
 
 void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance)
@@ -79,13 +87,15 @@ void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkIns
 
 void VulkanInstance::cleanupInstance()
 {
+    vkDestroySwapchainKHR(m_logicalDevice, m_displayDetails.swapchain, nullptr);
+    
     vkDestroyDevice(m_logicalDevice, nullptr);
     
     if (supportUtils::DEBUG_ENABLED) {
         VulkanExtensions::DestroyDebugUtilsMessengerEXT(m_vkInstance, m_debugMessenger, nullptr);
     }
 
-    vkDestroySurfaceKHR(m_vkInstance, m_windowSurface, nullptr);
+    vkDestroySurfaceKHR(m_vkInstance, m_displayDetails.windowSurface, nullptr);
     
     vkDestroyInstance(m_vkInstance, nullptr);
 }
