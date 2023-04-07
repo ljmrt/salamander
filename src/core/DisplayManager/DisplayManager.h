@@ -20,6 +20,7 @@ namespace DisplayManager
         std::vector<VkImage> swapchainImages;
         VkFormat swapchainImageFormat;
         VkExtent2D swapchainExtent;
+        std::vector<VkImageView> swapchainImageViews;
     };
     
     
@@ -40,6 +41,12 @@ namespace DisplayManager
     // @param glfwWindow GLFW window to create a surface from.
     // @param resultWindowSurface stored created window surface.
     void createWindowSurface(VkInstance vkInstance, GLFWwindow *glfwWindow, VkSurfaceKHR& resultWindowSurface);
+
+    // create image views
+    //
+    // @param displayDetails DisplayDetails struct to use and store result in.
+    // @param logicalDevice logical device to use in image view creation.
+    void createImageViews(DisplayDetails& displayDetails, VkDevice logicalDevice);
 
     // process window input and act accordingly.
     //

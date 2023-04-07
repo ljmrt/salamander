@@ -42,6 +42,8 @@ VulkanInstance::VulkanInstance(std::string instanceApplicationName, GLFWwindow *
                                       m_displayDetails.swapchainImages,
                                       m_displayDetails.swapchainImageFormat,
                                       m_displayDetails.swapchainExtent);
+
+    DisplayManager::createImageViews(m_displayDetails, m_logicalDevice);
 }
 
 void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance)
@@ -87,6 +89,10 @@ void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkIns
 
 void VulkanInstance::cleanupInstance()
 {
+    for (VkImageView imageView : m_displayDetails.swapchainImageViews) {
+        vkDestroyImageView(m_logicalDevice, imageView, nullptr);
+    }
+    
     vkDestroySwapchainKHR(m_logicalDevice, m_displayDetails.swapchain, nullptr);
     
     vkDestroyDevice(m_logicalDevice, nullptr);
