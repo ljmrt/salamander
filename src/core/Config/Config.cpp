@@ -23,8 +23,10 @@ void ConfigDB::loadConfig(std::string filePath)
 {
     m_configPath = filePath;
     
-    std::ifstream inputFile(filePath);
-    for (std::string line; getline(inputFile, line);) {  // get every line in file seperately.
+    std::vector<std::string> fileLines;
+    FileUtils::readFileLines(filePath, fileLines);
+    
+    for (std::string line : fileLines) {
         std::string valueDelimiters = ":";
         std::string eolDelimiters = "#";
 

@@ -19,6 +19,16 @@ private:
     
     // render/main loop.
     void render();
+
+    // create the **Vulkan** graphics pipeline.
+    void createGraphicsPipeline();
+
+    // TODO: seperate file/directory?
+    // create a shader module using the supplied bytecode.
+    //
+    // @param shaderBytecode the shader's bytecode in a vector of chars.
+    // @param resultShaderModule stored created shader module.
+    void createShaderModule(const std::vector<char> shaderBytecode, VkShaderModule& resultShaderModule);
     
     // terminates/destroys libraries, frees memory, etc.
     void cleanup();
