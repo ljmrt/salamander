@@ -1,5 +1,6 @@
 #include <core/Config/Config.h>
 #include <core/Logging/ErrorLogger.h>
+#include <utils/FileUtils.h>
 
 #include <vector>
 #include <string>
@@ -14,12 +15,12 @@ ConfigDB::ConfigDB()
 {
 }
 
-ConfigDB::ConfigDB(std::string filePath)
+ConfigDB::ConfigDB(const char *filePath)
 {
     loadConfig(filePath);
 }
 
-void ConfigDB::loadConfig(std::string filePath)
+void ConfigDB::loadConfig(const char *filePath)
 {
     m_configPath = filePath;
     

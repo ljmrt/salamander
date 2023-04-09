@@ -38,6 +38,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Logging/ErrorLogger.cpp
     ${PROJECT_SOURCE_DIR}/core/Logging/DebugMessenger.cpp
     ${PROJECT_SOURCE_DIR}/core/Renderer/Renderer.cpp
+    ${PROJECT_SOURCE_DIR}/core/Shader/Shader.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/DisplayManager.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/swapchainHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanExtensions/VulkanExtensions.cpp
@@ -48,6 +49,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Callbacks/Callbacks.cpp
     ${PROJECT_SOURCE_DIR}/core/Config/Config.cpp
     ${PROJECT_SOURCE_DIR}/core/Defaults/Defaults.cpp
+    ${PROJECT_SOURCE_DIR}/utils/FileUtils.cpp
     ${PROJECT_SOURCE_DIR}/main.cpp
 )
 

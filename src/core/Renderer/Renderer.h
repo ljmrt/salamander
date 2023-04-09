@@ -6,12 +6,16 @@
 #include <GLFW/glfw3.h>
 
 #include <core/VulkanInstance/VulkanInstance.h>
+#include <core/Shader/Shader.h>
 
 
+// TODO: move initialization, run, cleanup functions to higher-level application class?
 class Renderer
 {
 private:
     VulkanInstance m_instance;  // current vulkan instance **class**.
+
+    Shader::ShaderStages m_shaderStages;
     
     
     // initialize Vulkan.
@@ -23,13 +27,6 @@ private:
     // create the **Vulkan** graphics pipeline.
     void createGraphicsPipeline();
 
-    // TODO: seperate file/directory?
-    // create a shader module using the supplied bytecode.
-    //
-    // @param shaderBytecode the shader's bytecode in a vector of chars.
-    // @param resultShaderModule stored created shader module.
-    void createShaderModule(const std::vector<char> shaderBytecode, VkShaderModule& resultShaderModule);
-    
     // terminates/destroys libraries, frees memory, etc.
     void cleanup();
 public:

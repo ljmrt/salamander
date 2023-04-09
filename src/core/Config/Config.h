@@ -27,12 +27,12 @@ public:
     
     
     ConfigDB();
-    ConfigDB(std::string filePath);
+    ConfigDB(const char *filePath);
     
     // load a .scfg file as the current database.
     //
     // @param filePath path of the desired file to load.
-    void loadConfig(std::string filePath);
+    void loadConfig(const char *filePath);
     // lookup a key's value in the database.
     //
     // @param key key to lookup the value of.
