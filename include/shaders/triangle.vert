@@ -8,7 +8,7 @@ vec2 vertexPositions[3] = vec2[](
      vec2(-0.5, 0.5)
 );
 
-vec3 vertexColors[3] = vec3[])
+vec3 vertexColors[3] = vec3[](
      vec3(1.0, 0.0, 0.0),
      vec3(0.0, 1.0, 0.0),
      vec3(0.0, 0.0, 1.0)
@@ -17,5 +17,5 @@ vec3 vertexColors[3] = vec3[])
 void main()
 {
     gl_Position = vec4(vertexPositions[gl_VertexIndex], 0.0, 1.0);
-    fragmentColor = colors[gl_VertexIndex];
+    fragmentColor = vertexColors[gl_VertexIndex];
 }

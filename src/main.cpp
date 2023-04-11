@@ -14,7 +14,7 @@ int main()
         Defaults::initializeDefaults();
         application.run();
     } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        // std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 

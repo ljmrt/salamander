@@ -17,8 +17,8 @@ void FileUtils::readFileLines(const char *filePath, std::vector<std::string>& re
         throwDebugException("Failed to open file: \"" + (std::string)(filePath) + "\".");
     }
 
-    uint32_t fileLineCount = std::count(std::istream_iterator<char>(fileStream), std::istream_iterator<char>(), '\n');
-    resultFileLines.resize(fileLineCount);
+    // uint32_t fileLineCount = std::count(std::istream_iterator<char>(fileStream), std::istream_iterator<char>(), '\n');
+    // resultFileLines.resize(fileLineCount);
     
     for (std::string line; getline(fileStream, line);) {
         resultFileLines.push_back(line);

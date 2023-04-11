@@ -8,6 +8,8 @@
 
 ErrorLogger::debugException::debugException(const std::string &arg, const char *file, int line) : std::runtime_error(arg)
 {
+    msg = arg;
+    
     std::cout << "\033[35m" << std::endl;  // set output foreground color to magenta.
         
     std::ostringstream o;
@@ -18,6 +20,8 @@ ErrorLogger::debugException::debugException(const std::string &arg, const char *
       << "::\""
       << arg
       << "\"";
+
+    std::cout << o.str() << std::endl;
 }
 
 ErrorLogger::debugException::~debugException() throw()

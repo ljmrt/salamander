@@ -39,3 +39,4 @@ build/Makefile
 build/CMakeDoxyfile.in
 build/CMakeDoxygenDefaults.cmake
 build/libs/
+build/*.spv

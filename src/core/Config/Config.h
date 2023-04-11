@@ -19,9 +19,6 @@ private:
     };
     
     std::vector<struct m_lookupPair> m_configDatabase;
-
-    // dump the config database into std::cout formatted as a .scfg file.
-    void dumpDatabase();
 public:
     std::string m_configPath = "CONFIG NOT SET";
     
@@ -33,11 +30,15 @@ public:
     //
     // @param filePath path of the desired file to load.
     void loadConfig(const char *filePath);
+    
     // lookup a key's value in the database.
     //
     // @param key key to lookup the value of.
     // @return key value.
     std::string lookupKey(std::string key);
+
+    // dump the config database into std::cout formatted as a .scfg file.
+    void dumpDatabase();
 };
 
 
