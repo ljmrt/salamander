@@ -15,7 +15,14 @@ class Renderer
 private:
     VulkanInstance m_instance;  // current vulkan instance **class**.
 
-    Shader::ShaderStages m_shaderStages;
+    Shader::ShaderStages m_shaderStages;  // graphics pipeline shader stages.
+
+    const std::vector<VkDynamicState> m_dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    VkPipelineLayout m_pipelineLayout;
     
     
     // initialize Vulkan.

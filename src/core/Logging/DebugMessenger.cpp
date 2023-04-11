@@ -30,6 +30,9 @@ void DebugMessenger::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreat
         | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT // * validationEnabled
         | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT; // * performanceEnabled;
 
+    resultCreateInfo.pNext = nullptr;
+    resultCreateInfo.flags = 0;
+    
     resultCreateInfo.pfnUserCallback = Callbacks::debugCallback;
     resultCreateInfo.pUserData = nullptr;
 }

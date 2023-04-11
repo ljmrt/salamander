@@ -4,7 +4,7 @@ project(salamander)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wextra -O2 -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -Wextra -O2 -Wno-unused-parameter -Wno-unused-but-set-variable")  # TODO: remove Wno
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(PROJECT_OUTPUT_DIR ${CMAKE_BINARY_DIR})
