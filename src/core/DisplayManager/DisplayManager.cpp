@@ -29,15 +29,15 @@ void DisplayManager::createWindowSurface(VkInstance vkInstance, GLFWwindow *glfw
     }
 }
 
-void DisplayManager::createImageViews(DisplayManager::DisplayDetails& displayDetails, VkDevice logicalDevice)
+void DisplayManager::createImageViews(DisplayManager::VulkanDisplayDetails& vulkanDisplayDetails, VkDevice logicalDevice)
 {
-    displayDetails.swapchainImageViews.resize(displayDetails.swapchainImages.size());
-    for (size_t i = 0; i < displayDetails.swapchainImages.size(); i += 1) {
+    vulkanDisplayDetails.swapchainImageViews.resize(vulkanDisplayDetails.swapchainImages.size());
+    for (size_t i = 0; i < vulkanDisplayDetails.swapchainImages.size(); i += 1) {
         VkImageViewCreateInfo imageViewCreateInfo{};
         imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imageViewCreateInfo.image = displayDetails.swapchainImages[i];
+        imageViewCreateInfo.image = vulkanDisplayDetails.swapchainImages[i];
         imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        imageViewCreateInfo.format = displayDetails.swapchainImageFormat;
+        imageViewCreateInfo.format = vulkanDisplayDetails.swapchainImageFormat;
         // swizzle/modify color channels, currently set to default mapping.
         imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -49,7 +49,7 @@ void DisplayManager::createImageViews(DisplayManager::DisplayDetails& displayDet
         imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
         imageViewCreateInfo.subresourceRange.layerCount = 1;
 
-        int imageViewCreationResult = vkCreateImageView(logicalDevice, &imageViewCreateInfo, nullptr, &displayDetails.swapchainImageViews[i]);
+        int imageViewCreationResult = vkCreateImageView(logicalDevice, &imageViewCreateInfo, nullptr, &vulkanDisplayDetails.swapchainImageViews[i]);
         if (imageViewCreationResult != VK_SUCCESS) {
             throwDebugException("Failed to create image views.");
         }

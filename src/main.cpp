@@ -1,5 +1,4 @@
-#include <core/Renderer/Renderer.h>
-#include <core/Defaults/Defaults.h>
+#include <core/Application/Application.h>
 
 #include <iostream>
 #include <stdexcept>
@@ -8,11 +7,10 @@
 
 int main()
 {
-    Renderer application;
+    Application salamanderEngine;
 
     try {
-        Defaults::initializeDefaults();
-        application.run();
+        salamanderEngine.launch();
     } catch (const std::exception& e) {
         // std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;

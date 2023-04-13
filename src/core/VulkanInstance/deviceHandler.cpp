@@ -12,7 +12,7 @@
 #include <set>
 
 
-void deviceHandler::pickPhysicalDevice(VulkanInstance instance, Queue::QueueFamilyIndices& resultFamilyIndices, VkPhysicalDevice& resultPhysicalDevice)
+void deviceHandler::pickPhysicalDevice(VulkanInstance instance, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& resultFamilyIndices, VkPhysicalDevice& resultPhysicalDevice)
 {
     uint32_t physicalDeviceCount = 0;
     vkEnumeratePhysicalDevices(instance.m_vkInstance, &physicalDeviceCount, nullptr);
@@ -23,7 +23,7 @@ void deviceHandler::pickPhysicalDevice(VulkanInstance instance, Queue::QueueFami
     std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
     vkEnumeratePhysicalDevices(instance.m_vkInstance, &physicalDeviceCount, physicalDevices.data());
     for (VkPhysicalDevice device : physicalDevices) {
-        if (deviceHandler::deviceSuitable(device, instance.m_displayDetails.windowSurface, resultFamilyIndices)) {
+        if (deviceHandler::deviceSuitable(device, windowSurface, resultFamilyIndices)) {
             resultPhysicalDevice = device;
             break;
         }

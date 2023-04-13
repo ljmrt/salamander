@@ -21,9 +21,10 @@ namespace deviceHandler
     // pick a suitable graphics card for the application.
     //
     // @param instance Vulkan instance **class** to use in selection.
+    // @param windowSurface Vulkan window surface to use in selection.
     // @param resultFamilyIndices result indices of requested queue families.
     // @param resultPhysicalDevice result chosen device.
-    void pickPhysicalDevice(VulkanInstance instance, Queue::QueueFamilyIndices& resultFamilyIndices, VkPhysicalDevice& resultPhysicalDevice);
+    void pickPhysicalDevice(VulkanInstance instance, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& resultFamilyIndices, VkPhysicalDevice& resultPhysicalDevice);
 
     // check if a VkPhysicalDevice is suitable for the application.
     //

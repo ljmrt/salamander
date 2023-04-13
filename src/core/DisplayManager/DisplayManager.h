@@ -12,8 +12,7 @@
 
 namespace DisplayManager
 {
-    struct DisplayDetails {
-        GLFWwindow *glfwWindow;
+    struct VulkanDisplayDetails {
         VkSurfaceKHR windowSurface;
 
         VkSwapchainKHR swapchain;
@@ -21,6 +20,11 @@ namespace DisplayManager
         VkFormat swapchainImageFormat;
         VkExtent2D swapchainExtent;
         std::vector<VkImageView> swapchainImageViews;
+    };
+    
+    struct DisplayDetails {
+        GLFWwindow *glfwWindow;
+        VulkanDisplayDetails vulkanDisplayDetails;
     };
     
     
@@ -42,11 +46,11 @@ namespace DisplayManager
     // @param resultWindowSurface stored created window surface.
     void createWindowSurface(VkInstance vkInstance, GLFWwindow *glfwWindow, VkSurfaceKHR& resultWindowSurface);
 
-    // create image views
+    // create Vulkan image views.
     //
-    // @param displayDetails DisplayDetails struct to use and store result in.
+    // @param vulkanDisplayDetails Vulkan display details struct to use and store result in.
     // @param logicalDevice logical device to use in image view creation.
-    void createImageViews(DisplayDetails& displayDetails, VkDevice logicalDevice);
+    void createImageViews(VulkanDisplayDetails& vulkanDisplayDetails, VkDevice logicalDevice);
 
     // process window input and act accordingly.
     //

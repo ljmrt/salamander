@@ -35,6 +35,7 @@ add_subdirectory(${GLM_DIR} EXCLUDE_FROM_ALL)
 include_directories(${PROJECT_SOURCE_DIR})
 
 add_executable(${PROJECT_NAME}
+    ${PROJECT_SOURCE_DIR}/core/Application/Application.cpp
     ${PROJECT_SOURCE_DIR}/core/Logging/ErrorLogger.cpp
     ${PROJECT_SOURCE_DIR}/core/Logging/DebugMessenger.cpp
     ${PROJECT_SOURCE_DIR}/core/Renderer/Renderer.cpp

@@ -13,8 +13,6 @@
 class Renderer
 {
 private:
-    VulkanInstance m_instance;  // current vulkan instance **class**.
-
     Shader::ShaderStages m_shaderStages;  // graphics pipeline shader stages.
 
     const std::vector<VkDynamicState> m_dynamicStates = {
@@ -23,24 +21,16 @@ private:
     };
 
     VkPipelineLayout m_pipelineLayout;
-    
-    
-    // initialize Vulkan.
-    void vulkanInit();
-    
-    // render/main loop.
-    void render();
 
     // create the **Vulkan** graphics pipeline.
-    void createGraphicsPipeline();
+    void createGraphicsPipeline(VkDevice vulkanLogicalDevice);
+public:
+    // render/main loop.
+    void render(VkDevice vulkanLogicalDevice, DisplayManager::DisplayDetails displayDetails);
 
     // terminates/destroys libraries, frees memory, etc.
-    void cleanup();
-public:
-    // run the renderer.
-    //
-    // handles vulkan initialization, rendering, and cleanup.
-    void run();
+    void cleanupRenderer(VkDevice vulkanLogicalDevice);
+    
 
     Renderer();
 };

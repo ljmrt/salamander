@@ -19,35 +19,20 @@ Renderer::Renderer()
     
 }
 
-void Renderer::run()
+void Renderer::render(VkDevice vulkanLogicalDevice, DisplayManager::DisplayDetails displayDetails)
 {
-    DisplayManager::initializeGLFW();
-    DisplayManager::createWindow(Defaults::windowDefaults.MAIN_WINDOW_WIDTH, Defaults::windowDefaults.MAIN_WINDOW_HEIGHT, Defaults::windowDefaults.MAIN_WINDOW_NAME, m_instance.m_displayDetails.glfwWindow);
+    this->createGraphicsPipeline(vulkanLogicalDevice);
     
-    Renderer::vulkanInit();
-    
-    Renderer::render();
-    
-    Renderer::cleanup();
+    DisplayManager::stallWindow(displayDetails.glfwWindow);
 }
 
-void Renderer::vulkanInit()
+void Renderer::createGraphicsPipeline(VkDevice vulkanLogicalDevice)
 {
-    m_instance = VulkanInstance(Defaults::windowDefaults.MAIN_WINDOW_NAME, m_instance.m_displayDetails.glfwWindow);
-}
+    m_shaderStages.vertexShader.shaderFilePath = "/home/lucas/programming/graphics/salamander-engine/include/shaders/triangle.vert";
+    Shader::completeShaderData(VK_SHADER_STAGE_VERTEX_BIT, vulkanLogicalDevice, m_shaderStages.vertexShader);
 
-void Renderer::render()
-{
-    DisplayManager::stallWindow(m_instance.m_displayDetails.glfwWindow);
-}
-
-void Renderer::createGraphicsPipeline()
-{
-    m_shaderStages.vertexShader.shaderFilePath = "/home/lucas/programming/graphics/salamander-engine/include/shaders/triangle.vs";
-    Shader::completeShaderData(VK_SHADER_STAGE_VERTEX_BIT, m_instance.m_logicalDevice, m_shaderStages.vertexShader);
-
-    m_shaderStages.fragmentShader.shaderFilePath = "/home/lucas/programming/graphics/salamander-engine/include/shaders/triangle.fs";
-    Shader::completeShaderData(VK_SHADER_STAGE_FRAGMENT_BIT, m_instance.m_logicalDevice, m_shaderStages.fragmentShader);
+    m_shaderStages.fragmentShader.shaderFilePath = "/home/lucas/programming/graphics/salamander-engine/include/shaders/triangle.frag";
+    Shader::completeShaderData(VK_SHADER_STAGE_FRAGMENT_BIT, vulkanLogicalDevice, m_shaderStages.fragmentShader);
 
     // VkPipelineShaderStageCreateInfo shaderStages[] = {m_shaderStages.vertexShader.shaderStageCreateInfo, m_shaderStages.fragmentShader.shaderStageCreateInfo};
     
@@ -153,21 +138,17 @@ void Renderer::createGraphicsPipeline()
     pipelineLayoutCreateInfo.pNext = nullptr;
     pipelineLayoutCreateInfo.flags = 0;
 
-    size_t pipelineLayoutCreationResult = vkCreatePipelineLayout(m_instance.m_logicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout);
+    size_t pipelineLayoutCreationResult = vkCreatePipelineLayout(vulkanLogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout);
     if (pipelineLayoutCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create pipeline layout.");
     }
 
 
-    vkDestroyShaderModule(m_instance.m_logicalDevice, m_shaderStages.fragmentShader.shaderModule, nullptr);
-    vkDestroyShaderModule(m_instance.m_logicalDevice, m_shaderStages.vertexShader.shaderModule, nullptr);
+    vkDestroyShaderModule(vulkanLogicalDevice, m_shaderStages.fragmentShader.shaderModule, nullptr);
+    vkDestroyShaderModule(vulkanLogicalDevice, m_shaderStages.vertexShader.shaderModule, nullptr);
 }
 
-void Renderer::cleanup()
+void Renderer::cleanupRenderer(VkDevice vulkanLogicalDevice)
 {
-    vkDestroyPipelineLayout(m_instance.m_logicalDevice, m_pipelineLayout, nullptr);
-    
-    m_instance.cleanupInstance();
-    
-    DisplayManager::cleanupGLFW(m_instance.m_displayDetails.glfwWindow);
+    vkDestroyPipelineLayout(vulkanLogicalDevice, m_pipelineLayout, nullptr);
 }
