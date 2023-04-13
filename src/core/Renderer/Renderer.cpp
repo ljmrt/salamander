@@ -21,20 +21,59 @@ Renderer::Renderer()
 
 void Renderer::render(VkDevice vulkanLogicalDevice, DisplayManager::DisplayDetails displayDetails)
 {
+    this->createRenderPass(vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainImageFormat);
     this->createGraphicsPipeline(vulkanLogicalDevice);
     
     DisplayManager::stallWindow(displayDetails.glfwWindow);
 }
 
+void Renderer::createRenderPass(VkDevice vulkanLogicalDevice, VkFormat swapchainImageFormat)
+{
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = swapchainImageFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;  // clear framebuffer to black before renderering.
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;  // ignore stencil buffer loading and storing.
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;  // transition image into swapchain-ready format.
+
+    
+    VkAttachmentReference colorAttachmentReference{};
+    colorAttachmentReference.attachment = 0;
+    colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentReference;
+
+    
+    VkRenderPassCreateInfo renderPassCreateInfo{};
+    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassCreateInfo.attachmentCount = 1;
+    renderPassCreateInfo.pAttachments = &colorAttachment;
+    renderPassCreateInfo.subpassCount = 1;
+    renderPassCreateInfo.pSubpasses = &subpass;
+    
+    size_t renderPassCreationResult = vkCreateRenderPass(vulkanLogicalDevice, &renderPassCreateInfo, nullptr, &m_renderPass);
+    if (renderPassCreationResult != VK_SUCCESS) {
+        throwDebugException("Failed to create render pass.");
+    }
+}
+
 void Renderer::createGraphicsPipeline(VkDevice vulkanLogicalDevice)
 {
+    // TODO: extract graphics pipeline creation into multiple stages.
     m_shaderStages.vertexShader.shaderFilePath = "/home/lucas/programming/graphics/salamander-engine/include/shaders/triangle.vert";
     Shader::completeShaderData(VK_SHADER_STAGE_VERTEX_BIT, vulkanLogicalDevice, m_shaderStages.vertexShader);
 
     m_shaderStages.fragmentShader.shaderFilePath = "/home/lucas/programming/graphics/salamander-engine/include/shaders/triangle.frag";
     Shader::completeShaderData(VK_SHADER_STAGE_FRAGMENT_BIT, vulkanLogicalDevice, m_shaderStages.fragmentShader);
 
-    // VkPipelineShaderStageCreateInfo shaderStages[] = {m_shaderStages.vertexShader.shaderStageCreateInfo, m_shaderStages.fragmentShader.shaderStageCreateInfo};
+    VkPipelineShaderStageCreateInfo shaderStages[] = {m_shaderStages.vertexShader.shaderStageCreateInfo, m_shaderStages.fragmentShader.shaderStageCreateInfo};
     
 
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
@@ -67,12 +106,6 @@ void Renderer::createGraphicsPipeline(VkDevice vulkanLogicalDevice)
     */
 
 
-    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
-    dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(m_dynamicStates.size());
-    dynamicStateCreateInfo.pDynamicStates = m_dynamicStates.data();
-
-
     VkPipelineViewportStateCreateInfo viewportStateCreateInfo{};
     viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportStateCreateInfo.viewportCount = 1;
@@ -95,7 +128,7 @@ void Renderer::createGraphicsPipeline(VkDevice vulkanLogicalDevice)
     rasterizationCreateInfo.depthBiasSlopeFactor = 0.0f;
 
 
-    // currently disabled.
+    // multisampling is currently disabled.
     VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
     multisamplingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisamplingCreateInfo.sampleShadingEnable = VK_FALSE;
@@ -129,6 +162,12 @@ void Renderer::createGraphicsPipeline(VkDevice vulkanLogicalDevice)
     colorBlendCreateInfo.blendConstants[3] = 0.0f;
 
 
+    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{};
+    dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(m_dynamicStates.size());
+    dynamicStateCreateInfo.pDynamicStates = m_dynamicStates.data();
+
+
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutCreateInfo.setLayoutCount = 0;
@@ -144,11 +183,41 @@ void Renderer::createGraphicsPipeline(VkDevice vulkanLogicalDevice)
     }
 
 
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
+    pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    
+    pipelineCreateInfo.stageCount = 2;
+    pipelineCreateInfo.pStages = shaderStages;
+    
+    pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
+    pipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
+    pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
+    pipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
+    pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
+    pipelineCreateInfo.pDepthStencilState = nullptr;
+    pipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
+    pipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
+
+    pipelineCreateInfo.layout = m_pipelineLayout;
+    pipelineCreateInfo.renderPass = m_renderPass;
+    pipelineCreateInfo.subpass = 0;
+
+    pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineCreateInfo.basePipelineIndex = -1;
+
+    size_t pipelineCreationResult = vkCreateGraphicsPipelines(vulkanLogicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &m_graphicsPipeline);
+    if (pipelineCreationResult != VK_SUCCESS) {
+        throwDebugException("Failed to create graphics pipeline.");
+    }
+
+
     vkDestroyShaderModule(vulkanLogicalDevice, m_shaderStages.fragmentShader.shaderModule, nullptr);
     vkDestroyShaderModule(vulkanLogicalDevice, m_shaderStages.vertexShader.shaderModule, nullptr);
 }
 
 void Renderer::cleanupRenderer(VkDevice vulkanLogicalDevice)
 {
+    vkDestroyPipeline(vulkanLogicalDevice, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(vulkanLogicalDevice, m_pipelineLayout, nullptr);
+    vkDestroyRenderPass(vulkanLogicalDevice, m_renderPass, nullptr);
 }
