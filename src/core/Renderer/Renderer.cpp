@@ -177,12 +177,12 @@ void Renderer::createPipelineLayout(VkPipelineLayout& pipelineLayout)
 
 void Renderer::createGraphicsPipeline(VkRenderPass renderPass, VkPipeline& graphicsPipeline)
 {
-    const char *vertexShaderFilePath = "/home/lucas/programming/graphics/salamander-engine/include/shaders/triangle.vert";
-    const char *fragmentShaderFilePath = "/home/lucas/programming/graphics/salamander-engine/include/shaders/triangle.frag";
+    const char *vertexBytecodeFilePath = "/home/lucas/programming/graphics/salamander-engine/build/vertex.spv";
+    const char *fragmentBytecodeFilePath = "/home/lucas/programming/graphics/salamander-engine/build/fragment.spv";
 
     Shader::PipelineShaders pipelineShaders;
-    Shader::createShader(vertexShaderFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, pipelineShaders.vertexShader);
-    Shader::createShader(fragmentShaderFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, pipelineShaders.fragmentShader);
+    Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, pipelineShaders.vertexShader);
+    Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, pipelineShaders.fragmentShader);
     
     VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {pipelineShaders.vertexShader.shaderStageCreateInfo, pipelineShaders.fragmentShader.shaderStageCreateInfo};
     
