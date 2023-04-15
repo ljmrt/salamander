@@ -4,6 +4,7 @@
 #include <core/Renderer/Renderer.h>
 #include <core/Shader/Shader.h>
 #include <core/DisplayManager/DisplayManager.h>
+#include <core/DisplayManager/swapchainHandler.h>
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/Logging/ErrorLogger.h>
 #include <core/Defaults/Defaults.h>
@@ -177,8 +178,8 @@ void Renderer::createPipelineLayout(VkPipelineLayout& pipelineLayout)
 
 void Renderer::createGraphicsPipeline(VkRenderPass renderPass, VkPipeline& graphicsPipeline)
 {
-    const char *vertexBytecodeFilePath = "/home/lucas/programming/graphics/salamander-engine/build/vertex.spv";
-    const char *fragmentBytecodeFilePath = "/home/lucas/programming/graphics/salamander-engine/build/fragment.spv";
+    std::string vertexBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/vertex.spv";
+    std::string fragmentBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/fragment.spv";
 
     Shader::PipelineShaders pipelineShaders;
     Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, pipelineShaders.vertexShader);
@@ -290,12 +291,18 @@ void Renderer::render(DisplayManager::DisplayDetails displayDetails)
     
     createGraphicsPipeline(renderPass, m_graphicsPipeline);
 
+    swapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, renderPass, displayDetails.vulkanDisplayDetails.swapchainExtent, *m_vulkanLogicalDevice, m_swapchainFramebuffers);
+
     
     DisplayManager::stallWindow(displayDetails.glfwWindow);
 }
 
 void Renderer::cleanupRenderer()
 {
+    for (VkFramebuffer swapchainFramebuffer : m_swapchainFramebuffers) {
+        vkDestroyFramebuffer(*m_vulkanLogicalDevice, swapchainFramebuffer, nullptr);
+    }
+    
     vkDestroyPipeline(*m_vulkanLogicalDevice, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(*m_vulkanLogicalDevice, m_pipelineLayout, nullptr);
     vkDestroyRenderPass(*m_vulkanLogicalDevice, m_renderPass, nullptr);

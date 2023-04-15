@@ -19,9 +19,15 @@ namespace Defaults
         uint32_t MAIN_WINDOW_HEIGHT;  // height of the main displayed window.
         std::string MAIN_WINDOW_NAME;  // name of the main displayed window.
     };
-    extern windowConfig windowDefaults;  // default window configuration.
+    extern windowConfig windowDefaults;  // default/read window configuration.
 
     // logging configuration.
+
+    // misc. configuration.
+    struct miscConfig {
+        std::string SALAMANDER_ROOT_DIRECTORY;  // the "root" directory of the project(ex: /home/lucas/salamander/), read from the %SALAMANDER_ROOT% environment variable.
+    };
+    extern miscConfig miscDefaults;  // default/read misc. configuration.
 
     // initialize all of the defaults.
     void initializeDefaults();

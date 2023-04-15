@@ -18,6 +18,8 @@ private:
     Shader::PipelineShaders m_pipelineShaders;  // graphics pipeline shader stages.
     VkPipelineLayout m_pipelineLayout;  // this graphics pipeline's pipeline layout.
     VkPipeline m_graphicsPipeline;  // graphics pipeline
+
+    std::vector<VkFramebuffer> m_swapchainFramebuffers;  // framebuffers for all swapchain images views.
     
 
     // fill out a color attachment description and reference.

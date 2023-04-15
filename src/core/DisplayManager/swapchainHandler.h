@@ -53,6 +53,15 @@ namespace swapchainHandler
     // @param resultSwapchainImageFormat stored swap chain image format.
     // @param resultSwapchainExtent stored swap chain extent.
     void createSwapchain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, GLFWwindow *glfwWindow, VkSurfaceKHR windowSurface, VkSwapchainKHR& resultSwapchain, std::vector<VkImage> resultSwapchainImages, VkFormat& resultSwapchainImageFormat, VkExtent2D& resultSwapchainExtent);
+
+    // create the framebuffers necessary for all swapchain image views.
+    //
+    // @param swapchainImageViews swapchain image views to use in framebuffer creation.
+    // @param renderPass render pass to use in framebuffer creation.
+    // @param swapchainExtent swapchain image extent to use in framebuffer creation.
+    // @param vulkanLogicalDevice this Vulkan instance's logical device.
+    // @param swapchainFramebuffers stored created swapchain framebuffers.
+    void createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkRenderPass renderPass, VkExtent2D swapchainExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& swapchainFramebuffers);
 }
 
 

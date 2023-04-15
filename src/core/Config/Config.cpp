@@ -15,17 +15,17 @@ ConfigDB::ConfigDB()
 {
 }
 
-ConfigDB::ConfigDB(const char *filePath)
+ConfigDB::ConfigDB(std::string filePath)
 {
     loadConfig(filePath);
 }
 
-void ConfigDB::loadConfig(const char *filePath)
+void ConfigDB::loadConfig(std::string filePath)
 {
     m_configPath = filePath;
     
     std::vector<std::string> fileLines;
-    FileUtils::readFileLines(filePath, fileLines);
+    FileUtils::readFileLines(filePath.c_str(), fileLines);
     
     for (std::string line : fileLines) {
         std::string valueDelimiters = ":";

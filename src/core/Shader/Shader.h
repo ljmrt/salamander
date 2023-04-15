@@ -4,13 +4,14 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <string>
 #include <vector>
 
 
 namespace Shader
 {
     struct Shader {
-        const char *bytecodeFilePath;
+        std::string bytecodeFilePath;
         VkShaderModule shaderModule;
         VkPipelineShaderStageCreateInfo shaderStageCreateInfo{};
     };
@@ -44,7 +45,7 @@ namespace Shader
     // @param shaderStage Vulkan shader stage bitmask of the shader's stage.
     // @param vulkanLogicalDevice Vulkan instance's logical device.
     // @param shader stored created shader.
-    void createShader(const char *bytecodeFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader);
+    void createShader(std::string bytecodeFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader);
 }
 
 #endif  // SHADER_H

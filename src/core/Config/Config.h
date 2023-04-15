@@ -5,7 +5,6 @@
 #include <string>
 
 
-// TODO: customizable config file locations.
 // TODO: GUI config.
 // TODO: customize common configs through GUI.
 // TODO: comment logging, display on GUI.
@@ -24,12 +23,12 @@ public:
     
     
     ConfigDB();
-    ConfigDB(const char *filePath);
+    ConfigDB(std::string filePath);
     
     // load a .scfg file as the current database.
     //
     // @param filePath path of the desired file to load.
-    void loadConfig(const char *filePath);
+    void loadConfig(std::string filePath);
     
     // lookup a key's value in the database.
     //

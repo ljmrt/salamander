@@ -25,7 +25,7 @@ void Shader::createShaderModule(std::vector<char> shaderBytecode, VkDevice vulka
 void Shader::completeShaderData(VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader)
 {
     std::vector<char> shaderBytecode;
-    FileUtils::readFileChars(shader.bytecodeFilePath, true, shaderBytecode);
+    FileUtils::readFileChars(shader.bytecodeFilePath.c_str(), true, shaderBytecode);
     createShaderModule(shaderBytecode, vulkanLogicalDevice, shader.shaderModule);
 
     
@@ -36,7 +36,7 @@ void Shader::completeShaderData(VkShaderStageFlagBits shaderStage, VkDevice vulk
     shader.shaderStageCreateInfo.pName = "main";  // shader entry point.
 }
 
-void Shader::createShader(const char *bytecodeFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader)
+void Shader::createShader(std::string bytecodeFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader)
 {
     shader.bytecodeFilePath = bytecodeFilePath;
     completeShaderData(shaderStage, vulkanLogicalDevice, shader);

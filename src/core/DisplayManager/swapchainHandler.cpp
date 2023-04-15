@@ -128,3 +128,36 @@ void swapchainHandler::createSwapchain(VkPhysicalDevice physicalDevice, VkDevice
     resultSwapchainImageFormat = swapchainSurfaceFormat.format;
     resultSwapchainExtent = swapchainExtent;
 }
+
+void swapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkRenderPass renderPass, VkExtent2D swapchainExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& swapchainFramebuffers)
+{
+    swapchainFramebuffers.resize(swapchainImageViews.size());
+
+    for (VkImageView swapchainImageView : swapchainImageViews) {
+        VkImageView framebufferAttachments[1] = {  // framebuffer create info requires a array of attachments.
+            swapchainImageView
+        };
+
+        VkFramebufferCreateInfo framebufferCreateInfo{};
+        framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+
+        framebufferCreateInfo.renderPass = renderPass;
+        
+        framebufferCreateInfo.attachmentCount = 1;
+        framebufferCreateInfo.pAttachments = framebufferAttachments;
+
+        // set framebuffer width and height to the same resolution as the swapchain images.
+        framebufferCreateInfo.width = swapchainExtent.width;
+        framebufferCreateInfo.height = swapchainExtent.height;
+        
+        framebufferCreateInfo.layers = 1;
+
+        VkFramebuffer createdFramebuffer;
+        size_t framebufferCreationResult = vkCreateFramebuffer(vulkanLogicalDevice, &framebufferCreateInfo, nullptr, &createdFramebuffer);
+        if (framebufferCreationResult != VK_SUCCESS) {
+            throwDebugException("Failed to create framebuffer.");
+        }
+        
+        swapchainFramebuffers.push_back(createdFramebuffer);
+    }
+}

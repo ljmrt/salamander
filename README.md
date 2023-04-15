@@ -87,6 +87,10 @@ WIP
 ```
 Built binaries should be found in the bin directory.
 
+## Setup
+
+The environment variable %SALAMANDER_ROOT% has to point to Salamander's root directory("." relative to this file) for proper functionality. In addition, see the "config" directory to view project configuration.
+
 ## References
 
 [Vulkan Tutorial](https://vulkan-tutorial.com/): Vulkan guidance.
