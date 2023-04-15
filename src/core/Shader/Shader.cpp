@@ -12,6 +12,7 @@ void Shader::createShaderModule(const std::vector<char> shaderBytecode, VkDevice
 {
     VkShaderModuleCreateInfo shaderModuleCreateInfo{};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    
     shaderModuleCreateInfo.codeSize = shaderBytecode.size();  // somehow not incorrect?
     shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t *>(shaderBytecode.data());  // Vulkan requires the bytecode pointer to be a uint32_t.
 
@@ -27,8 +28,16 @@ void Shader::completeShaderData(VkShaderStageFlagBits shaderStage, VkDevice logi
     FileUtils::readFileChars(shader.shaderFilePath, true, shaderBytecode);
     createShaderModule(shaderBytecode, logicalDevice, shader.shaderModule);
 
+    
     shader.shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    
     shader.shaderStageCreateInfo.stage = shaderStage;
     shader.shaderStageCreateInfo.module = shader.shaderModule;
     shader.shaderStageCreateInfo.pName = "main";  // shader entry point.
+}
+
+void Shader::createShader(const char *shaderFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader)
+{
+    shader.shaderFilePath = shaderFilePath;
+    completeShaderData(shaderStage, vulkanLogicalDevice, shader);
 }

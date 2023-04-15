@@ -7,12 +7,16 @@
 </h1>
 <p align="center">
     <img src="https://img.shields.io/static/v1?label=release-version&message=0.0.0&color=green">
-    <img src="https://img.shields.io/static/v1?label=build-version&message=0.4.0&color=green">
+    <img src="https://img.shields.io/static/v1?label=build-version&message=0.5.0&color=green">
     <img src="https://img.shields.io/static/v1?label=language&message=C%2B%2B17&color=green">
     <img src="https://img.shields.io/static/v1?label=platform&message=Linux&color=green">
     <img src="https://img.shields.io/static/v1?label=development&message=Active&color=green">
 </p>
 <p align="center">Modern Vulkan based real-time renderer written in C++17.</p>
+
+## Notice
+
+This is the "development" branch! Most builds here will run, but may not be fully finished. Stable releases can be found on the "release" branch, but may not be as bleeding-edge as this.
 
 ## Features
 
@@ -34,29 +38,40 @@ WIP
 
 ```diff
 .
-├── assets
-│   ├── branding
-│   ├── models
-│   └── textures
-├── build
-├── include                  # Project configuration or read-from files.
-│   └── config               # Configuration files.
-├── libs                     # Third-party libraries/dependencies.
-│   ├── glfw                 # GLFW: Used for windowing and input support.
-│   └── glm                  # GLM: Used for mathematics and useful graphics functions.
-├── src                      # C++ implementation files.
-│   ├── core                 # Fundamental engine code/files(rendering, logging, etc.).
-│   │   ├── Callbacks        # Windowing, input, rendering, etc. callbacks.
-│   │   ├── Logging          # Core error logging and handling system(only enabled in debug builds).
-│   │   ├── Renderer         # The core renderer.
-│   │   ├── VulkanExtensions # Functions not included-by-default in Vulkan(but are loaded in).
-│   │   └── VulkanInstance   # Vulkan instancing code.
-│   └── extensions           # Features built on top of the core(GUI, image loading, etc.).
+├── assets                    # Misc. outside project files.
+│   ├── branding              # Project branding(logos, etc.).
+│   ├── models                # (.glTF) Default models and model storage directory.
+│   └── textures              # Model and misc. textures.
+├── bin                       # (Not included by repository, created by script) Output binary files.
+├── build                     # Build debug or release mode script(.sh), CMake output file directory.
+├── include                   # Project configuration or read-from files.
+│   ├── config                # Configuration files.
+│   └── shaders               # .vert and .frag shaders.
+├── libs                      # Third-party libraries/dependencies.
+│   ├── glfw                  # Used for windowing and input support.
+│   └── glm                   # Used for mathematics and useful graphics functions.
+└── src                       # C++ implementation files.
+    ├── core                  # Fundamental engine code(rendering, logging, configuration, etc.).
+    │   ├── Application       # Highest-level application, manages renderer and Vulkan instance.
+    │   ├── Callbacks         # Windowing, input, rendering, etc. callbacks.
+    │   ├── Config            # .scfg configuration system.
+    │   ├── Defaults          # Global/default variables(window width, window height, etc.).
+    │   ├── DisplayManager    # Display-related functions and handlers.
+    │   ├── Logging           # Core error logging and handling systems(currently only enabled in debug builds).
+    │   ├── Queue             # Queue and queue family code.
+    │   ├── Renderer          # The core renderer/the graphics pipeline container.
+    │   ├── Shader            # Shader structs and handlers.
+    │   ├── VulkanExtensions  # Functions/features not included-by-default in Vulkan(loaded in here).
+    │   └── VulkanInstance    # Core Vulkan processes/Vulkan instancing code.
+    ├── extensions            # Features built on top of the core(GUI, image loading, etc.).
+    └── utils                 # Utility functions(file loading, etc.).
 ```
 
 ## Third-party libraries
 
-* WIP
+(Note: all are built into the project source code)
+* GLFW: Windowing and input support.
+* GLM: Mathematics and useful graphics functions.
 
 ## Building
 

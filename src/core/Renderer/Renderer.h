@@ -9,45 +9,96 @@
 #include <core/Shader/Shader.h>
 
 
-// TODO: move initialization, run, cleanup functions to higher-level application class?
 class Renderer
 {
 private:
-    Shader::ShaderStages m_shaderStages;  // graphics pipeline shader stages.
+    VkDevice *m_vulkanLogicalDevice;  // pointer to this application's Vulkan instance.
+    
+    VkRenderPass m_renderPass;  // this graphics pipeline's render pass.
+    Shader::PipelineShaders m_pipelineShaders;  // graphics pipeline shader stages.
+    VkPipelineLayout m_pipelineLayout;  // this graphics pipeline's pipeline layout.
+    VkPipeline m_graphicsPipeline;  // graphics pipeline
+    
 
-    const std::vector<VkDynamicState> m_dynamicStates = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR
-    };
-
-    // TODO: reference to Vulkan instance's logical device?
-    VkRenderPass m_renderPass;
-    VkPipelineLayout m_pipelineLayout;
-    VkPipeline m_graphicsPipeline;
-
+    // fill out a color attachment description and reference.
+    //
+    // @param swapchainImageFormat the image format of the swapchain, used in filling out as the color attachment is ultimately sent to the swapchain.
+    // @param colorAttachmentDescription stored filled color attachment description.
+    // @param colorAttachmentReference stored filled color attachment reference.
+    void fillColorAttachment(VkFormat swapchainImageFormat, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference);
+    // fill out a subpass's description.
+    //
+    // @param colorAttachmentReference color attachment reference to use in subpass description.
+    // @param subpassDescription stored filled subpass description.
+    void fillSubpassDescription(VkAttachmentReference *colorAttachmentReference, VkSubpassDescription& subpassDescription);
+    
     // create the renderer's render pass.
     //
-    // @param vulkanLogicalDevice the Vulkan logical device to create the render pass with.
     // @param swapchainImageFormat the swapchain image format to use in render pass creation.
-    void createRenderPass(VkDevice vulkanLogicalDevice, VkFormat swapchainImageFormat);
+    // @param renderPass stored created render pass.
+    void createRenderPass(VkFormat swapchainImageFormat, VkRenderPass& renderPass);
+
+    // fill out a vertex input's create info.
+    //
+    // @param vertexInputCreateInfo stored filled vertex input create info.
+    void fillVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo);
+
+    // fill out a input assembly's create info.
+    //
+    // @param inputAssemblyCreateInfo stored filled input assembly create info.
+    void fillInputAssemblyCreateInfo(VkPipelineInputAssemblyStateCreateInfo& inputAssemblyCreateInfo);
+
+    // fill out a viewport's create info.
+    //
+    // @param viewportCreateInfo stored filled viewport create info.
+    void fillViewportCreateInfo(VkPipelineViewportStateCreateInfo& viewportCreateInfo);
+
+    // fill out a rasterization's create info.
+    //
+    // @param rasterizationCreateInfo stored filled rasterization create info.
+    void fillRasterizationCreateInfo(VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo);
+
+    // fill out a multisampling's create info.
+    //
+    // @param multisamplingCreateInfo stored filled multisampling create info.
+    void fillMultisamplingCreateInfo(VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo);
+
+    // fill out a color blend attachment and color blend's create info.
+    //
+    // @param colorBlendAttachment stored filled color blend attachment.
+    // @param colorBlendCreateInfo stored filled color blend create info.
+    void fillColorBlend(VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo);
+
+    // fill out a dynamic states's create info.
+    //
+    // @param dynamicStates dynamic states to use in filling.
+    // @param dynamicStatesCreateInfo stored filled dynamic states create info.
+    void fillDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicStates, VkPipelineDynamicStateCreateInfo& dynamicStatesCreateInfo);
+
+    // create a pipeline layout.
+    //
+    // @param pipelineLayout stored created pipeline layout.
+    void createPipelineLayout(VkPipelineLayout& pipelineLayout);
     
     // create the **Vulkan** graphics pipeline.
     //
-    // @param vulkanLogicalDevice the Vulkan logical device to create the graphics pipeline with.
-    void createGraphicsPipeline(VkDevice vulkanLogicalDevice);
+    // @param graphicsPipeline stored created graphics pipeline.
+    void createGraphicsPipeline(VkRenderPass renderPass, VkPipeline& graphicsPipeline);
 public:
+    // set the pointer to the Vulkan instance's logical device.
+    //
+    // @param vulkanLogicalDevice pointer to set personal pointer to.
+    void setVulkanLogicalDevice(VkDevice *vulkanLogicalDevice);
+    
     // render/main loop.
     //
-    // @param vulkanLogicalDevice the Vulkan logical device to render with.
     // @param displayDetails the display details to use in rendering.
-    void render(VkDevice vulkanLogicalDevice, DisplayManager::DisplayDetails displayDetails);
+    void render(DisplayManager::DisplayDetails displayDetails);
 
     // terminates/destroys libraries, frees memory, etc.
-    //
-    // @param vulkanLogicalDevice the Vulkan logical device to use in renderer cleanup.
-    void cleanupRenderer(VkDevice vulkanLogicalDevice);
-    
+    void cleanupRenderer();
 
+    // Renderer constructor.
     Renderer();
 };
 

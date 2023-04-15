@@ -15,7 +15,7 @@ namespace Shader
         VkPipelineShaderStageCreateInfo shaderStageCreateInfo;
     };
 
-    struct ShaderStages {
+    struct PipelineShaders {
         Shader vertexShader;
         Shader fragmentShader;
     };
@@ -35,6 +35,16 @@ namespace Shader
     // @param logicalDevice Vulkan instance's logical device.
     // @param shader shader to complete.
     void completeShaderData(VkShaderStageFlagBits shaderStage, VkDevice logicalDevice, Shader& shader);
+
+    // wrapper function to simplify shader creation.
+    //
+    // sets shaderFilePath and then calls completeShaderData.
+    //
+    // @param shaderFilePath file path of the shader to create.
+    // @param shaderStage Vulkan shader stage bitmask of the shader's stage.
+    // @param vulkanLogicalDevice Vulkan instance's logical device.
+    // @param shader stored created shader.
+    void createShader(const char *shaderFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader);
 }
 
 #endif  // SHADER_H

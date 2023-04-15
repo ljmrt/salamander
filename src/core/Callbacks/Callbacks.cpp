@@ -53,5 +53,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Callbacks::debugCallback(VkDebugUtilsMessageSever
     // ex: "[04/01/23 12:51:51, GENERAL:VERBOSE] Copying old device 0 into new device 0"
     std::cout << "[" << timeValue << ", " << extendedType << ":" << extendedSeverity << "] " << pCallbackData->pMessage << std::endl;
 
+    std::cout << "\033[0m" << std::endl;  // reset terminal output color.
+
     return VK_FALSE;
 }

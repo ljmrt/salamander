@@ -10,7 +10,7 @@ ErrorLogger::debugException::debugException(const std::string &arg, const char *
 {
     msg = arg;
     
-    std::cout << "\033[35m" << std::endl;  // set output foreground color to magenta.
+    std::cout << "\033[36m" << std::endl;  // set output foreground color to magenta.
         
     std::ostringstream o;
     o << "Logging::"

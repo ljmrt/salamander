@@ -52,6 +52,7 @@ void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkIns
     
     VkApplicationInfo applicationInfo{};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    
     applicationInfo.pApplicationName = instanceApplicationName.c_str();
     applicationInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     applicationInfo.pEngineName = "No Engine";
