@@ -12,7 +12,7 @@ namespace Shader
     struct Shader {
         const char *bytecodeFilePath;
         VkShaderModule shaderModule;
-        VkPipelineShaderStageCreateInfo shaderStageCreateInfo;
+        VkPipelineShaderStageCreateInfo shaderStageCreateInfo{};
     };
 
     struct PipelineShaders {
