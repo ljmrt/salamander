@@ -28,8 +28,6 @@ public:
     VkDebugUtilsMessengerEXT m_debugMessenger;  // debug/logging messenger.
     
     Queue::QueueFamilyIndices m_familyIndices;
-    VkQueue m_graphicsQueue;
-    VkQueue m_presentationQueue;
     
     VkDevice m_logicalDevice;  // created logical device.
 

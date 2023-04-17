@@ -13,6 +13,9 @@
 namespace DisplayManager
 {
     struct VulkanDisplayDetails {
+        VkQueue graphicsQueue;
+        VkQueue presentationQueue;
+        
         VkSurfaceKHR windowSurface;
 
         VkSwapchainKHR swapchain;
@@ -45,12 +48,6 @@ namespace DisplayManager
     // @param glfwWindow GLFW window to create a surface from.
     // @param resultWindowSurface stored created window surface.
     void createWindowSurface(VkInstance vkInstance, GLFWwindow *glfwWindow, VkSurfaceKHR& resultWindowSurface);
-
-    // create Vulkan image views.
-    //
-    // @param vulkanDisplayDetails Vulkan display details struct to use and store result in.
-    // @param logicalDevice logical device to use in image view creation.
-    void createImageViews(VulkanDisplayDetails& vulkanDisplayDetails, VkDevice logicalDevice);
 
     // process window input and act accordingly.
     //

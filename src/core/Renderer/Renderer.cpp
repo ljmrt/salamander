@@ -57,6 +57,23 @@ void Renderer::createRenderPass(VkFormat swapchainImageFormat, VkRenderPass& ren
     renderPassCreateInfo.pAttachments = &colorAttachmentDescription;
     renderPassCreateInfo.subpassCount = 1;
     renderPassCreateInfo.pSubpasses = &subpassDescription;
+
+    
+    VkSubpassDependency subpassDependency{};
+    
+    subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    subpassDependency.dstSubpass = 0;
+
+    // operations to wait on.
+    subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;  // wait for the swapchain to finish reading the image before accessing.
+    subpassDependency.srcAccessMask = 0;
+
+    // operations that should wait.
+    subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    renderPassCreateInfo.dependencyCount = 1;
+    renderPassCreateInfo.pDependencies = &subpassDependency;
     
     size_t renderPassCreationResult = vkCreateRenderPass(*m_vulkanLogicalDevice, &renderPassCreateInfo, nullptr, &renderPass);
     if (renderPassCreationResult != VK_SUCCESS) {
@@ -291,9 +308,9 @@ void Renderer::createSynchronizationObjects(VkSemaphore& imageAvailibleSemaphore
     fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;  // create the fence signaled to avoid blockage on first run of drawFrame.
 
 
-    uint32_t imageAvailibleSemaphoreCreationResult = vkCreateSemaphore(*m_vulkanLogicalDevice, &semaphoreCreateInfo, nullptr, &imageAvailibleCreateInfo);
-    uint32_t renderFinishedSemaphoreCreationResult = vkCreateSemaphore(*m_vulkanLogicalDevice, &semaphoreCreateInfo, nullptr, &renderFinishedCreateInfo);
-    uint32_t inFlightFenceCreationResult = vkCreateFence(*m_vulkanLogicalDevice, &fenceCreateInfo, nullptr, &inFlightFence);
+    uint32_t imageAvailibleSemaphoreCreationResult = vkCreateSemaphore(*m_vulkanLogicalDevice, &semaphoreCreateInfo, nullptr, &m_imageAvailibleSemaphore);
+    uint32_t renderFinishedSemaphoreCreationResult = vkCreateSemaphore(*m_vulkanLogicalDevice, &semaphoreCreateInfo, nullptr, &m_renderFinishedSemaphore);
+    uint32_t inFlightFenceCreationResult = vkCreateFence(*m_vulkanLogicalDevice, &fenceCreateInfo, nullptr, &m_inFlightFence);
 
     if (imageAvailibleSemaphoreCreationResult != VK_SUCCESS || renderFinishedSemaphoreCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create semaphores.");
@@ -303,13 +320,13 @@ void Renderer::createSynchronizationObjects(VkSemaphore& imageAvailibleSemaphore
     }
 }
 
-void Renderer::drawFrame(VkSwapchain swapchain, VkExtent2D swapchainImageExtent)
+void Renderer::drawFrame(VkSwapchainKHR swapchain, VkExtent2D swapchainImageExtent, VkQueue graphicsQueue, VkQueue presentationQueue)
 {
     vkWaitForFences(*m_vulkanLogicalDevice, 1, &m_inFlightFence, VK_TRUE, UINT64_MAX);  // wait for the GPU to finish with the previous frame, UINT64_MAX timeout.
     vkResetFences(*m_vulkanLogicalDevice, 1, &m_inFlightFence);
 
 
-    size_t swapchainImageIndex;
+    uint32_t swapchainImageIndex;  // prefer to use size_t, but want to avoid weird casts to uint32_t.
     vkAcquireNextImageKHR(*m_vulkanLogicalDevice, swapchain, UINT64_MAX, m_imageAvailibleSemaphore, VK_NULL_HANDLE, &swapchainImageIndex);  // get the index of an availbile swapchain image.
 
 
@@ -322,7 +339,7 @@ void Renderer::drawFrame(VkSwapchain swapchain, VkExtent2D swapchainImageExtent)
 
     // what semaphore to wait on and what stage of the pipeline to wait on.
     VkSemaphore waitSemaphores[] = {m_imageAvailibleSemaphore};
-    VkPipelineStageFlags waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -336,10 +353,25 @@ void Renderer::drawFrame(VkSwapchain swapchain, VkExtent2D swapchainImageExtent)
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    uint32_t graphicsQueueSubmitResult = vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFence);
+    uint32_t graphicsQueueSubmitResult = vkQueueSubmit(graphicsQueue, 1, &submitInfo, m_inFlightFence);
     if (graphicsQueueSubmitResult != VK_SUCCESS) {
         throwDebugException("Failed to submit graphics command buffer to graphics queue.");
     }
+
+
+    VkPresentInfoKHR presentationInfo{};
+    presentationInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    presentationInfo.waitSemaphoreCount = 1;
+    presentationInfo.pWaitSemaphores = signalSemaphores;
+
+    VkSwapchainKHR swapchains[] = {swapchain};
+    presentationInfo.swapchainCount = 1;
+    presentationInfo.pSwapchains = swapchains;
+    presentationInfo.pImageIndices = &swapchainImageIndex;
+    presentationInfo.pResults = nullptr;
+
+    vkQueuePresentKHR(presentationQueue, &presentationInfo);
 }
 
 void Renderer::setVulkanLogicalDevice(VkDevice *vulkanLogicalDevice)
@@ -366,8 +398,10 @@ void Renderer::render(DisplayManager::DisplayDetails displayDetails, size_t grap
         DisplayManager::processWindowInput(displayDetails.glfwWindow);
         glfwPollEvents();
 
-        drawFrame();
+        drawFrame(displayDetails.vulkanDisplayDetails.swapchain, displayDetails.vulkanDisplayDetails.swapchainImageExtent, displayDetails.vulkanDisplayDetails.graphicsQueue, displayDetails.vulkanDisplayDetails.presentationQueue);
     }
+
+    vkDeviceWaitIdle(*m_vulkanLogicalDevice);  // wait for the logical device to finish all operations before termination.
 }
 
 void Renderer::cleanupRenderer()

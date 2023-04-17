@@ -29,8 +29,8 @@ VulkanInstance::VulkanInstance(std::string instanceApplicationName, DisplayManag
     deviceHandler::pickPhysicalDevice(*this, displayDetails.vulkanDisplayDetails.windowSurface, m_familyIndices, m_physicalDevice);
     
     deviceHandler::createLogicalDevice(m_physicalDevice, m_familyIndices, m_logicalDevice);
-    vkGetDeviceQueue(m_logicalDevice, m_familyIndices.graphicsFamily.value(), 0, &m_graphicsQueue);
-    vkGetDeviceQueue(m_logicalDevice, m_familyIndices.presentationFamily.value(), 0, &m_presentationQueue);
+    vkGetDeviceQueue(m_logicalDevice, m_familyIndices.graphicsFamily.value(), 0, &displayDetails.vulkanDisplayDetails.graphicsQueue);
+    vkGetDeviceQueue(m_logicalDevice, m_familyIndices.presentationFamily.value(), 0, &displayDetails.vulkanDisplayDetails.presentationQueue);
 
     swapchainHandler::createSwapchain(m_physicalDevice,
                                       m_logicalDevice,
@@ -41,7 +41,7 @@ VulkanInstance::VulkanInstance(std::string instanceApplicationName, DisplayManag
                                       displayDetails.vulkanDisplayDetails.swapchainImageFormat,
                                       displayDetails.vulkanDisplayDetails.swapchainImageExtent);
 
-    DisplayManager::createImageViews(displayDetails.vulkanDisplayDetails, m_logicalDevice);
+    swapchainHandler::createSwapchainImageViews(displayDetails.vulkanDisplayDetails.swapchainImages, displayDetails.vulkanDisplayDetails.swapchainImageFormat, m_logicalDevice, displayDetails.vulkanDisplayDetails.swapchainImageViews);
 }
 
 void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance)

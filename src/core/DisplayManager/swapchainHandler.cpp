@@ -68,7 +68,7 @@ void swapchainHandler::selectSwapchainExtent(const VkSurfaceCapabilitiesKHR exte
     }
 }
 
-void swapchainHandler::createSwapchain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, GLFWwindow *glfwWindow, VkSurfaceKHR windowSurface, VkSwapchainKHR& resultSwapchain, std::vector<VkImage> resultSwapchainImages, VkFormat& resultSwapchainImageFormat, VkExtent2D& resultSwapchainExtent)
+void swapchainHandler::createSwapchain(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, GLFWwindow *glfwWindow, VkSurfaceKHR windowSurface, VkSwapchainKHR& resultSwapchain, std::vector<VkImage>& resultSwapchainImages, VkFormat& resultSwapchainImageFormat, VkExtent2D& resultSwapchainExtent)
 {
     SwapchainSupportDetails swapchainSupportDetails;
     swapchainHandler::querySwapchainSupportDetails(physicalDevice, windowSurface, swapchainSupportDetails);
@@ -129,13 +129,39 @@ void swapchainHandler::createSwapchain(VkPhysicalDevice physicalDevice, VkDevice
     resultSwapchainExtent = swapchainExtent;
 }
 
+void swapchainHandler::createSwapchainImageViews(std::vector<VkImage> swapchainImages, VkFormat swapchainImageFormat, VkDevice vulkanLogicalDevice, std::vector<VkImageView>& swapchainImageViews)
+{
+    swapchainImageViews.resize(swapchainImages.size());
+    for (size_t i = 0; i < swapchainImages.size(); i += 1) {
+        VkImageViewCreateInfo imageViewCreateInfo{};
+        imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewCreateInfo.image = swapchainImages[i];
+        imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCreateInfo.format = swapchainImageFormat;
+        // swizzle/modify color channels, currently set to default mapping.
+        imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;  // use image as color target.
+        imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+        imageViewCreateInfo.subresourceRange.levelCount = 1;
+        imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+        imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+        int imageViewCreationResult = vkCreateImageView(vulkanLogicalDevice, &imageViewCreateInfo, nullptr, &swapchainImageViews[i]);
+        if (imageViewCreationResult != VK_SUCCESS) {
+            throwDebugException("Failed to create image views.");
+        }
+    }
+}
+
 void swapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkRenderPass renderPass, VkExtent2D swapchainExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& swapchainFramebuffers)
 {
     swapchainFramebuffers.resize(swapchainImageViews.size());
-
-    for (VkImageView swapchainImageView : swapchainImageViews) {
+    for (size_t i = 0; i < swapchainImageViews.size(); i += 1) {
         VkImageView framebufferAttachments[1] = {  // framebuffer create info requires a array of attachments.
-            swapchainImageView
+            swapchainImageViews[i]
         };
 
         VkFramebufferCreateInfo framebufferCreateInfo{};
@@ -152,12 +178,9 @@ void swapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swap
         
         framebufferCreateInfo.layers = 1;
 
-        VkFramebuffer createdFramebuffer;
-        size_t framebufferCreationResult = vkCreateFramebuffer(vulkanLogicalDevice, &framebufferCreateInfo, nullptr, &createdFramebuffer);
+        size_t framebufferCreationResult = vkCreateFramebuffer(vulkanLogicalDevice, &framebufferCreateInfo, nullptr, &swapchainFramebuffers[i]);
         if (framebufferCreationResult != VK_SUCCESS) {
             throwDebugException("Failed to create framebuffer.");
         }
-        
-        swapchainFramebuffers.push_back(createdFramebuffer);
     }
 }

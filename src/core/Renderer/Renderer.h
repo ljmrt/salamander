@@ -98,7 +98,7 @@ private:
 
     void createSynchronizationObjects(VkSemaphore& imageAvailibleSemaphore, VkSemaphore& renderFinishedSemaphore, VkFence& inFlightFence);
 
-    void drawFrame();
+    void drawFrame(VkSwapchainKHR swapchain, VkExtent2D swapchainImageExtent, VkQueue graphicsQueue, VkQueue presentationQueue);
 public:
     // set the pointer to the Vulkan instance's logical device.
     //
