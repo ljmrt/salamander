@@ -63,14 +63,6 @@ void DisplayManager::processWindowInput(GLFWwindow *glfwWindow)
     }
 }
 
-void DisplayManager::stallWindow(GLFWwindow *glfwWindow)
-{
-    while (!glfwWindowShouldClose(glfwWindow)) {
-        DisplayManager::processWindowInput(glfwWindow);
-        glfwPollEvents();
-    }
-}
-
 void DisplayManager::cleanupGLFW(GLFWwindow *glfwWindow)
 {
     glfwDestroyWindow(glfwWindow);

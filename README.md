@@ -30,9 +30,25 @@ Some features or parts of the engine may not be fully implemented and bugs will 
 
 WIP
 
-## Usage
+## Project setup and building
 
-WIP
+Note: Currently only supported on Linux.
+
+### Setup
+
+The environment variable %SALAMANDER_ROOT% has to point to Salamander's root directory("." relative to this file) for proper functionality. This can be set manually, or you can run "setupenv.sh" to automatically set up the environment variable(appends export to your ".bashrc"). In addition, see the "config" directory to view project configuration.
+
+### Dependencies
+
+GLFW and GLM are included in the project's source code. Vulkan tools, layers, and loader will need to be installed by your package manager. CMake and similar build tools may need to be installed if not already.
+
+### Compiling builds
+
+To compile debug or release builds, you must be in the "build" directory and run the corresponding build script(compileDebug.sh, compileRelease.sh).
+
+### Compiled binaries
+
+Compiled debug or release binaries can be found in the "bin" directory.
 
 ## Project structure
 
@@ -66,30 +82,6 @@ WIP
     ├── extensions            # Features built on top of the core(GUI, image loading, etc.).
     └── utils                 # Utility functions(file loading, etc.).
 ```
-
-## Third-party libraries
-
-(Note: all are built into the project source code)
-* GLFW: Windowing and input support.
-* GLM: Mathematics and useful graphics functions.
-
-## Building
-
-Currently Linux only, not many plans to move this elsewhere.
-### Linux
-#### Dependencies
-GLFW and GLM are currently included in the project's source code as git submodules. No prerequesites are necessary.
-#### Build commands
-```diff
-
-WIP
-
-```
-Built binaries should be found in the bin directory.
-
-## Setup
-
-The environment variable %SALAMANDER_ROOT% has to point to Salamander's root directory("." relative to this file) for proper functionality. In addition, see the "config" directory to view project configuration.
 
 ## References
 

@@ -16,8 +16,7 @@ void Application::initialize()
 
 void Application::run()
 {
-    // TODO: only pass necessary Vulkan details.
-    m_renderer.render(m_displayDetails);
+    m_renderer.render(m_displayDetails, m_instance.m_familyIndices.graphicsFamily.value());
 }
 
 void Application::terminate()

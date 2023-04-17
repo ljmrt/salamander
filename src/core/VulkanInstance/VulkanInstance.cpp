@@ -39,7 +39,7 @@ VulkanInstance::VulkanInstance(std::string instanceApplicationName, DisplayManag
                                       displayDetails.vulkanDisplayDetails.swapchain,
                                       displayDetails.vulkanDisplayDetails.swapchainImages,
                                       displayDetails.vulkanDisplayDetails.swapchainImageFormat,
-                                      displayDetails.vulkanDisplayDetails.swapchainExtent);
+                                      displayDetails.vulkanDisplayDetails.swapchainImageExtent);
 
     DisplayManager::createImageViews(displayDetails.vulkanDisplayDetails, m_logicalDevice);
 }

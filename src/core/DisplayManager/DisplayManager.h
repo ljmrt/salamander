@@ -18,7 +18,7 @@ namespace DisplayManager
         VkSwapchainKHR swapchain;
         std::vector<VkImage> swapchainImages;
         VkFormat swapchainImageFormat;
-        VkExtent2D swapchainExtent;
+        VkExtent2D swapchainImageExtent;
         std::vector<VkImageView> swapchainImageViews;
     };
     
@@ -56,11 +56,6 @@ namespace DisplayManager
     //
     // @param glfwWindow GLFW window to take and process input from.
     void processWindowInput(GLFWwindow *glfwWindow);
-
-    // stall window open(temporary function).
-    //
-    // @param glfwWindow GLFW window to stall.
-    void stallWindow(GLFWwindow *glfwWindow);
 
     // cleanup and terminate GLFW.
     //

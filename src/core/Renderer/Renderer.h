@@ -8,6 +8,8 @@
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/Shader/Shader.h>
 
+#include <vector>
+
 
 class Renderer
 {
@@ -20,6 +22,13 @@ private:
     VkPipeline m_graphicsPipeline;  // graphics pipeline
 
     std::vector<VkFramebuffer> m_swapchainFramebuffers;  // framebuffers for all swapchain images views.
+
+    VkCommandPool m_graphicsCommandPool;  // a command pool used for graphics command buffers.
+    VkCommandBuffer m_graphicsCommandBuffer;  // child command buffer under the graphics command pool.
+
+    VkSemaphore m_imageAvailibleSemaphore;  // semaphore used to make the GPU wait to continue until the next availible image index in the swapchain has been fetched.
+    VkSemaphore m_renderFinishedSemaphore;
+    VkFence m_inFlightFence;  // fence used to synchronize the GPU and CPU before begining to draw another frame.
     
 
     // fill out a color attachment description and reference.
@@ -86,6 +95,10 @@ private:
     //
     // @param graphicsPipeline stored created graphics pipeline.
     void createGraphicsPipeline(VkRenderPass renderPass, VkPipeline& graphicsPipeline);
+
+    void createSynchronizationObjects(VkSemaphore& imageAvailibleSemaphore, VkSemaphore& renderFinishedSemaphore, VkFence& inFlightFence);
+
+    void drawFrame();
 public:
     // set the pointer to the Vulkan instance's logical device.
     //
@@ -95,7 +108,8 @@ public:
     // render/main loop.
     //
     // @param displayDetails the display details to use in rendering.
-    void render(DisplayManager::DisplayDetails displayDetails);
+    // @param graphicsFamilyIndex index of the graphics queue family.
+    void render(DisplayManager::DisplayDetails displayDetails, size_t graphicsFamilyIndex);
 
     // terminates/destroys libraries, frees memory, etc.
     void cleanupRenderer();

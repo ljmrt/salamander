@@ -42,6 +42,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Shader/Shader.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/DisplayManager.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/swapchainHandler.cpp
+    ${PROJECT_SOURCE_DIR}/core/Command/CommandManager.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanExtensions/VulkanExtensions.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanInstance/supportUtils.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanInstance/deviceHandler.cpp
