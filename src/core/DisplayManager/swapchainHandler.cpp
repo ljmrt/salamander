@@ -184,3 +184,39 @@ void swapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swap
         }
     }
 }
+
+void swapchainHandler::recreateSwapchain(VkPhysicalDevice physicalDevice, VkDevice vulkanLogicalDevice, GLFWwindow *glfwWindow, VkSurfaceKHR windowSurface, VkRenderPass renderPass, VkSwapchainKHR& swapchain, std::vector<VkImage>& swapchainImages, VkFormat& swapchainImageFormat, VkExtent2D& swapchainImageExtent, std::vector<VkImageView>& swapchainImageViews, std::vector<VkFramebuffer>& swapchainFramebuffers)
+{
+    // stall window if minimized.
+    // prefer to use size_t, but complying with GLFW is better.
+    int framebufferWidth = 0;
+    int framebufferHeight = 0;
+    glfwGetFramebufferSize(glfwWindow, &framebufferWidth, &framebufferHeight);
+    
+    while (framebufferWidth == 0 || framebufferHeight == 0) {  // window is minimized.
+        glfwGetFramebufferSize(glfwWindow, &framebufferWidth, &framebufferHeight);
+        glfwWaitEvents();
+    }
+    
+    
+    vkDeviceWaitIdle(vulkanLogicalDevice);  // wait for logical device processing to finish.
+
+    cleanupSwapchain(vulkanLogicalDevice, swapchainFramebuffers, swapchainImageViews, swapchain);
+
+    createSwapchain(physicalDevice, vulkanLogicalDevice, glfwWindow, windowSurface, swapchain, swapchainImages, swapchainImageFormat, swapchainImageExtent);
+    createSwapchainImageViews(swapchainImages, swapchainImageFormat, vulkanLogicalDevice, swapchainImageViews);
+    createSwapchainFramebuffers(swapchainImageViews, renderPass, swapchainImageExtent, vulkanLogicalDevice, swapchainFramebuffers);
+}
+
+void swapchainHandler::cleanupSwapchain(VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer> swapchainFramebuffers, std::vector<VkImageView> swapchainImageViews, VkSwapchainKHR swapchain)
+{
+    for (VkFramebuffer swapchainFramebuffer : swapchainFramebuffers) {
+        vkDestroyFramebuffer(vulkanLogicalDevice, swapchainFramebuffer, nullptr);
+    }
+    
+    for (VkImageView imageView : swapchainImageViews) {
+        vkDestroyImageView(vulkanLogicalDevice, imageView, nullptr);
+    }
+    
+    vkDestroySwapchainKHR(vulkanLogicalDevice, swapchain, nullptr);
+}

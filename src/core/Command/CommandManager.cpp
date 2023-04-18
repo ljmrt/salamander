@@ -21,8 +21,10 @@ void CommandManager::createGraphicsCommandPool(size_t graphicsFamilyIndex, VkDev
     }
 }
 
-void CommandManager::allocateChildCommandBuffer(VkCommandPool parentCommandPool, size_t commandBufferCount, VkDevice vulkanLogicalDevice, VkCommandBuffer& childCommandBuffer)
+void CommandManager::allocateChildCommandBuffers(VkCommandPool parentCommandPool, size_t commandBufferCount, VkDevice vulkanLogicalDevice, std::vector<VkCommandBuffer>& childCommandBuffers)
 {
+    childCommandBuffers.resize(commandBufferCount);
+    
     VkCommandBufferAllocateInfo commandBufferAllocationInfo{};
     commandBufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 
@@ -30,9 +32,9 @@ void CommandManager::allocateChildCommandBuffer(VkCommandPool parentCommandPool,
     commandBufferAllocationInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;  // buffers can be submitted directly to queue.
     commandBufferAllocationInfo.commandBufferCount = commandBufferCount;
 
-    uint32_t commandBufferCreationResult = vkAllocateCommandBuffers(vulkanLogicalDevice, &commandBufferAllocationInfo, &childCommandBuffer);
+    uint32_t commandBufferCreationResult = vkAllocateCommandBuffers(vulkanLogicalDevice, &commandBufferAllocationInfo, childCommandBuffers.data());
     if (commandBufferCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create command buffer.");
+        throwDebugException("Failed to allocate child command buffers.");
     }
 }
 

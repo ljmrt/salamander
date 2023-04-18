@@ -70,6 +70,19 @@ namespace swapchainHandler
     // @param vulkanLogicalDevice this Vulkan instance's logical device.
     // @param swapchainFramebuffers stored created swapchain framebuffers.
     void createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkRenderPass renderPass, VkExtent2D swapchainExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& swapchainFramebuffers);
+
+    // recreate the swapchain after some form of incompatibility.
+    //
+    // @param ... see above functions.
+    void recreateSwapchain(VkPhysicalDevice physicalDevice, VkDevice vulkanLogicalDevice, GLFWwindow *glfwWindow, VkSurfaceKHR windowSurface, VkRenderPass renderPass, VkSwapchainKHR& swapchain, std::vector<VkImage>& swapchainImages, VkFormat& swapchainImageFormat, VkExtent2D& swapchainImageExtent, std::vector<VkImageView>& swapchainImageViews, std::vector<VkFramebuffer>& swapchainFramebuffers);
+
+    // clean up a swapchain.
+    //
+    // @param vulkanLogicalDevice the Vulkan instance's logical device.
+    // @param swapchainFramebuffers swapchain framebuffers to clean up.
+    // @param swapchainImageViews swapchain image views to clean up.
+    // @param swapchain swapchain to clean up.
+    void cleanupSwapchain(VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer> swapchainFramebuffers, std::vector<VkImageView> swapchainImageViews, VkSwapchainKHR swapchain);
 }
 
 

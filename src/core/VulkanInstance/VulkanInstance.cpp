@@ -86,13 +86,9 @@ void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkIns
     }
 }
 
-void VulkanInstance::cleanupInstance(DisplayManager::DisplayDetails displayDetails)
+void VulkanInstance::cleanupInstance(DisplayManager::DisplayDetails displayDetails, std::vector<VkFramebuffer> swapchainFramebuffers)
 {
-    for (VkImageView imageView : displayDetails.vulkanDisplayDetails.swapchainImageViews) {
-        vkDestroyImageView(m_logicalDevice, imageView, nullptr);
-    }
-    
-    vkDestroySwapchainKHR(m_logicalDevice, displayDetails.vulkanDisplayDetails.swapchain, nullptr);
+    swapchainHandler::cleanupSwapchain(m_logicalDevice, swapchainFramebuffers, displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.swapchain);  // clean up the swapchain and its details.
     
     vkDestroyDevice(m_logicalDevice, nullptr);
     

@@ -17,13 +17,13 @@ namespace CommandManager
     // @param graphicsCommandPool stored created graphics command pool.
     void createGraphicsCommandPool(size_t graphicsFamilyIndex, VkDevice vulkanLogicalDevice, VkCommandPool& graphicsCommandPool);
 
-    // allocate a amount of command buffers under a command pool(currently only able to allocate one).
+    // allocate am amount of command buffers under a command pool.
     //
     // @param parentCommandPool parent command pool to allocate the child command buffers under(also determines command buffer use).
     // @param commandBufferCount the amount of command buffers to create.
     // @param vulkanLogicalDevice the Vulkan instance's logical device.
-    // @param commandBuffer stored created command buffer.
-    void allocateChildCommandBuffer(VkCommandPool parentCommandPool, size_t commandBufferCount, VkDevice vulkanLogicalDevice, VkCommandBuffer& childCommandBuffer);
+    // @param commandBuffers stored created command buffers.
+    void allocateChildCommandBuffers(VkCommandPool parentCommandPool, size_t commandBufferCount, VkDevice vulkanLogicalDevice, std::vector<VkCommandBuffer>& childCommandBuffers);
 
     // record necessary drawing commands in a graphics command buffer.
     //
