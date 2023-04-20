@@ -8,10 +8,7 @@
 #include <ctime>
 
 
-VKAPI_ATTR VkBool32 VKAPI_CALL Callbacks::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                        VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                        void *pUserData)
+VKAPI_ATTR VkBool32 VKAPI_CALL Callbacks::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void *pUserData)
 {
     time_t rawTime;
     time(&rawTime);

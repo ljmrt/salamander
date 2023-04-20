@@ -14,18 +14,18 @@ void Application::initialize()
     glfwSetFramebufferSizeCallback(m_displayDetails.glfwWindow, Callbacks::framebufferResizeCallback);
 
     m_instance = VulkanInstance(Defaults::windowDefaults.MAIN_WINDOW_NAME, m_displayDetails);
-    m_renderer.setVulkanLogicalDevice(&m_instance.m_logicalDevice);
+    m_renderer.setVulkanLogicalDevice(&m_instance.m_devices.logicalDevice);
 }
 
 void Application::run()
 {
-    m_renderer.render(m_displayDetails, m_instance.m_familyIndices.graphicsFamily.value(), m_instance.m_physicalDevice);
+    m_renderer.render(m_displayDetails, m_instance.m_familyIndices.graphicsFamily.value(), m_instance.m_devices.physicalDevice);
 }
 
 void Application::terminate()
 {
     m_renderer.cleanupRenderer();
-    m_instance.cleanupInstance(m_displayDetails, m_renderer.m_swapchainFramebuffers);
+    m_instance.cleanupInstance(m_displayDetails);
     DisplayManager::cleanupGLFW(m_displayDetails.glfwWindow);
 }
 

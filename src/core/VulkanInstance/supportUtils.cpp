@@ -9,7 +9,7 @@
 #include <string>
 
 
-std::vector<const char *> supportUtils::getRequiredExtensions()
+void supportUtils::fetchRequiredExtensions(std::vector<const char *>& requiredExtensions)
 {
     uint32_t glfwExtensionCount = 0;
     const char **glfwExtensions;
@@ -21,7 +21,7 @@ std::vector<const char *> supportUtils::getRequiredExtensions()
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
-    return extensions;
+    requiredExtensions = extensions;
 }
 
 bool supportUtils::checkValidationLayerSupport()
@@ -39,7 +39,7 @@ bool supportUtils::checkValidationLayerSupport()
         supportedLayerNames.push_back(supportedLayer.layerName);
     }
 
-    for (const char *validationLayerName : m_validationLayers) {
+    for (const char *validationLayerName : requiredValidationLayers) {
         if(std::find(supportedLayerNames.begin(), supportedLayerNames.end(), validationLayerName) == supportedLayerNames.end()) {  // if required validation layer name not found at all in the supported layers.
             return false;
         }

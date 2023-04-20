@@ -14,13 +14,13 @@ private:
     DisplayManager::DisplayDetails m_displayDetails;
     
     
-    // initializate the application.
+    // initializate the application and its dependencies.
     void initialize();
 
-    // run the application/main loop.
+    // run the application and its dependencies.
     void run();
     
-    // terminate the application.
+    // terminate the application and its dependencies.
     void terminate();
 public:
     // launch the application.

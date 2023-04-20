@@ -10,7 +10,7 @@ ErrorLogger::debugException::debugException(const std::string &arg, const char *
 {
     msg = arg;
     
-    std::cout << "\033[36m" << std::endl;  // set output foreground color to magenta.
+    std::cout << "\033[36m" << std::endl;  // set output foreground color to cyan.
         
     std::ostringstream o;
     o << "Logging::"
@@ -26,6 +26,7 @@ ErrorLogger::debugException::debugException(const std::string &arg, const char *
 
 ErrorLogger::debugException::~debugException() throw()
 {
+    
 }
 
 const char *ErrorLogger::debugException::what() const throw()

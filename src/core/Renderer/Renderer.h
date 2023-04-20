@@ -28,7 +28,7 @@ private:
     std::vector<VkSemaphore> m_renderFinishedSemaphores;  // semaphore used to make the GPU wait to continue until the current frame has finished rendering.
     std::vector<VkFence> m_inFlightFences;  // fence used to synchronize the GPU and CPU before begining to draw another frame.]
 
-    size_t m_currentFrame;  // the current "frame" in context of the "in flight" frames.
+    size_t m_currentFrame = 0;  // the current "frame" in context of the "in flight" frames.
     
 
     // fill out a color attachment description and reference.
@@ -43,11 +43,10 @@ private:
     // @param subpassDescription stored filled subpass description.
     void fillSubpassDescription(VkAttachmentReference *colorAttachmentReference, VkSubpassDescription& subpassDescription);
     
-    // create the renderer's render pass.
+    // create member render pass.
     //
     // @param swapchainImageFormat the swapchain image format to use in render pass creation.
-    // @param renderPass stored created render pass.
-    void createRenderPass(VkFormat swapchainImageFormat, VkRenderPass& renderPass);
+    void createMemberRenderPass(VkFormat swapchainImageFormat);
 
     // fill out a vertex input's create info.
     //
@@ -87,23 +86,14 @@ private:
     void fillDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicStates, VkPipelineDynamicStateCreateInfo& dynamicStatesCreateInfo);
 
     // create a pipeline layout.
-    //
-    // @param pipelineLayout stored created pipeline layout.
-    void createPipelineLayout(VkPipelineLayout& pipelineLayout);
+    void createMemberPipelineLayout();
     
-    // create the **Vulkan** graphics pipeline.
-    //
-    // @param graphicsPipeline stored created graphics pipeline.
-    void createGraphicsPipeline(VkRenderPass renderPass, VkPipeline& graphicsPipeline);
+    // create member Vulkan graphics pipeline.
+    void createMemberGraphicsPipeline();
 
-    // create synchronization objects(semaphores, fences).
-    //
-    // @param imageAvailibleSemaphores stored created semaphores for when an image is availible for the GPU.
-    // @param renderFinishedSemaphores stored created semaphores for when the current frame is finished rendering.
-    // @param inFlightFences stored created fences for synchronization in "in flight" frames.
-    void createSynchronizationObjects(std::vector<VkSemaphore>& imageAvailibleSemaphores, std::vector<VkSemaphore>& renderFinishedSemaphores, std::vector<VkFence>& inFlightFences);
+    // create member synchronization objects(semaphores, fences).
+    void createMemberSynchronizationObjects();
 
-    // TODO: extract internal variables to function parameters(change from using m_graphicsPipeline in function to taking a graphics pipeline as a parameter).
     // draw a frame onto the screen using all of the configured render passes, pipelines, etc.
     //
     // @param currentFrame current swapchain frame to draw.
@@ -111,11 +101,8 @@ private:
     // @param vulkanPhysicalDevice the Vulkan instance's physical device to use in possible swapchain recreation.
     // @param graphicsQueue graphics queue to queue commands to.
     // @param presentationQueue presentation queue to queue commands to.
-    void drawFrame(size_t& currentFrame, DisplayManager::DisplayDetails& displayDetails, VkPhysicalDevice vulkanPhysicalDevice, VkQueue graphicsQueue, VkQueue presentationQueue);
+    void drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysicalDevice vulkanPhysicalDevice, VkQueue graphicsQueue, VkQueue presentationQueue);
 public:
-    // TODO: move this to VulkanInstance class.
-    std::vector<VkFramebuffer> m_swapchainFramebuffers;  // framebuffers for all swapchain images views.
-    
     // set the pointer to the Vulkan instance's logical device.
     //
     // @param vulkanLogicalDevice pointer to set personal pointer to.
@@ -126,9 +113,9 @@ public:
     // @param displayDetails the display details to use in rendering.
     // @param graphicsFamilyIndex index of the graphics queue family.
     // @param vulkanPhysicalDevice the Vulkan instance's physical device to use in frame drawing.
-    void render(DisplayManager::DisplayDetails displayDetails, size_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice);
+    void render(DisplayManager::DisplayDetails& displayDetails, size_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice);
 
-    // terminates/destroys libraries, frees memory, etc.
+    // terminates/destroys renderer and its members.
     void cleanupRenderer();
 
     // Renderer constructor.

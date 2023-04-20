@@ -13,7 +13,7 @@ void DisplayManager::initializeGLFW()
     // to be expanded.
 }
 
-void DisplayManager::createWindow(uint32_t windowWidth, uint32_t windowHeight, std::string windowName, GLFWwindow*& resultWindow)
+void DisplayManager::createWindow(size_t windowWidth, size_t windowHeight, std::string windowName, GLFWwindow*& resultWindow)
 {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);  // don't create an OpenGL context.
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -23,15 +23,15 @@ void DisplayManager::createWindow(uint32_t windowWidth, uint32_t windowHeight, s
 
 void DisplayManager::createWindowSurface(VkInstance vkInstance, GLFWwindow *glfwWindow, VkSurfaceKHR& resultWindowSurface)
 {
-    int creationResult = glfwCreateWindowSurface(vkInstance, glfwWindow, nullptr, &resultWindowSurface);
-    if (creationResult != VK_SUCCESS) {
+    VkResult windowSurfaceCreationResult = glfwCreateWindowSurface(vkInstance, glfwWindow, nullptr, &resultWindowSurface);
+    if (windowSurfaceCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create window surface");
     }
 }
 
 void DisplayManager::processWindowInput(GLFWwindow *glfwWindow)
 {
-    if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_X)) {
+    if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_X)) {  // close window on X press.
         glfwSetWindowShouldClose(glfwWindow, true);
     }
 }

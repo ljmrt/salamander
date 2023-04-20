@@ -41,7 +41,7 @@ void Renderer::fillSubpassDescription(VkAttachmentReference *colorAttachmentRefe
     subpassDescription.pColorAttachments = colorAttachmentReference;
 }
 
-void Renderer::createRenderPass(VkFormat swapchainImageFormat, VkRenderPass& renderPass)
+void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat)
 {
     VkAttachmentDescription colorAttachmentDescription{};
     VkAttachmentReference colorAttachmentReference{};
@@ -75,7 +75,7 @@ void Renderer::createRenderPass(VkFormat swapchainImageFormat, VkRenderPass& ren
     renderPassCreateInfo.dependencyCount = 1;
     renderPassCreateInfo.pDependencies = &subpassDependency;
     
-    size_t renderPassCreationResult = vkCreateRenderPass(*m_vulkanLogicalDevice, &renderPassCreateInfo, nullptr, &renderPass);
+    size_t renderPassCreationResult = vkCreateRenderPass(*m_vulkanLogicalDevice, &renderPassCreateInfo, nullptr, &m_renderPass);
     if (renderPassCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create render pass.");
     }
@@ -175,7 +175,7 @@ void Renderer::fillDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicS
     dynamicStatesCreateInfo.pDynamicStates = dynamicStates.data();    
 }
 
-void Renderer::createPipelineLayout(VkPipelineLayout& pipelineLayout)
+void Renderer::createMemberPipelineLayout()
 {
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -188,22 +188,21 @@ void Renderer::createPipelineLayout(VkPipelineLayout& pipelineLayout)
     pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
     pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-    size_t pipelineLayoutCreationResult = vkCreatePipelineLayout(*m_vulkanLogicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+    size_t pipelineLayoutCreationResult = vkCreatePipelineLayout(*m_vulkanLogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout);
     if (pipelineLayoutCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create pipeline layout.");
     }
 }
 
-void Renderer::createGraphicsPipeline(VkRenderPass renderPass, VkPipeline& graphicsPipeline)
+void Renderer::createMemberGraphicsPipeline()
 {
     std::string vertexBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/vertex.spv";
     std::string fragmentBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/fragment.spv";
 
-    Shader::PipelineShaders pipelineShaders;
-    Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, pipelineShaders.vertexShader);
-    Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, pipelineShaders.fragmentShader);
+    Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, m_pipelineShaders.vertexShader);
+    Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, m_pipelineShaders.fragmentShader);
     
-    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {pipelineShaders.vertexShader.shaderStageCreateInfo, pipelineShaders.fragmentShader.shaderStageCreateInfo};
+    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_pipelineShaders.vertexShader.shaderStageCreateInfo, m_pipelineShaders.fragmentShader.shaderStageCreateInfo};
     
 
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
@@ -212,22 +211,6 @@ void Renderer::createGraphicsPipeline(VkRenderPass renderPass, VkPipeline& graph
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
     fillInputAssemblyCreateInfo(inputAssemblyCreateInfo);
-
-
-    /*
-    VkViewport defaultViewport{};
-    defaultViewport.x = 0.0f;
-    defaultViewport.y = 0.0f;
-    defaultViewport.width = (float)(m_instance.m_displayDetails.swapchainExtent.width);
-    defaultViewport.height = (float)(m_instance.m_displayDetails.swapchainExtent.height);
-    defaultViewport.minDepth = 0.0f;
-    defaultViewport.maxDepth = 1.0f;
-
-
-    VkRect2D defaultScissor{};
-    defaultScissor.offset = {0, 0};
-    defaultScissor.extent = m_instance.m_diplayDetails.swapchainExtent;
-    */
 
 
     VkPipelineViewportStateCreateInfo viewportCreateInfo{};
@@ -255,8 +238,7 @@ void Renderer::createGraphicsPipeline(VkRenderPass renderPass, VkPipeline& graph
     fillDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
 
 
-    VkPipelineLayout pipelineLayout;
-    createPipelineLayout(pipelineLayout);
+    createMemberPipelineLayout();
 
 
     VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
@@ -274,34 +256,28 @@ void Renderer::createGraphicsPipeline(VkRenderPass renderPass, VkPipeline& graph
     pipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
     pipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
 
-    pipelineCreateInfo.layout = pipelineLayout;
-    pipelineCreateInfo.renderPass = renderPass;
+    pipelineCreateInfo.layout = m_pipelineLayout;
+    pipelineCreateInfo.renderPass = m_renderPass;
     pipelineCreateInfo.subpass = 0;
 
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineCreateInfo.basePipelineIndex = -1;
 
-    size_t pipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline);
+    size_t pipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &m_graphicsPipeline);
     if (pipelineCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create graphics pipeline.");
     }
 
 
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, pipelineShaders.fragmentShader.shaderModule, nullptr);
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, pipelineShaders.vertexShader.shaderModule, nullptr);
-
-
-    // inefficient, only to make side-effects more visible.
-    m_renderPass = renderPass;
-    m_pipelineShaders = pipelineShaders;
-    m_pipelineLayout = pipelineLayout;
+    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_pipelineShaders.fragmentShader.shaderModule, nullptr);
+    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_pipelineShaders.vertexShader.shaderModule, nullptr);
 }
 
-void Renderer::createSynchronizationObjects(std::vector<VkSemaphore>& imageAvailibleSemaphores, std::vector<VkSemaphore>& renderFinishedSemaphores, std::vector<VkFence>& inFlightFences)
+void Renderer::createMemberSynchronizationObjects()
 {
-    imageAvailibleSemaphores.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-    inFlightFences.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+    m_imageAvailibleSemaphores.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+    m_renderFinishedSemaphores.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+    m_inFlightFences.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
     
     
     VkSemaphoreCreateInfo semaphoreCreateInfo{};
@@ -314,9 +290,9 @@ void Renderer::createSynchronizationObjects(std::vector<VkSemaphore>& imageAvail
     fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;  // create the fence signaled to avoid blockage on first run of drawFrame.
 
     for (size_t i = 0; i < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; i += 1) {
-        uint32_t imageAvailibleSemaphoreCreationResult = vkCreateSemaphore(*m_vulkanLogicalDevice, &semaphoreCreateInfo, nullptr, &imageAvailibleSemaphores[i]);
-        uint32_t renderFinishedSemaphoreCreationResult = vkCreateSemaphore(*m_vulkanLogicalDevice, &semaphoreCreateInfo, nullptr, &renderFinishedSemaphores[i]);
-        uint32_t inFlightFenceCreationResult = vkCreateFence(*m_vulkanLogicalDevice, &fenceCreateInfo, nullptr, &inFlightFences[i]);
+        uint32_t imageAvailibleSemaphoreCreationResult = vkCreateSemaphore(*m_vulkanLogicalDevice, &semaphoreCreateInfo, nullptr, &m_imageAvailibleSemaphores[i]);
+        uint32_t renderFinishedSemaphoreCreationResult = vkCreateSemaphore(*m_vulkanLogicalDevice, &semaphoreCreateInfo, nullptr, &m_renderFinishedSemaphores[i]);
+        uint32_t inFlightFenceCreationResult = vkCreateFence(*m_vulkanLogicalDevice, &fenceCreateInfo, nullptr, &m_inFlightFences[i]);
 
         if (imageAvailibleSemaphoreCreationResult != VK_SUCCESS || renderFinishedSemaphoreCreationResult != VK_SUCCESS) {
             throwDebugException("Failed to create semaphores.");
@@ -327,19 +303,19 @@ void Renderer::createSynchronizationObjects(std::vector<VkSemaphore>& imageAvail
     }
 }
 
-void Renderer::drawFrame(size_t& currentFrame, DisplayManager::DisplayDetails& displayDetails, VkPhysicalDevice vulkanPhysicalDevice, VkQueue graphicsQueue, VkQueue presentationQueue)
+void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysicalDevice vulkanPhysicalDevice, VkQueue graphicsQueue, VkQueue presentationQueue)
 {
-    vkWaitForFences(*m_vulkanLogicalDevice, 1, &m_inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);  // wait for the GPU to finish with the previous frame, UINT64_MAX timeout.
+    vkWaitForFences(*m_vulkanLogicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);  // wait for the GPU to finish with the previous frame, UINT64_MAX timeout.
 
 
     uint32_t swapchainImageIndex;  // prefer to use size_t, but want to avoid weird casts to uint32_t.
-    VkResult imageAcquisitionResult = vkAcquireNextImageKHR(*m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchain, UINT64_MAX, m_imageAvailibleSemaphores[currentFrame], VK_NULL_HANDLE, &swapchainImageIndex);  // get the index of an availbile swapchain image.
+    VkResult imageAcquisitionResult = vkAcquireNextImageKHR(*m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchain, UINT64_MAX, m_imageAvailibleSemaphores[m_currentFrame], VK_NULL_HANDLE, &swapchainImageIndex);  // get the index of an availbile swapchain image.
 
     // commented out parts are non-functional code checking framebuffer resize.
     if (imageAcquisitionResult == VK_ERROR_OUT_OF_DATE_KHR) {
  // if (imageAcquisitionResult == VK_ERROR_OUT_OF_DATE_KHR || imageAcquisitionResult == VK_SUBOPTIMAL_KHR || Defaults::callbacksVariables.FRAMEBUFFER_RESIZED) {
         // Defaults::callbacksVariables.FRAMEBUFFER_RESIZED = false;
-        swapchainHandler::recreateSwapchain(vulkanPhysicalDevice, *m_vulkanLogicalDevice, displayDetails.glfwWindow, displayDetails.vulkanDisplayDetails.windowSurface, m_renderPass, displayDetails.vulkanDisplayDetails.swapchain, displayDetails.vulkanDisplayDetails.swapchainImages, displayDetails.vulkanDisplayDetails.swapchainImageFormat, displayDetails.vulkanDisplayDetails.swapchainImageExtent, displayDetails.vulkanDisplayDetails.swapchainImageViews, m_swapchainFramebuffers);
+        swapchainHandler::recreateSwapchain(deviceHandler::VulkanDevices{vulkanPhysicalDevice, *m_vulkanLogicalDevice}, m_renderPass, displayDetails);
         return;
     } else if (imageAcquisitionResult != VK_SUCCESS && imageAcquisitionResult != VK_SUBOPTIMAL_KHR) {
  // } else if (imageAcquisitionResult != VK_SUCCESS) {
@@ -347,18 +323,18 @@ void Renderer::drawFrame(size_t& currentFrame, DisplayManager::DisplayDetails& d
     }
     
 
-    vkResetFences(*m_vulkanLogicalDevice, 1, &m_inFlightFences[currentFrame]);  // reset fences only after successful image acquisition.
+    vkResetFences(*m_vulkanLogicalDevice, 1, &m_inFlightFences[m_currentFrame]);  // reset fences only after successful image acquisition.
 
 
-    vkResetCommandBuffer(m_graphicsCommandBuffers[currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[currentFrame], m_renderPass, m_swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline);
+    vkResetCommandBuffer(m_graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
+    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline);
 
     
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     // what semaphore to wait on and what stage of the pipeline to wait on.
-    VkSemaphore waitSemaphores[] = {m_imageAvailibleSemaphores[currentFrame]};
+    VkSemaphore waitSemaphores[] = {m_imageAvailibleSemaphores[m_currentFrame]};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     
     submitInfo.waitSemaphoreCount = 1;
@@ -366,14 +342,14 @@ void Renderer::drawFrame(size_t& currentFrame, DisplayManager::DisplayDetails& d
     submitInfo.pWaitDstStageMask = waitStages;
 
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &m_graphicsCommandBuffers[currentFrame];
+    submitInfo.pCommandBuffers = &m_graphicsCommandBuffers[m_currentFrame];
 
     // what semaphore to signal when the command buffers have finished executing.
-    VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[currentFrame]};
+    VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[m_currentFrame]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    uint32_t graphicsQueueSubmitResult = vkQueueSubmit(graphicsQueue, 1, &submitInfo, m_inFlightFences[currentFrame]);
+    uint32_t graphicsQueueSubmitResult = vkQueueSubmit(graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]);
     if (graphicsQueueSubmitResult != VK_SUCCESS) {
         throwDebugException("Failed to submit graphics command buffer to graphics queue.");
     }
@@ -394,7 +370,7 @@ void Renderer::drawFrame(size_t& currentFrame, DisplayManager::DisplayDetails& d
     vkQueuePresentKHR(presentationQueue, &presentationInfo);
 
     
-    currentFrame = (currentFrame + 1) % Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT;  // modulo operator to ensure frame index resets after MAX_FRAMES_IN_FLIGHT frames.
+    m_currentFrame = (m_currentFrame + 1) % Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT;  // modulo operator to ensure frame index resets after MAX_FRAMES_IN_FLIGHT frames.
 }
 
 void Renderer::setVulkanLogicalDevice(VkDevice *vulkanLogicalDevice)
@@ -402,27 +378,26 @@ void Renderer::setVulkanLogicalDevice(VkDevice *vulkanLogicalDevice)
     m_vulkanLogicalDevice = vulkanLogicalDevice;
 }
 
-void Renderer::render(DisplayManager::DisplayDetails displayDetails, size_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice)
+void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice)
 {
-    VkRenderPass renderPass;
-    createRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat, renderPass);
+    createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat);
     
-    createGraphicsPipeline(renderPass, m_graphicsPipeline);
+    createMemberGraphicsPipeline();
 
-    swapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, m_swapchainFramebuffers);
+    swapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
+
 
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 
-    createSynchronizationObjects(m_imageAvailibleSemaphores, m_renderFinishedSemaphores, m_inFlightFences);
+    createMemberSynchronizationObjects();
 
 
-    m_currentFrame = 0;
     while (!glfwWindowShouldClose(displayDetails.glfwWindow)) {  // "main loop"
         DisplayManager::processWindowInput(displayDetails.glfwWindow);
         glfwPollEvents();
 
-        drawFrame(m_currentFrame, displayDetails, vulkanPhysicalDevice, displayDetails.vulkanDisplayDetails.graphicsQueue, displayDetails.vulkanDisplayDetails.presentationQueue);
+        drawFrame(displayDetails, vulkanPhysicalDevice, displayDetails.vulkanDisplayDetails.graphicsQueue, displayDetails.vulkanDisplayDetails.presentationQueue);
     }
 
     vkDeviceWaitIdle(*m_vulkanLogicalDevice);  // wait for the logical device to finish all operations before termination.

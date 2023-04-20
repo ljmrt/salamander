@@ -8,7 +8,7 @@
 #include <vector>
 
 
-void Shader::createShaderModule(std::vector<char> shaderBytecode, VkDevice vulkanLogicalDevice, VkShaderModule& resultShaderModule)
+void Shader::createShaderModule(std::vector<char> shaderBytecode, VkDevice vulkanLogicalDevice, VkShaderModule& createdShaderModule)
 {
     VkShaderModuleCreateInfo shaderModuleCreateInfo{};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -16,28 +16,28 @@ void Shader::createShaderModule(std::vector<char> shaderBytecode, VkDevice vulka
     shaderModuleCreateInfo.codeSize = shaderBytecode.size();
     shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t *>(shaderBytecode.data());  // Vulkan requires the bytecode pointer to be a uint32_t.
 
-    uint32_t shaderModuleCreationResult = vkCreateShaderModule(vulkanLogicalDevice, &shaderModuleCreateInfo, nullptr, &resultShaderModule);
+    uint32_t shaderModuleCreationResult = vkCreateShaderModule(vulkanLogicalDevice, &shaderModuleCreateInfo, nullptr, &createdShaderModule);
     if (shaderModuleCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create shader module.");
     }
 }
 
-void Shader::completeShaderData(VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader)
+void Shader::completeShaderData(VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& incompleteShader)
 {
     std::vector<char> shaderBytecode;
-    FileUtils::readFileChars(shader.bytecodeFilePath.c_str(), true, shaderBytecode);
-    createShaderModule(shaderBytecode, vulkanLogicalDevice, shader.shaderModule);
+    FileUtils::readFileChars(incompleteShader.bytecodeFilePath.c_str(), true, shaderBytecode);
+    createShaderModule(shaderBytecode, vulkanLogicalDevice, incompleteShader.shaderModule);
 
     
-    shader.shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    incompleteShader.shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     
-    shader.shaderStageCreateInfo.stage = shaderStage;
-    shader.shaderStageCreateInfo.module = shader.shaderModule;
-    shader.shaderStageCreateInfo.pName = "main";  // shader entry point.
+    incompleteShader.shaderStageCreateInfo.stage = shaderStage;
+    incompleteShader.shaderStageCreateInfo.module = incompleteShader.shaderModule;
+    incompleteShader.shaderStageCreateInfo.pName = "main";  // shader entry point.
 }
 
-void Shader::createShader(std::string bytecodeFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader)
+void Shader::createShader(std::string bytecodeFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& createdShader)
 {
-    shader.bytecodeFilePath = bytecodeFilePath;
-    completeShaderData(shaderStage, vulkanLogicalDevice, shader);
+    createdShader.bytecodeFilePath = bytecodeFilePath;
+    completeShaderData(shaderStage, vulkanLogicalDevice, createdShader);
 }

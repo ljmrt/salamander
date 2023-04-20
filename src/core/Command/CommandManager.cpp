@@ -7,7 +7,7 @@
 #include <vector>
 
 
-void CommandManager::createGraphicsCommandPool(size_t graphicsFamilyIndex, VkDevice vulkanLogicalDevice, VkCommandPool& graphicsCommandPool)
+void CommandManager::createGraphicsCommandPool(size_t graphicsFamilyIndex, VkDevice vulkanLogicalDevice, VkCommandPool& createdGraphicsCommandPool)
 {
     VkCommandPoolCreateInfo commandPoolCreateInfo{};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -15,15 +15,15 @@ void CommandManager::createGraphicsCommandPool(size_t graphicsFamilyIndex, VkDev
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;  // rerecord command buffers individually.
     commandPoolCreateInfo.queueFamilyIndex = graphicsFamilyIndex;
 
-    uint32_t commandPoolCreationResult = vkCreateCommandPool(vulkanLogicalDevice, &commandPoolCreateInfo, nullptr, &graphicsCommandPool);
+    uint32_t commandPoolCreationResult = vkCreateCommandPool(vulkanLogicalDevice, &commandPoolCreateInfo, nullptr, &createdGraphicsCommandPool);
     if (commandPoolCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create graphics command pool.");
     }
 }
 
-void CommandManager::allocateChildCommandBuffers(VkCommandPool parentCommandPool, size_t commandBufferCount, VkDevice vulkanLogicalDevice, std::vector<VkCommandBuffer>& childCommandBuffers)
+void CommandManager::allocateChildCommandBuffers(VkCommandPool parentCommandPool, size_t commandBufferCount, VkDevice vulkanLogicalDevice, std::vector<VkCommandBuffer>& allocatedChildCommandBuffers)
 {
-    childCommandBuffers.resize(commandBufferCount);
+    allocatedChildCommandBuffers.resize(commandBufferCount);
     
     VkCommandBufferAllocateInfo commandBufferAllocationInfo{};
     commandBufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -32,7 +32,7 @@ void CommandManager::allocateChildCommandBuffers(VkCommandPool parentCommandPool
     commandBufferAllocationInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;  // buffers can be submitted directly to queue.
     commandBufferAllocationInfo.commandBufferCount = commandBufferCount;
 
-    uint32_t commandBufferCreationResult = vkAllocateCommandBuffers(vulkanLogicalDevice, &commandBufferAllocationInfo, childCommandBuffers.data());
+    uint32_t commandBufferCreationResult = vkAllocateCommandBuffers(vulkanLogicalDevice, &commandBufferAllocationInfo, allocatedChildCommandBuffers.data());
     if (commandBufferCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to allocate child command buffers.");
     }
@@ -62,7 +62,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     renderPassBeginInfo.renderArea.extent = swapchainImageExtent;
 
     // clear color and info to use in color attachment load op clearing.
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};  // black clear color.n
+    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};  // black clear color.
     renderPassBeginInfo.clearValueCount = 1;
     renderPassBeginInfo.pClearValues = &clearColor;
 

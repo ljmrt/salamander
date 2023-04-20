@@ -10,23 +10,22 @@
 
 namespace supportUtils
 {
-    // TODO: move elsewhere.
     #ifdef NDEBUG
         const bool DEBUG_ENABLED = false;
     #else
         const bool DEBUG_ENABLED = true;
     #endif
     
-    const std::vector<const char *> m_validationLayers = {
+    const std::vector<const char *> requiredValidationLayers = {
         "VK_LAYER_KHRONOS_validation"
     };
-    const bool m_enableValidationLayers = DEBUG_ENABLED;
+    const bool enableValidationLayers = DEBUG_ENABLED;
     
 
-    // get the required extensions(from GLFW and others).2
+    // fetch the required extensions(those needed by GLFW, etc.).
     //
-    // @return vector containing extension names.
-    std::vector<const char *> getRequiredExtensions();
+    // @param requiredExtensions fetched required extensions.
+    void fetchRequiredExtensions(std::vector<const char *>& requiredExtensions);
     
     // checks if all the required validation layers are supported.
     //

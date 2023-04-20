@@ -23,6 +23,7 @@ namespace DisplayManager
         VkFormat swapchainImageFormat;
         VkExtent2D swapchainImageExtent;
         std::vector<VkImageView> swapchainImageViews;
+        std::vector<VkFramebuffer> swapchainFramebuffers;
     };
     
     struct DisplayDetails {
@@ -40,7 +41,7 @@ namespace DisplayManager
     // @param windowHeight height of the created window(px).
     // @param windowName name of the created window.
     // @param resultWindow stored created window.
-    void createWindow(uint32_t windowWidth, uint32_t windowHeight, std::string windowName, GLFWwindow*& resultWindow);
+    void createWindow(size_t windowWidth, size_t windowHeight, std::string windowName, GLFWwindow*& resultWindow);
     
     // create a window surface to present using.
     //

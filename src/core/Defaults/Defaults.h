@@ -41,6 +41,7 @@ namespace Defaults
         std::string SALAMANDER_ROOT_DIRECTORY;  // the "root" directory of the project(ex: /home/lucas/salamander/), read from the %SALAMANDER_ROOT% environment variable.
     };
     extern miscConfig miscDefaults;  // default/read misc. configuration.
+    
 
     // initialize all of the defaults.
     void initializeDefaults();
