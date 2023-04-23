@@ -40,6 +40,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Logging/DebugMessenger.cpp
     ${PROJECT_SOURCE_DIR}/core/Renderer/Renderer.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/Shader.cpp
+    ${PROJECT_SOURCE_DIR}/core/Model/vertexHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/DisplayManager.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/swapchainHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/Command/CommandManager.cpp
