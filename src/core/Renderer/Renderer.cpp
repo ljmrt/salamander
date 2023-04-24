@@ -84,11 +84,17 @@ void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat)
 void Renderer::fillVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)
 {
     vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    VkVertexInputBindingDescription bindingDescription;
+    vertexHandler::Vertex::fetchBindingDescription(bindingDescription);
+
+    std::vector<VkVertexInputAttributeDescription, 2> attributeDescriptions;
+    vertexHandler::Vertex::fetchAttributeDescriptions(attributeDescriptions);
     
-    vertexInputCreateInfo.vertexBindingDescriptionCount = 0;  // vertex binding details struct count.
-    vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
-    vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;  // vertex attribute details struct count.
-    vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+    vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
+    vertexInputCreateInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputCreateInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 }
 
 void Renderer::fillInputAssemblyCreateInfo(VkPipelineInputAssemblyStateCreateInfo& inputAssemblyCreateInfo)

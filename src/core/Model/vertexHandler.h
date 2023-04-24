@@ -16,6 +16,7 @@ namespace vertexHandler
         glm::vec3 color;
 
         static void fetchBindingDescription(VkVertexInputBindingDescription& bindingDescription);
+        static void fetchAttributeDescriptions(std::vector<VkVertexInputAttributeDescription, 2>& attributeDescriptions);
     };
 
     const std::vector<Vertex> vertices = {
