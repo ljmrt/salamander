@@ -24,6 +24,9 @@ private:
     VkCommandPool m_graphicsCommandPool;  // a command pool used for graphics command buffers.
     std::vector<VkCommandBuffer> m_graphicsCommandBuffers;  // child command buffers under the graphics command pool.
 
+    VkBuffer m_vertexBuffer;  // vertex buffer.
+    VkDeviceMemory m_vertexBufferMemory;  // the vertex buffer's memory.
+
     std::vector<VkSemaphore> m_imageAvailibleSemaphores;  // semaphore used to make the GPU wait to continue until the next availible image index in the swapchain has been fetched.
     std::vector<VkSemaphore> m_renderFinishedSemaphores;  // semaphore used to make the GPU wait to continue until the current frame has finished rendering.
     std::vector<VkFence> m_inFlightFences;  // fence used to synchronize the GPU and CPU before begining to draw another frame.]

@@ -38,7 +38,7 @@ void CommandManager::allocateChildCommandBuffers(VkCommandPool parentCommandPool
     }
 }
 
-void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline)
+void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline, VkBuffer vertexBuffer)
 {
     VkCommandBufferBeginInfo commandBufferBeginInfo{};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -85,7 +85,12 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     dynamicScissor.extent = swapchainImageExtent;
     vkCmdSetScissor(graphicsCommandBuffer, 0, 1, &dynamicScissor);
 
-    vkCmdDraw(graphicsCommandBuffer, 3, 1, 0, 0);  // command buffer, vertex count, instance count, first vertex index, first instance index.
+    vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+    VkBuffer vertexBuffers[] = {vertexBuffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, vertexBuffers, offsets);
+
+    vkCmdDraw(graphicsCommandBuffer, static_cast<uint32_t>(vertexHandler::vertices.size()), 1, 0, 0);  // command buffer, vertex count, instance count, first vertex index, first instance index.
 
     vkCmdEndRenderPass(graphicsCommandBuffer);
 

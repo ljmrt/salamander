@@ -333,7 +333,7 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
 
 
     vkResetCommandBuffer(m_graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline);
+    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, m_vertexBuffer);
 
     
     VkSubmitInfo submitInfo{};
@@ -394,6 +394,9 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
 
 
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
+
+    vertexHandler::createVertexBuffer(*m_vulkanLogicalDevice, m_vertexBuffer);
+    
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 
     createMemberSynchronizationObjects();
@@ -418,6 +421,9 @@ void Renderer::cleanupRenderer()
     }
     
     vkDestroyCommandPool(*m_vulkanLogicalDevice, m_graphicsCommandPool, nullptr);  // child command buffers automatically freed.
+
+    vkDestroyBuffer(*m_vulkanLogicalDevice, m_vertexBuffer, nullptr);
+    vkFreeMemory(*m_vulkanLogicalDevice, m_vertexBufferMemory, nullptr);
     
     vkDestroyPipeline(*m_vulkanLogicalDevice, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(*m_vulkanLogicalDevice, m_pipelineLayout, nullptr);
