@@ -18,6 +18,8 @@ namespace Queue
             return graphicsFamily.has_value() && presentationFamily.has_value();
         }
     };
+
+    const float queuePriority = 1.0f;  // preserved queue priority.
     
     
     // query the supported queue families of a physical device.

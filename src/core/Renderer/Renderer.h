@@ -28,6 +28,7 @@ private:
     VkDeviceMemory m_vertexBufferMemory;  // the vertex buffer's memory.
 
     std::vector<VkVertexInputAttributeDescription> m_attributeDescriptions;  // preserved attribute descriptions.
+    VkVertexInputBindingDescription m_bindingDescription;  // preserved binding description.
 
     std::vector<VkSemaphore> m_imageAvailibleSemaphores;  // semaphore used to make the GPU wait to continue until the next availible image index in the swapchain has been fetched.
     std::vector<VkSemaphore> m_renderFinishedSemaphores;  // semaphore used to make the GPU wait to continue until the current frame has finished rendering.

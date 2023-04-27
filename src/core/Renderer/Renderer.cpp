@@ -86,13 +86,12 @@ void Renderer::fillVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& v
 {
     vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-    VkVertexInputBindingDescription bindingDescription{};
-    vertexHandler::fetchBindingDescription(bindingDescription);
+    vertexHandler::fetchBindingDescription(m_bindingDescription);
 
     vertexHandler::fetchAttributeDescriptions(m_attributeDescriptions);
     
     vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-    vertexInputCreateInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputCreateInfo.pVertexBindingDescriptions = &m_bindingDescription;
     vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(m_attributeDescriptions.size());
     vertexInputCreateInfo.pVertexAttributeDescriptions = m_attributeDescriptions.data();
 }

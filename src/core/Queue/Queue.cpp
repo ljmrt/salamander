@@ -49,10 +49,10 @@ void Queue::populateQueueCreateInfos(QueueFamilyIndices queueFamilyIndices, std:
     // create queue families specified in QueueFamilyIndices.
     std::set<uint32_t> uniqueQueueFamilies = {queueFamilyIndices.graphicsFamily.value(), queueFamilyIndices.presentationFamily.value()};
 
-    float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
         VkDeviceQueueCreateInfo familyCreateInfo{};
         familyCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        
         familyCreateInfo.queueFamilyIndex = queueFamily;
         familyCreateInfo.queueCount = 1;
         familyCreateInfo.pQueuePriorities = &queuePriority;
