@@ -7,6 +7,7 @@
 #include <core/DisplayManager/swapchainHandler.h>
 #include <core/Command/CommandManager.h>
 #include <core/VulkanInstance/VulkanInstance.h>
+#include <core/Model/vertexHandler.h>
 #include <core/Logging/ErrorLogger.h>
 #include <core/Defaults/Defaults.h>
 
@@ -85,16 +86,15 @@ void Renderer::fillVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& v
 {
     vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-    VkVertexInputBindingDescription bindingDescription;
-    vertexHandler::Vertex::fetchBindingDescription(bindingDescription);
+    VkVertexInputBindingDescription bindingDescription{};
+    vertexHandler::fetchBindingDescription(bindingDescription);
 
-    std::vector<VkVertexInputAttributeDescription, 2> attributeDescriptions;
-    vertexHandler::Vertex::fetchAttributeDescriptions(attributeDescriptions);
+    vertexHandler::fetchAttributeDescriptions(m_attributeDescriptions);
     
     vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
     vertexInputCreateInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputCreateInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+    vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(m_attributeDescriptions.size());
+    vertexInputCreateInfo.pVertexAttributeDescriptions = m_attributeDescriptions.data();
 }
 
 void Renderer::fillInputAssemblyCreateInfo(VkPipelineInputAssemblyStateCreateInfo& inputAssemblyCreateInfo)
@@ -395,7 +395,10 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
 
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
 
-    vertexHandler::createVertexBuffer(*m_vulkanLogicalDevice, m_vertexBuffer);
+    deviceHandler::VulkanDevices temporaryVulkanDevices{};
+    temporaryVulkanDevices.physicalDevice = vulkanPhysicalDevice;
+    temporaryVulkanDevices.logicalDevice = *m_vulkanLogicalDevice;
+    vertexHandler::createVertexBufferComponents(temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory);
     
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 

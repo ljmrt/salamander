@@ -3,6 +3,7 @@
 
 #include <core/Command/CommandManager.h>
 #include <core/Logging/ErrorLogger.h>
+#include <core/Model/vertexHandler.h>
 
 #include <vector>
 
