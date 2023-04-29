@@ -21,14 +21,23 @@ private:
     VkPipelineLayout m_pipelineLayout;  // this graphics pipeline's pipeline layout.
     VkPipeline m_graphicsPipeline;  // graphics pipeline
 
-    std::vector<VkFramebuffer> m_swapchainFramebuffers;  // framebuffers for all swapchain images views.
-
     VkCommandPool m_graphicsCommandPool;  // a command pool used for graphics command buffers.
-    VkCommandBuffer m_graphicsCommandBuffer;  // child command buffer under the graphics command pool.
+    std::vector<VkCommandBuffer> m_graphicsCommandBuffers;  // child command buffers under the graphics command pool.
 
-    VkSemaphore m_imageAvailibleSemaphore;  // semaphore used to make the GPU wait to continue until the next availible image index in the swapchain has been fetched.
-    VkSemaphore m_renderFinishedSemaphore;
-    VkFence m_inFlightFence;  // fence used to synchronize the GPU and CPU before begining to draw another frame.
+    // TODO: add vertexHandler struct of data buffers.
+    VkBuffer m_vertexBuffer;  // vertex buffer.
+    VkDeviceMemory m_vertexBufferMemory;  // the vertex buffer's memory.
+    VkBuffer m_indexBuffer;  // index buffer.
+    VkDeviceMemory m_indexBufferMemory;  // the index buffer's memory.
+
+    std::vector<VkVertexInputAttributeDescription> m_attributeDescriptions;  // preserved attribute descriptions.
+    VkVertexInputBindingDescription m_bindingDescription;  // preserved binding description.
+
+    std::vector<VkSemaphore> m_imageAvailibleSemaphores;  // semaphore used to make the GPU wait to continue until the next availible image index in the swapchain has been fetched.
+    std::vector<VkSemaphore> m_renderFinishedSemaphores;  // semaphore used to make the GPU wait to continue until the current frame has finished rendering.
+    std::vector<VkFence> m_inFlightFences;  // fence used to synchronize the GPU and CPU before begining to draw another frame.]
+
+    size_t m_currentFrame = 0;  // the current "frame" in context of the "in flight" frames.
     
 
     // fill out a color attachment description and reference.
@@ -43,11 +52,10 @@ private:
     // @param subpassDescription stored filled subpass description.
     void fillSubpassDescription(VkAttachmentReference *colorAttachmentReference, VkSubpassDescription& subpassDescription);
     
-    // create the renderer's render pass.
+    // create member render pass.
     //
     // @param swapchainImageFormat the swapchain image format to use in render pass creation.
-    // @param renderPass stored created render pass.
-    void createRenderPass(VkFormat swapchainImageFormat, VkRenderPass& renderPass);
+    void createMemberRenderPass(VkFormat swapchainImageFormat);
 
     // fill out a vertex input's create info.
     //
@@ -87,18 +95,22 @@ private:
     void fillDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicStates, VkPipelineDynamicStateCreateInfo& dynamicStatesCreateInfo);
 
     // create a pipeline layout.
-    //
-    // @param pipelineLayout stored created pipeline layout.
-    void createPipelineLayout(VkPipelineLayout& pipelineLayout);
+    void createMemberPipelineLayout();
     
-    // create the **Vulkan** graphics pipeline.
+    // create member Vulkan graphics pipeline.
+    void createMemberGraphicsPipeline();
+
+    // create member synchronization objects(semaphores, fences).
+    void createMemberSynchronizationObjects();
+
+    // draw a frame onto the screen using all of the configured render passes, pipelines, etc.
     //
-    // @param graphicsPipeline stored created graphics pipeline.
-    void createGraphicsPipeline(VkRenderPass renderPass, VkPipeline& graphicsPipeline);
-
-    void createSynchronizationObjects(VkSemaphore& imageAvailibleSemaphore, VkSemaphore& renderFinishedSemaphore, VkFence& inFlightFence);
-
-    void drawFrame(VkSwapchainKHR swapchain, VkExtent2D swapchainImageExtent, VkQueue graphicsQueue, VkQueue presentationQueue);
+    // @param currentFrame current swapchain frame to draw.
+    // @param displayDetails display details to use in frame drawing and possible swapchain recreation.
+    // @param vulkanPhysicalDevice the Vulkan instance's physical device to use in possible swapchain recreation.
+    // @param graphicsQueue graphics queue to queue commands to.
+    // @param presentationQueue presentation queue to queue commands to.
+    void drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysicalDevice vulkanPhysicalDevice, VkQueue graphicsQueue, VkQueue presentationQueue);
 public:
     // set the pointer to the Vulkan instance's logical device.
     //
@@ -109,9 +121,10 @@ public:
     //
     // @param displayDetails the display details to use in rendering.
     // @param graphicsFamilyIndex index of the graphics queue family.
-    void render(DisplayManager::DisplayDetails displayDetails, size_t graphicsFamilyIndex);
+    // @param vulkanPhysicalDevice the Vulkan instance's physical device to use in frame drawing.
+    void render(DisplayManager::DisplayDetails& displayDetails, size_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice);
 
-    // terminates/destroys libraries, frees memory, etc.
+    // terminates/destroys renderer and its members.
     void cleanupRenderer();
 
     // Renderer constructor.

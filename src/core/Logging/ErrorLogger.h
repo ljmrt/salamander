@@ -16,7 +16,7 @@ namespace ErrorLogger
         debugException(const std::string &arg, const char *file, int line);
         ~debugException();
 
-        const char *what() const throw();
+        const char *what() const throw();  // may print duplicate exceptions: exception msg is printed in debugException throw.
     };
 };
 #define throwDebugException(arg) throw ErrorLogger::debugException(arg, __FILE__, __LINE__);

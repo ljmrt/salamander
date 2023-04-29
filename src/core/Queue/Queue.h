@@ -14,31 +14,32 @@ namespace Queue
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentationFamily;
 
-        bool isAssigned() {
+        bool isPopulated() {
             return graphicsFamily.has_value() && presentationFamily.has_value();
         }
     };
-    
-    
-    // get the supported queue families from a physical device.
-    //
-    // @param device device to find the queue families of.
-    // @return struct with indices of the supported queue families.
-    void getSupportedQueueFamilies(VkPhysicalDevice device, std::vector<VkQueueFamilyProperties>& resultQueueFamilies);
 
-    // TODO: refactor this function for ease-of-use(extract QueueFamilyIndices setting).
+    const float queuePriority = 1.0f;  // preserved queue priority.
+    
+    
+    // query the supported queue families of a physical device.
+    //
+    // @param physicalDevice physical device to use in queue family fetch.
+    // @param queriedQueueFamilies stored queried queue families from the physical device.
+    void querySupportedQueueFamilies(VkPhysicalDevice physicalDevice, std::vector<VkQueueFamilyProperties>& queriedQueueFamilies);
+
     // test whether the device supports all required queue families(specified in QueueFamilyIndices).
     //
     // @param physicalDevice physical device to check support of.
     // @param windowSurface window surface to use in presentation support testing.
-    // @param resultFamilyIndices stored family indices(if supported).
-    bool deviceQueueFamiliesSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, QueueFamilyIndices& resultFamilyIndices);
+    // @param supportedFamilyIndices populated queue family indices(if supported).
+    bool deviceQueueFamiliesSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, QueueFamilyIndices& supportedFamilyIndices);
 
-    // get the VkDeviceQueueCreateInfos from the supplied indices.
+    // populate the VkDeviceQueueCreateInfos from the supplied indices.
     //
-    // @param familyIndices indices to base the create infos on.
-    // @param resultFamilyCreateInfos stored resulting VkDeviceQueueCreateInfos.
-    void getFamilyCreateInfos(QueueFamilyIndices familyIndices, std::vector<VkDeviceQueueCreateInfo>& resultFamilyCreateInfos);
+    // @param queueFamilyIndices queue family indices to base the queue create infos on.
+    // @param populatedQueueCreateInfos populated queue create infos.
+    void populateQueueCreateInfos(QueueFamilyIndices queueFamilyIndices, std::vector<VkDeviceQueueCreateInfo>& populatedQueueCreateInfos);
 }
 
 

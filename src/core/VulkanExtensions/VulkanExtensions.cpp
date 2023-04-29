@@ -6,7 +6,7 @@
 
 VkResult VulkanExtensions::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
-    auto loadedFunction = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");  // lookup vkCreateDebugUtilsMessengerEXT function.
+    PFN_vkCreateDebugUtilsMessengerEXT loadedFunction = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");  // lookup vkCreateDebugUtilsMessengerEXT function.
 
     if (loadedFunction != nullptr) {
         return loadedFunction(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -17,7 +17,7 @@ VkResult VulkanExtensions::CreateDebugUtilsMessengerEXT(VkInstance instance, con
 
 void VulkanExtensions::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 {
-    auto loadedFunction = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");  // lookup vkDEstroyDEbugUtilsMessengerEXT function.
+    PFN_vkDestroyDebugUtilsMessengerEXT loadedFunction = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");  // lookup vkDEstroyDEbugUtilsMessengerEXT function.
 
     if (loadedFunction != nullptr) {
         loadedFunction(instance, debugMessenger, pAllocator);

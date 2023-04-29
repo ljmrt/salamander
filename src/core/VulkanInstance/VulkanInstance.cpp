@@ -26,27 +26,22 @@ VulkanInstance::VulkanInstance(std::string instanceApplicationName, DisplayManag
         
     DebugMessenger::createDebugMessenger(m_vkInstance, m_debugMessenger);
     DisplayManager::createWindowSurface(m_vkInstance, displayDetails.glfwWindow, displayDetails.vulkanDisplayDetails.windowSurface);
-    deviceHandler::pickPhysicalDevice(*this, displayDetails.vulkanDisplayDetails.windowSurface, m_familyIndices, m_physicalDevice);
+
+    m_devices.physicalDevice = VK_NULL_HANDLE;
+    deviceHandler::selectPhysicalDevice(m_vkInstance, displayDetails.vulkanDisplayDetails.windowSurface, m_familyIndices, m_devices.physicalDevice);
     
-    deviceHandler::createLogicalDevice(m_physicalDevice, m_familyIndices, m_logicalDevice);
-    vkGetDeviceQueue(m_logicalDevice, m_familyIndices.graphicsFamily.value(), 0, &displayDetails.vulkanDisplayDetails.graphicsQueue);
-    vkGetDeviceQueue(m_logicalDevice, m_familyIndices.presentationFamily.value(), 0, &displayDetails.vulkanDisplayDetails.presentationQueue);
+    deviceHandler::createLogicalDevice(m_devices.physicalDevice, m_familyIndices, m_devices.logicalDevice);
+    vkGetDeviceQueue(m_devices.logicalDevice, m_familyIndices.graphicsFamily.value(), 0, &displayDetails.vulkanDisplayDetails.graphicsQueue);
+    vkGetDeviceQueue(m_devices.logicalDevice, m_familyIndices.presentationFamily.value(), 0, &displayDetails.vulkanDisplayDetails.presentationQueue);
 
-    swapchainHandler::createSwapchain(m_physicalDevice,
-                                      m_logicalDevice,
-                                      displayDetails.glfwWindow,
-                                      displayDetails.vulkanDisplayDetails.windowSurface,
-                                      displayDetails.vulkanDisplayDetails.swapchain,
-                                      displayDetails.vulkanDisplayDetails.swapchainImages,
-                                      displayDetails.vulkanDisplayDetails.swapchainImageFormat,
-                                      displayDetails.vulkanDisplayDetails.swapchainImageExtent);
+    swapchainHandler::createSwapchainComponentsWrapper(m_devices, displayDetails);
 
-    swapchainHandler::createSwapchainImageViews(displayDetails.vulkanDisplayDetails.swapchainImages, displayDetails.vulkanDisplayDetails.swapchainImageFormat, m_logicalDevice, displayDetails.vulkanDisplayDetails.swapchainImageViews);
+    swapchainHandler::createSwapchainImageViews(displayDetails.vulkanDisplayDetails.swapchainImages, displayDetails.vulkanDisplayDetails.swapchainImageFormat, m_devices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainImageViews);
 }
 
-void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkInstance& resultInstance)
+void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkInstance& createdInstance)
 {
-    if (supportUtils::m_enableValidationLayers && !supportUtils::checkValidationLayerSupport()) {
+    if (supportUtils::enableValidationLayers && !supportUtils::checkValidationLayerSupport()) {
         throwDebugException("Validation layers requested but not availible.");
     }
     
@@ -63,14 +58,15 @@ void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkIns
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &applicationInfo;
 
-    std::vector<const char *> extensions = supportUtils::getRequiredExtensions();
+    std::vector<const char *> extensions;
+    supportUtils::fetchRequiredExtensions(extensions);
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-    if (supportUtils::m_enableValidationLayers) {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(supportUtils::m_validationLayers.size());
-        createInfo.ppEnabledLayerNames = supportUtils::m_validationLayers.data();
+    if (supportUtils::enableValidationLayers) {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(supportUtils::requiredValidationLayers.size());
+        createInfo.ppEnabledLayerNames = supportUtils::requiredValidationLayers.data();
 
         DebugMessenger::populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
@@ -80,7 +76,7 @@ void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkIns
         createInfo.pNext = nullptr;
     }
 
-    VkResult instanceResult = vkCreateInstance(&createInfo, nullptr, &resultInstance);
+    VkResult instanceResult = vkCreateInstance(&createInfo, nullptr, &createdInstance);
     if (instanceResult != VK_SUCCESS) {
         throwDebugException("Failed to create vulkan instance.");
     }
@@ -88,13 +84,9 @@ void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkIns
 
 void VulkanInstance::cleanupInstance(DisplayManager::DisplayDetails displayDetails)
 {
-    for (VkImageView imageView : displayDetails.vulkanDisplayDetails.swapchainImageViews) {
-        vkDestroyImageView(m_logicalDevice, imageView, nullptr);
-    }
+    swapchainHandler::cleanupSwapchain(m_devices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers, displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.swapchain);  // clean up the swapchain and its details.
     
-    vkDestroySwapchainKHR(m_logicalDevice, displayDetails.vulkanDisplayDetails.swapchain, nullptr);
-    
-    vkDestroyDevice(m_logicalDevice, nullptr);
+    vkDestroyDevice(m_devices.logicalDevice, nullptr);
     
     if (supportUtils::DEBUG_ENABLED) {
         VulkanExtensions::DestroyDebugUtilsMessengerEXT(m_vkInstance, m_debugMessenger, nullptr);

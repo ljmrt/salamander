@@ -10,15 +10,15 @@
 #include <core/Defaults/Defaults.h>
 
 
-void DebugMessenger::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& resultCreateInfo)
+void DebugMessenger::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& populatedCreateInfo)
 {
-    resultCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    populatedCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 
     // int verboseEnabled = std::stoi(m_loggingConfig.lookupKey("SEVERITY_VERBOSE"));
     // int infoEnabled = std::stoi(m_loggingConfig.lookupKey("SEVERITY_INFO"));
     // int warningEnabled = std::stoi(m_loggingConfig.lookupKey("SEVERITY_WARNING"));
     // int errorEnabled = std::stoi(m_loggingConfig.lookupKey("SEVERITY_ERROR"));
-    resultCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT // * verboseEnabled
+    populatedCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT // * verboseEnabled
         | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT // * infoEnabled
         | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT // * warningEnabled
         | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT; // * errorEnabled;
@@ -26,18 +26,18 @@ void DebugMessenger::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreat
     // int generalEnabled = std::stoi(m_loggingConfig.lookupKey("TYPE_GENERAL"));
     // int validationEnabled = std::stoi(m_loggingConfig.lookupKey("TYPE_VALIDATION"));
     // int performanceEnabled = std::stoi(m_loggingConfig.lookupKey("TYPE_PERFORMANCE"));
-    resultCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT // * generalEnabled
+    populatedCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT // * generalEnabled
         | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT // * validationEnabled
         | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT; // * performanceEnabled;
 
-    resultCreateInfo.pNext = nullptr;
-    resultCreateInfo.flags = 0;
+    populatedCreateInfo.pNext = nullptr;
+    populatedCreateInfo.flags = 0;
     
-    resultCreateInfo.pfnUserCallback = Callbacks::debugCallback;
-    resultCreateInfo.pUserData = nullptr;
+    populatedCreateInfo.pfnUserCallback = Callbacks::debugCallback;
+    populatedCreateInfo.pUserData = nullptr;
 }
 
-void DebugMessenger::createDebugMessenger(VkInstance vkInstance, VkDebugUtilsMessengerEXT& resultDebugMessenger)
+void DebugMessenger::createDebugMessenger(VkInstance vkInstance, VkDebugUtilsMessengerEXT& createdDebugMessenger)
 {
     if (supportUtils::DEBUG_ENABLED == false) {
         return;
@@ -46,7 +46,7 @@ void DebugMessenger::createDebugMessenger(VkInstance vkInstance, VkDebugUtilsMes
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     DebugMessenger::populateDebugMessengerCreateInfo(createInfo);
     
-    int creationResult = VulkanExtensions::CreateDebugUtilsMessengerEXT(vkInstance, &createInfo, nullptr, &resultDebugMessenger);
+    int creationResult = VulkanExtensions::CreateDebugUtilsMessengerEXT(vkInstance, &createInfo, nullptr, &createdDebugMessenger);
     if (creationResult != VK_SUCCESS) {
         throwDebugException("Failed to set up debug messenger.");
     }

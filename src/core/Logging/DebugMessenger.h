@@ -15,14 +15,14 @@ namespace DebugMessenger
     //
     // configurable filters.
     //
-    // @param resultCreateInfo stored create info from function.
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& resultCreateInfo);
+    // @param populatedCreateInfo stored populated debug messenger create info.
+    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& populatedCreateInfo);
     
-    // create a debug messenger and store it in resultDebugMessenger.
+    // create a debug messenger.
     //
-    // @param vkInstance Vulkan Instance passed to the function to properly create the messenger.
-    // @param resultDebugMessenger stored messenger from function.
-    void createDebugMessenger(VkInstance vkInstance, VkDebugUtilsMessengerEXT& resultDebugMessenger);
+    // @param vkInstance Vulkan instance used in debug messenger creation.
+    // @param createdDebugMessenger created debug messenger.
+    void createDebugMessenger(VkInstance vkInstance, VkDebugUtilsMessengerEXT& createdDebugMessenger);
 };
 
 

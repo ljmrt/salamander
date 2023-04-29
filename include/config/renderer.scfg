@@ -1,0 +1,3 @@
+# Application renderer configuration file.
+
+MAX_FRAMES_IN_FLIGHT : 2  # The max amount of frames "in flight"(processing concurrently on the CPU) allowed.

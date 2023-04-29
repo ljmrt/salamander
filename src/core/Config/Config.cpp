@@ -13,6 +13,7 @@
 
 ConfigDB::ConfigDB()
 {
+    
 }
 
 ConfigDB::ConfigDB(std::string filePath)
@@ -28,8 +29,8 @@ void ConfigDB::loadConfig(std::string filePath)
     FileUtils::readFileLines(filePath.c_str(), fileLines);
     
     for (std::string line : fileLines) {
-        std::string valueDelimiters = ":";
-        std::string eolDelimiters = "#";
+        std::string valueDelimiters = ":";  // key and value seperators.
+        std::string eolDelimiters = "#";  // EOL comment characters.
 
         size_t valueDelimitersPosition = line.find_first_of(valueDelimiters);
         size_t eolDelimitersPosition = line.find_first_of(eolDelimiters);

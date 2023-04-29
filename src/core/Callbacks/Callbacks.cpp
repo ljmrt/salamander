@@ -2,14 +2,13 @@
 #include <GLFW/glfw3.h>
 
 #include <core/Callbacks/Callbacks.h>
+#include <core/Defaults/Defaults.h>
 
 #include <iostream>
 #include <ctime>
 
-VKAPI_ATTR VkBool32 VKAPI_CALL Callbacks::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                    void *pUserData)
+
+VKAPI_ATTR VkBool32 VKAPI_CALL Callbacks::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void *pUserData)
 {
     time_t rawTime;
     time(&rawTime);
@@ -56,4 +55,9 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Callbacks::debugCallback(VkDebugUtilsMessageSever
     std::cout << "\033[0m" << std::endl;  // reset terminal output color.
 
     return VK_FALSE;
+}
+
+void Callbacks::framebufferResizeCallback(GLFWwindow *window, int width, int height)
+{
+    Defaults::callbacksVariables.FRAMEBUFFER_RESIZED = true;
 }

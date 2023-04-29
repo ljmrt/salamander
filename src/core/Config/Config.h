@@ -22,9 +22,6 @@ public:
     std::string m_configPath = "CONFIG NOT SET";
     
     
-    ConfigDB();
-    ConfigDB(std::string filePath);
-    
     // load a .scfg file as the current database.
     //
     // @param filePath path of the desired file to load.
@@ -38,6 +35,9 @@ public:
 
     // dump the config database into std::cout formatted as a .scfg file.
     void dumpDatabase();
+
+    ConfigDB();
+    ConfigDB(std::string filePath);
 };
 
 

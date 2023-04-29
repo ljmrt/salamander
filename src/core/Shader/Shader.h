@@ -25,17 +25,17 @@ namespace Shader
     //
     // @param shaderBytecode the shader's bytecode in a vector of chars.
     // @param vulkanLogicalDevice Vulkan instance's logical device.
-    // @param resultShaderModule stored created shader module.
-    void createShaderModule(std::vector<char> shaderBytecode, VkDevice vulkanLogicalDevice, VkShaderModule& resultShaderModule);
+    // @param createdShaderModule stored created shader module.
+    void createShaderModule(std::vector<char> shaderBytecode, VkDevice vulkanLogicalDevice, VkShaderModule& createdShaderModule);
 
     // complete data within a Shader struct(fill out shader module and shader shade create info).
     //
     // bytecodeFilePath must have a valid value.
     //
     // @param shaderStage bitmask of shader stage(ex: VK_SHADER_STAGE_VERTEX_BIT).
-    // @param vulkanLogicalDevice Vulkan instance's logical device.
-    // @param shader shader to complete.
-    void completeShaderData(VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader);
+    // @param vulkanLogicalDevice the Vulkan instance's logical device.
+    // @param incompleteShader incomplete shader to complete.
+    void completeShaderData(VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& incompleteShader);
 
     // wrapper function to simplify shader creation.
     //
@@ -44,8 +44,8 @@ namespace Shader
     // @param bytecodeFilePath file path of the shader to create.
     // @param shaderStage Vulkan shader stage bitmask of the shader's stage.
     // @param vulkanLogicalDevice Vulkan instance's logical device.
-    // @param shader stored created shader.
-    void createShader(std::string bytecodeFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& shader);
+    // @param createdShader stored created shader.
+    void createShader(std::string bytecodeFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& createdShader);
 }
 
 #endif  // SHADER_H

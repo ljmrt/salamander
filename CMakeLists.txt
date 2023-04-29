@@ -19,7 +19,7 @@ if (!UNIX)
    message("WARNING: Salamander is only supported on Linux!")
 endif()
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Werror -Wextra -O0 -Wno-unused-parameter -Wno-unused-but-set-variable -fsanitize=address,undefined")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Werror -Wextra -O0 -Wno-unused-parameter -fsanitize=address,undefined")
 endif()
 
 ###############################
@@ -40,6 +40,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Logging/DebugMessenger.cpp
     ${PROJECT_SOURCE_DIR}/core/Renderer/Renderer.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/Shader.cpp
+    ${PROJECT_SOURCE_DIR}/core/Model/vertexHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/DisplayManager.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/swapchainHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/Command/CommandManager.cpp

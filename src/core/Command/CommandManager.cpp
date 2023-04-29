@@ -3,11 +3,12 @@
 
 #include <core/Command/CommandManager.h>
 #include <core/Logging/ErrorLogger.h>
+#include <core/Model/vertexHandler.h>
 
 #include <vector>
 
 
-void CommandManager::createGraphicsCommandPool(size_t graphicsFamilyIndex, VkDevice vulkanLogicalDevice, VkCommandPool& graphicsCommandPool)
+void CommandManager::createGraphicsCommandPool(size_t graphicsFamilyIndex, VkDevice vulkanLogicalDevice, VkCommandPool& createdGraphicsCommandPool)
 {
     VkCommandPoolCreateInfo commandPoolCreateInfo{};
     commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -15,14 +16,16 @@ void CommandManager::createGraphicsCommandPool(size_t graphicsFamilyIndex, VkDev
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;  // rerecord command buffers individually.
     commandPoolCreateInfo.queueFamilyIndex = graphicsFamilyIndex;
 
-    uint32_t commandPoolCreationResult = vkCreateCommandPool(vulkanLogicalDevice, &commandPoolCreateInfo, nullptr, &graphicsCommandPool);
+    uint32_t commandPoolCreationResult = vkCreateCommandPool(vulkanLogicalDevice, &commandPoolCreateInfo, nullptr, &createdGraphicsCommandPool);
     if (commandPoolCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create graphics command pool.");
     }
 }
 
-void CommandManager::allocateChildCommandBuffer(VkCommandPool parentCommandPool, size_t commandBufferCount, VkDevice vulkanLogicalDevice, VkCommandBuffer& childCommandBuffer)
+void CommandManager::allocateChildCommandBuffers(VkCommandPool parentCommandPool, size_t commandBufferCount, VkDevice vulkanLogicalDevice, std::vector<VkCommandBuffer>& allocatedChildCommandBuffers)
 {
+    allocatedChildCommandBuffers.resize(commandBufferCount);
+    
     VkCommandBufferAllocateInfo commandBufferAllocationInfo{};
     commandBufferAllocationInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 
@@ -30,13 +33,13 @@ void CommandManager::allocateChildCommandBuffer(VkCommandPool parentCommandPool,
     commandBufferAllocationInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;  // buffers can be submitted directly to queue.
     commandBufferAllocationInfo.commandBufferCount = commandBufferCount;
 
-    uint32_t commandBufferCreationResult = vkAllocateCommandBuffers(vulkanLogicalDevice, &commandBufferAllocationInfo, &childCommandBuffer);
+    uint32_t commandBufferCreationResult = vkAllocateCommandBuffers(vulkanLogicalDevice, &commandBufferAllocationInfo, allocatedChildCommandBuffers.data());
     if (commandBufferCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create command buffer.");
+        throwDebugException("Failed to allocate child command buffers.");
     }
 }
 
-void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline)
+void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer)
 {
     VkCommandBufferBeginInfo commandBufferBeginInfo{};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -60,7 +63,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     renderPassBeginInfo.renderArea.extent = swapchainImageExtent;
 
     // clear color and info to use in color attachment load op clearing.
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};  // black clear color.n
+    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};  // black clear color.
     renderPassBeginInfo.clearValueCount = 1;
     renderPassBeginInfo.pClearValues = &clearColor;
 
@@ -83,7 +86,14 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     dynamicScissor.extent = swapchainImageExtent;
     vkCmdSetScissor(graphicsCommandBuffer, 0, 1, &dynamicScissor);
 
-    vkCmdDraw(graphicsCommandBuffer, 3, 1, 0, 0);  // command buffer, vertex count, instance count, first vertex index, first instance index.
+    vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+    VkBuffer vertexBuffers[] = {vertexBuffer};
+    VkDeviceSize offsets[] = {0};
+    
+    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(graphicsCommandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vkCmdDrawIndexed(graphicsCommandBuffer, static_cast<uint32_t>(vertexHandler::indices.size()), 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
 
     vkCmdEndRenderPass(graphicsCommandBuffer);
 
