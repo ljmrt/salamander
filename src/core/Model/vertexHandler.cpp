@@ -41,7 +41,7 @@ void vertexHandler::fetchAttributeDescriptions(std::vector<VkVertexInputAttribut
     attributeDescriptions.push_back(attributeDescription);
 }
 
-void vertexHandler::createBufferComponents(VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags memoryProperties, deviceHandler::VulkanDevices vulkanDevices, VkBuffer& createdBuffer, VkDeviceMemory& allocatedBufferMemory)
+void vertexHandler::createBufferComponents(VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags memoryProperties, deviceHandler::VulkanDevices vulkanDevices, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 {
     VkBufferCreateInfo bufferCreateInfo{};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -50,37 +50,36 @@ void vertexHandler::createBufferComponents(VkDeviceSize bufferSize, VkBufferUsag
     bufferCreateInfo.usage = bufferUsage;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    VkResult bufferCreationResult = vkCreateBuffer(vulkanDevices.logicalDevice, &bufferCreateInfo, nullptr, &createdBuffer);
+    VkResult bufferCreationResult = vkCreateBuffer(vulkanDevices.logicalDevice, &bufferCreateInfo, nullptr, &buffer);
     if (bufferCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create buffer.");
     }
 
 
     VkMemoryRequirements memoryRequirements;
-    vkGetBufferMemoryRequirements(vulkanDevices.logicalDevice, createdBuffer, &memoryRequirements);
+    vkGetBufferMemoryRequirements(vulkanDevices.logicalDevice, buffer, &memoryRequirements);
     
-    allocateBufferMemory(memoryRequirements, memoryProperties, vulkanDevices, allocatedBufferMemory);
-    vkBindBufferMemory(vulkanDevices.logicalDevice, createdBuffer, allocatedBufferMemory, 0);
+    allocateBufferMemory(memoryRequirements, memoryProperties, vulkanDevices, bufferMemory);
+    vkBindBufferMemory(vulkanDevices.logicalDevice, buffer, bufferMemory, 0);
 }
 
-void vertexHandler::createVertexBufferComponents(deviceHandler::VulkanDevices vulkanDevices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, VkCommandPool commandPool, VkQueue transferQueue)
+void vertexHandler::createDataBufferComponents(const void *bufferData, VkDeviceSize buffersSize, VkBufferUsageFlagBits bufferUsage, VkCommandPool commandPool, VkQueue transferQueue, deviceHandler::VulkanDevices vulkanDevices, VkBuffer& dataBuffer, VkDeviceMemory& dataBufferMemory)
 {
-    VkDeviceSize buffersSize = sizeof(vertices[0]) * vertices.size();
-
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     createBufferComponents(buffersSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vulkanDevices, stagingBuffer, stagingBufferMemory);  // staging buffer.
-    
-    // map staging buffer memory and copy vertices data into it.
-    void* verticesData;
-    vkMapMemory(vulkanDevices.logicalDevice, stagingBufferMemory, 0, buffersSize, 0, &verticesData);
-    memcpy(verticesData, vertices.data(), (size_t)(buffersSize));
+
+
+    // map staging buffer memory and copy buffer data into it.
+    void* stagingBufferData;
+    vkMapMemory(vulkanDevices.logicalDevice, stagingBufferMemory, 0, buffersSize, 0, &stagingBufferData);
+    memcpy(stagingBufferData, bufferData, (size_t)(buffersSize));
     vkUnmapMemory(vulkanDevices.logicalDevice, stagingBufferMemory);
-
     
-    createBufferComponents(buffersSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, vertexBuffer, vertexBufferMemory);
 
-    copyBuffer(stagingBuffer, vertexBuffer, buffersSize, commandPool, vulkanDevices.logicalDevice, transferQueue);
+    createBufferComponents(buffersSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | bufferUsage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, dataBuffer, dataBufferMemory);
+
+    copyBuffer(stagingBuffer, dataBuffer, buffersSize, commandPool, transferQueue, vulkanDevices.logicalDevice);
 
     vkDestroyBuffer(vulkanDevices.logicalDevice, stagingBuffer, nullptr);
     vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
@@ -122,7 +121,7 @@ void vertexHandler::allocateBufferMemory(VkMemoryRequirements memoryRequirements
     }
 }
 
-void vertexHandler::copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuffer, VkDeviceSize buffersSize, VkCommandPool commandPool, VkDevice vulkanLogicalDevice, VkQueue transferQueue)
+void vertexHandler::copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuffer, VkDeviceSize buffersSize, VkCommandPool commandPool, VkQueue transferQueue, VkDevice vulkanLogicalDevice)
 {
     VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

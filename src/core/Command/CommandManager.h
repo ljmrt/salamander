@@ -33,7 +33,8 @@ namespace CommandManager
     // @param swapchainImageExtent the swapchain image's extent to use in commands.
     // @param graphicsPipeline graphics pipeline to use in commands.
     // @param vertexBuffer vertex buffer to use in commands.
-    void recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline, VkBuffer vertexBuffer);
+    // @param indexBuffer index buffer to use in commands.
+    void recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer);
 }
 
 

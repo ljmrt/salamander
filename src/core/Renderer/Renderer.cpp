@@ -332,7 +332,7 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
 
 
     vkResetCommandBuffer(m_graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, m_vertexBuffer);
+    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, m_vertexBuffer, m_indexBuffer);
 
     
     VkSubmitInfo submitInfo{};
@@ -397,7 +397,10 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     deviceHandler::VulkanDevices temporaryVulkanDevices{};
     temporaryVulkanDevices.physicalDevice = vulkanPhysicalDevice;
     temporaryVulkanDevices.logicalDevice = *m_vulkanLogicalDevice;
-    vertexHandler::createVertexBufferComponents(temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue);  // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
+    
+    // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
+    vertexHandler::createDataBufferComponents(vertexHandler::vertices.data(), sizeof(vertexHandler::vertices[0]) * vertexHandler::vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory);
+    vertexHandler::createDataBufferComponents(vertexHandler::indices.data(), sizeof(vertexHandler::indices[0]) * vertexHandler::indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_indexBuffer, m_indexBufferMemory);
     
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 
@@ -426,6 +429,9 @@ void Renderer::cleanupRenderer()
 
     vkDestroyBuffer(*m_vulkanLogicalDevice, m_vertexBuffer, nullptr);
     vkFreeMemory(*m_vulkanLogicalDevice, m_vertexBufferMemory, nullptr);
+
+    vkDestroyBuffer(*m_vulkanLogicalDevice, m_indexBuffer, nullptr);
+    vkFreeMemory(*m_vulkanLogicalDevice, m_indexBufferMemory, nullptr);    
     
     vkDestroyPipeline(*m_vulkanLogicalDevice, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(*m_vulkanLogicalDevice, m_pipelineLayout, nullptr);

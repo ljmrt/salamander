@@ -24,8 +24,11 @@ private:
     VkCommandPool m_graphicsCommandPool;  // a command pool used for graphics command buffers.
     std::vector<VkCommandBuffer> m_graphicsCommandBuffers;  // child command buffers under the graphics command pool.
 
+    // TODO: add vertexHandler struct of data buffers.
     VkBuffer m_vertexBuffer;  // vertex buffer.
     VkDeviceMemory m_vertexBufferMemory;  // the vertex buffer's memory.
+    VkBuffer m_indexBuffer;  // index buffer.
+    VkDeviceMemory m_indexBufferMemory;  // the index buffer's memory.
 
     std::vector<VkVertexInputAttributeDescription> m_attributeDescriptions;  // preserved attribute descriptions.
     VkVertexInputBindingDescription m_bindingDescription;  // preserved binding description.
