@@ -42,12 +42,16 @@ namespace vertexHandler
     // @param attributeDescriptions stored fetched attribute descriptions.
     void fetchAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
 
+    void createBufferComponents(VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags memoryProperties, deviceHandler::VulkanDevices vulkanDevices, VkBuffer& createdBuffer, VkDeviceMemory& allocatedBufferMemory);
+    
     // create vertex buffer components.
     //
     // @param vulkanDevices Vulkan devices to use in vertex buffer component creation.
     // @param vertexBuffer stored created vertex buffer.
     // @param vertexBufferMemory stored allocated vertex buffer memory.
-    void createVertexBufferComponents(deviceHandler::VulkanDevices vulkanDevices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
+    // @param commandPool command pool to use in buffer operations.
+    // @param transferQueue queue to use in buffer memory copying.
+    void createVertexBufferComponents(deviceHandler::VulkanDevices vulkanDevices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, VkCommandPool commandPool, VkQueue transferQueue);
 
     // find a memory type comformant to memory type filter and required property flags.
     //
@@ -59,11 +63,9 @@ namespace vertexHandler
     // @param memoryType stored selected memory type.
     bool findBufferMemoryType(VkPhysicalDevice vulkanPhysicalDevice, uint32_t memoryTypeFilter, VkMemoryPropertyFlags requiredMemoryPropertyFlags, uint32_t& memoryType);
 
-    // allocate memory for an vertex buffer.
-    //
-    // @param vulkanDevices Vulkan devices to use in allocation.
-    // @param vertexBufferMemory stored allocated vertex buffer memory.
-    void allocateVertexBufferMemory(deviceHandler::VulkanDevices vulkanDevices, VkDeviceMemory& vertexBufferMemory);
+    void allocateBufferMemory(VkMemoryRequirements memoryRequirements, VkMemoryPropertyFlags memoryProperties, deviceHandler::VulkanDevices vulkanDevices, VkDeviceMemory& bufferMemory);
+
+    void copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuffer, VkDeviceSize buffersSize, VkCommandPool commandPool, VkDevice vulkanLogicalDevice, VkQueue transferQueue);
 }
 
 

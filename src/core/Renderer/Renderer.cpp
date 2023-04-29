@@ -397,7 +397,7 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     deviceHandler::VulkanDevices temporaryVulkanDevices{};
     temporaryVulkanDevices.physicalDevice = vulkanPhysicalDevice;
     temporaryVulkanDevices.logicalDevice = *m_vulkanLogicalDevice;
-    vertexHandler::createVertexBufferComponents(temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory);
+    vertexHandler::createVertexBufferComponents(temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue);  // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
     
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 

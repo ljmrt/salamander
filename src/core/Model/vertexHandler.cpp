@@ -41,31 +41,49 @@ void vertexHandler::fetchAttributeDescriptions(std::vector<VkVertexInputAttribut
     attributeDescriptions.push_back(attributeDescription);
 }
 
-void vertexHandler::createVertexBufferComponents(deviceHandler::VulkanDevices vulkanDevices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory)
+void vertexHandler::createBufferComponents(VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags memoryProperties, deviceHandler::VulkanDevices vulkanDevices, VkBuffer& createdBuffer, VkDeviceMemory& allocatedBufferMemory)
 {
-    VkBufferCreateInfo vertexBufferCreateInfo{};
-    vertexBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    VkBufferCreateInfo bufferCreateInfo{};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     
-    vertexBufferCreateInfo.size = sizeof(vertices[0]) * vertices.size();
-    vertexBufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    vertexBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;  // only the graphics queue is using this.
+    bufferCreateInfo.size = bufferSize;
+    bufferCreateInfo.usage = bufferUsage;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    VkResult vertexBufferCreationResult = vkCreateBuffer(vulkanDevices.logicalDevice, &vertexBufferCreateInfo, nullptr, &vertexBuffer);
-    if (vertexBufferCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create vertex buffer.");
+    VkResult bufferCreationResult = vkCreateBuffer(vulkanDevices.logicalDevice, &bufferCreateInfo, nullptr, &createdBuffer);
+    if (bufferCreationResult != VK_SUCCESS) {
+        throwDebugException("Failed to create buffer.");
     }
 
 
-    vkGetBufferMemoryRequirements(vulkanDevices.logicalDevice, vertexBuffer, &m_memoryRequirements);
-    allocateVertexBufferMemory(vulkanDevices, vertexBufferMemory);
-    vkBindBufferMemory(vulkanDevices.logicalDevice, vertexBuffer, vertexBufferMemory, 0);
+    VkMemoryRequirements memoryRequirements;
+    vkGetBufferMemoryRequirements(vulkanDevices.logicalDevice, createdBuffer, &memoryRequirements);
+    
+    allocateBufferMemory(memoryRequirements, memoryProperties, vulkanDevices, allocatedBufferMemory);
+    vkBindBufferMemory(vulkanDevices.logicalDevice, createdBuffer, allocatedBufferMemory, 0);
+}
+
+void vertexHandler::createVertexBufferComponents(deviceHandler::VulkanDevices vulkanDevices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory, VkCommandPool commandPool, VkQueue transferQueue)
+{
+    VkDeviceSize buffersSize = sizeof(vertices[0]) * vertices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    createBufferComponents(buffersSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vulkanDevices, stagingBuffer, stagingBufferMemory);  // staging buffer.
+    
+    // map staging buffer memory and copy vertices data into it.
+    void* verticesData;
+    vkMapMemory(vulkanDevices.logicalDevice, stagingBufferMemory, 0, buffersSize, 0, &verticesData);
+    memcpy(verticesData, vertices.data(), (size_t)(buffersSize));
+    vkUnmapMemory(vulkanDevices.logicalDevice, stagingBufferMemory);
 
     
-    // map vertex buffer memory and copy vertices data into it.
-    void* verticesData;
-    vkMapMemory(vulkanDevices.logicalDevice, vertexBufferMemory, 0, vertexBufferCreateInfo.size, 0, &verticesData);
-    memcpy(verticesData, vertices.data(), (size_t)(vertexBufferCreateInfo.size));
-    vkUnmapMemory(vulkanDevices.logicalDevice, vertexBufferMemory);
+    createBufferComponents(buffersSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, vertexBuffer, vertexBufferMemory);
+
+    copyBuffer(stagingBuffer, vertexBuffer, buffersSize, commandPool, vulkanDevices.logicalDevice, transferQueue);
+
+    vkDestroyBuffer(vulkanDevices.logicalDevice, stagingBuffer, nullptr);
+    vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
 }
 
 bool vertexHandler::findBufferMemoryType(VkPhysicalDevice vulkanPhysicalDevice, uint32_t memoryTypeFilter, VkMemoryPropertyFlags requiredMemoryPropertyFlags, uint32_t& memoryType)
@@ -85,21 +103,66 @@ bool vertexHandler::findBufferMemoryType(VkPhysicalDevice vulkanPhysicalDevice, 
     return false;
 }
 
-void vertexHandler::allocateVertexBufferMemory(deviceHandler::VulkanDevices vulkanDevices, VkDeviceMemory& vertexBufferMemory)
+void vertexHandler::allocateBufferMemory(VkMemoryRequirements memoryRequirements, VkMemoryPropertyFlags memoryProperties, deviceHandler::VulkanDevices vulkanDevices, VkDeviceMemory& bufferMemory)
 {
     VkMemoryAllocateInfo memoryAllocateInfo{};
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 
-    memoryAllocateInfo.allocationSize = m_memoryRequirements.size;
+    memoryAllocateInfo.allocationSize = memoryRequirements.size;
     
     uint32_t memoryTypeIndex;  // prefer size_t, but better to cohere.
-    if (findBufferMemoryType(vulkanDevices.physicalDevice, m_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memoryTypeIndex) == false) {
+    if (findBufferMemoryType(vulkanDevices.physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memoryTypeIndex) == false) {
         throwDebugException("Failed to find a suitable memory type.");
     }
     memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
 
-    VkResult memoryAllocationResult = vkAllocateMemory(vulkanDevices.logicalDevice, &memoryAllocateInfo, nullptr, &vertexBufferMemory);
+    VkResult memoryAllocationResult = vkAllocateMemory(vulkanDevices.logicalDevice, &memoryAllocateInfo, nullptr, &bufferMemory);
     if (memoryAllocationResult != VK_SUCCESS) {
-        throwDebugException("Failed to allocate vertex buffer memory.");
+        throwDebugException("Failed to allocate buffer memory.");
     }
+}
+
+void vertexHandler::copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuffer, VkDeviceSize buffersSize, VkCommandPool commandPool, VkDevice vulkanLogicalDevice, VkQueue transferQueue)
+{
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+    commandBufferAllocateInfo.commandPool = commandPool;
+    commandBufferAllocateInfo.commandBufferCount = 1;
+
+    VkCommandBuffer disposableCommandBuffer;
+    
+    vkAllocateCommandBuffers(vulkanLogicalDevice, &commandBufferAllocateInfo, &disposableCommandBuffer);
+
+
+    VkCommandBufferBeginInfo commandBufferBeginInfo{};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    
+    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    
+    vkBeginCommandBuffer(disposableCommandBuffer, &commandBufferBeginInfo);
+
+
+    VkBufferCopy bufferCopyRegion;
+    
+    bufferCopyRegion.srcOffset = 0;
+    bufferCopyRegion.dstOffset = 0;
+    bufferCopyRegion.size = buffersSize;
+
+    vkCmdCopyBuffer(disposableCommandBuffer, sourceBuffer, destinationBuffer, 1, &bufferCopyRegion);
+    vkEndCommandBuffer(disposableCommandBuffer);
+
+
+    VkSubmitInfo queueSubmitInfo{};
+    queueSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    queueSubmitInfo.commandBufferCount = 1;
+    queueSubmitInfo.pCommandBuffers = &disposableCommandBuffer;
+
+    vkQueueSubmit(transferQueue, 1, &queueSubmitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(transferQueue);  // could use fences for optimization.
+
+    vkFreeCommandBuffers(vulkanLogicalDevice, commandPool, 1, &disposableCommandBuffer);
 }
