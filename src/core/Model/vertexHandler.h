@@ -30,6 +30,12 @@ namespace vertexHandler
         0, 1, 2, 2, 3, 0
     };
 
+    struct UniformBufferObject {  // identical to the vertex shader's struct.
+        glm::mat4 modelMatrix;
+        glm::mat4 viewMatrix;
+        glm::mat4 projectionMatrix;
+    };
+
     extern VkMemoryRequirements m_memoryRequirements;  // populated in vertex buffer creation.
 
 
@@ -97,6 +103,12 @@ namespace vertexHandler
     // @param transferQueue queue to use in buffer memory operations.
     // @param vulkanLogicalDevice Vulkan logical device.
     void copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuffer, VkDeviceSize buffersSize, VkCommandPool commandPool, VkQueue transferQueue, VkDevice vulkanLogicalDevice);
+
+    // update the current frame's vertex shader uniform buffer.
+    //
+    // @param currentImage current image/frame.
+    // @param swapchainImageExtent Vulkan swapchain image extent.
+    void updateUniformBuffer(size_t currentImage, VkExtent2D swapchainImageExtent);
 }
 
 

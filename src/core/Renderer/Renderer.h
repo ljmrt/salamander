@@ -18,6 +18,7 @@ private:
     
     VkRenderPass m_renderPass;  // this graphics pipeline's render pass.
     Shader::PipelineShaders m_pipelineShaders;  // graphics pipeline shader stages.
+    VkDescriptorSetLayout m_descriptorSetLayout;  // this pipeline layout's descriptor set layout.
     VkPipelineLayout m_pipelineLayout;  // this graphics pipeline's pipeline layout.
     VkPipeline m_graphicsPipeline;  // graphics pipeline
 
@@ -46,6 +47,7 @@ private:
     // @param colorAttachmentDescription stored filled color attachment description.
     // @param colorAttachmentReference stored filled color attachment reference.
     void fillColorAttachment(VkFormat swapchainImageFormat, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference);
+    
     // fill out a subpass's description.
     //
     // @param colorAttachmentReference color attachment reference to use in subpass description.
@@ -56,6 +58,9 @@ private:
     //
     // @param swapchainImageFormat the swapchain image format to use in render pass creation.
     void createMemberRenderPass(VkFormat swapchainImageFormat);
+
+    // create member descriptor set layout.
+    void createMemberDescriptorSetLayout();
 
     // fill out a vertex input's create info.
     //

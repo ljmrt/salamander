@@ -82,6 +82,32 @@ void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat)
     }
 }
 
+void Renderer::createMemberDescriptorSetLayout()
+{
+    VkDescriptorSetLayoutBinding uniformBufferLayoutBinding{};
+    
+    uniformBufferLayoutBinding.binding = 0;  // specified in the vertex shader.
+    
+    uniformBufferLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uniformBufferLayoutBinding.descriptorCount = 1;
+
+    uniformBufferLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;  // descriptor only referenced in the vertex shader.
+
+    uniformBufferLayoutBinding.pImmutableSamplers = nullptr;
+
+
+    VkDescriptorSetLayoutCreateInfo layoutCreateInfo{};
+    layoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    
+    descriptorSetLayoutCreateInfo.bindingCount = 1;
+    descriptorSetLayoutCreateInfo.pBindings = &uniformBufferLayoutBinding;
+
+    VkResult descriptorSetLayoutCreationResult = vkCreateDescriptorSetLayout(*m_vulkanLogicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &m_descriptorSetLayout);
+    if (descriptorSetLayoutCreationResult != VK_SUCCESS) {
+        throwDebugException("Failed to create descriptor set layout.");
+    }
+}
+
 void Renderer::fillVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)
 {
     vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -187,8 +213,8 @@ void Renderer::createMemberPipelineLayout()
     pipelineLayoutCreateInfo.pNext = nullptr;
     pipelineLayoutCreateInfo.flags = 0;
     
-    pipelineLayoutCreateInfo.setLayoutCount = 0;
-    pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+    pipelineLayoutCreateInfo.setLayoutCount = 1;
+    pipelineLayoutCreateInfo.pSetLayouts = &m_descriptorSetLayout;
     
     pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
     pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
@@ -335,6 +361,9 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
     CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, m_vertexBuffer, m_indexBuffer);
 
     
+    vertexHandler::updateUniformBuffer(currentFrame);
+
+    
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -386,6 +415,8 @@ void Renderer::setVulkanLogicalDevice(VkDevice *vulkanLogicalDevice)
 void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice)
 {
     createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat);
+
+    createMemberDescriptorSetLayout();
     
     createMemberGraphicsPipeline();
 
@@ -431,7 +462,9 @@ void Renderer::cleanupRenderer()
     vkFreeMemory(*m_vulkanLogicalDevice, m_vertexBufferMemory, nullptr);
 
     vkDestroyBuffer(*m_vulkanLogicalDevice, m_indexBuffer, nullptr);
-    vkFreeMemory(*m_vulkanLogicalDevice, m_indexBufferMemory, nullptr);    
+    vkFreeMemory(*m_vulkanLogicalDevice, m_indexBufferMemory, nullptr);
+
+    vkDestroyDescriptorSetLayout(*m_vulkanLogicalDevice, m_descriptorSetLayout, nullptr);
     
     vkDestroyPipeline(*m_vulkanLogicalDevice, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(*m_vulkanLogicalDevice, m_pipelineLayout, nullptr);

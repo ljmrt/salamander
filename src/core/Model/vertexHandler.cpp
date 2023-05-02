@@ -1,14 +1,17 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <core/Model/vertexHandler.h>
 #include <core/VulkanInstance/deviceHandler.h>
 #include <core/Logging/ErrorLogger.h>
 
-#include <glm/glm.hpp>
-
 #include <vector>
 #include <cstring>
+#include <chrono>
 
 
 VkMemoryRequirements vertexHandler::m_memoryRequirements;
@@ -164,4 +167,24 @@ void vertexHandler::copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuff
     vkQueueWaitIdle(transferQueue);  // could use fences for optimization.
 
     vkFreeCommandBuffers(vulkanLogicalDevice, commandPool, 1, &disposableCommandBuffer);
+}
+
+void vertexHandler::updateUniformBuffer(size_t currentImage, VkExtent2D swapchainImageExtent)
+{
+    // necessary to doing operations regardless of frame rate.
+    static std::chrono::time_point startTime = std::chrono::high_resolution_clock::now();
+
+    std::chrono::time_point currentTime = std::chrono::high_resolution_clock::now();
+    float passedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+
+    UniformBufferObject uniformBufferObject{};
+
+    uniformBufferObject.modelMatrix = glm::rotate(glm::mat4(1.0f), passedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));  // rotate around the z-axis over time.
+    uniformBufferObject.viewMatrix = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));  // look down at the geometry from above at a 45-degree angle.
+    uniformBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), (float)(swapchainImageExtent.width / swapchainImageExtent.height), 0.1f, 10.0f);  // 45-degree vertical field-of-view.
+    uniformBufferObject.projectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
+
+
+    memcpy(mappedUniformBuffers[currentImage], &uniformBufferObject, sizeof(uniformBufferObject));
 }
