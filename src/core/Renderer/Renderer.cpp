@@ -82,6 +82,102 @@ void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat)
     }
 }
 
+void Renderer::createMemberDescriptorSetLayout()
+{
+    VkDescriptorSetLayoutBinding uniformBufferLayoutBinding{};
+    
+    uniformBufferLayoutBinding.binding = 0;  // specified in the vertex shader.
+    
+    uniformBufferLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uniformBufferLayoutBinding.descriptorCount = 1;
+
+    uniformBufferLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;  // descriptor only referenced in the vertex shader.
+
+    uniformBufferLayoutBinding.pImmutableSamplers = nullptr;
+
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
+    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    
+    descriptorSetLayoutCreateInfo.bindingCount = 1;
+    descriptorSetLayoutCreateInfo.pBindings = &uniformBufferLayoutBinding;
+
+    VkResult descriptorSetLayoutCreationResult = vkCreateDescriptorSetLayout(*m_vulkanLogicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &m_descriptorSetLayout);
+    if (descriptorSetLayoutCreationResult != VK_SUCCESS) {
+        throwDebugException("Failed to create descriptor set layout.");
+    }
+}
+
+void Renderer::createMemberDescriptorPool()
+{
+    VkDescriptorPoolSize descriptorPoolSize{};
+    descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    
+    descriptorPoolSize.descriptorCount = static_cast<uint32_t>(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+
+
+    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
+    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+
+    descriptorPoolCreateInfo.poolSizeCount = 1;
+    descriptorPoolCreateInfo.pPoolSizes = &descriptorPoolSize;
+
+    descriptorPoolCreateInfo.maxSets = static_cast<uint32_t>(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+
+    VkResult descriptorPoolCreationResult = vkCreateDescriptorPool(*m_vulkanLogicalDevice, &descriptorPoolCreateInfo, nullptr, &m_descriptorPool);
+    if (descriptorPoolCreationResult != VK_SUCCESS) {
+        throwDebugException("Failed to create descriptor pool.");
+    }
+}
+
+void Renderer::createMemberDescriptorSets()
+{
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
+    
+    VkDescriptorSetAllocateInfo descriptorSetsAllocateInfo{};
+    descriptorSetsAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+
+    descriptorSetsAllocateInfo.descriptorPool = m_descriptorPool;
+    
+    descriptorSetsAllocateInfo.descriptorSetCount = static_cast<uint32_t>(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+    descriptorSetsAllocateInfo.pSetLayouts = descriptorSetLayouts.data();
+
+    m_descriptorSets.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+    VkResult descriptorSetsAllocationResult = vkAllocateDescriptorSets(*m_vulkanLogicalDevice, &descriptorSetsAllocateInfo, m_descriptorSets.data());
+    if (descriptorSetsAllocationResult != VK_SUCCESS) {
+        throwDebugException("Failed to allocate descriptor sets.");
+    }
+}
+
+void Renderer::populateMemberDescriptorSets()
+{
+    for (size_t i = 0; i < m_descriptorSets.size(); i += 1) {
+        VkDescriptorBufferInfo descriptorBufferInfo{};
+
+        descriptorBufferInfo.buffer = m_uniformBuffers[i];
+        
+        descriptorBufferInfo.offset = 0;
+        descriptorBufferInfo.range = VK_WHOLE_SIZE;  // we're overwriting the entire buffer.
+
+
+        VkWriteDescriptorSet writeDescriptorSet{};
+        writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+
+        writeDescriptorSet.dstSet = m_descriptorSets[i];
+        writeDescriptorSet.dstBinding = 0;  // the uniform buffer binding index.
+        writeDescriptorSet.dstArrayElement = 0;  // we're not using an array.
+
+        writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;  // we're using this for our uniform buffer.
+        writeDescriptorSet.descriptorCount = 1;
+
+        writeDescriptorSet.pBufferInfo = &descriptorBufferInfo;
+        writeDescriptorSet.pImageInfo = nullptr;
+        writeDescriptorSet.pTexelBufferView = nullptr;
+
+        vkUpdateDescriptorSets(*m_vulkanLogicalDevice, 1, &writeDescriptorSet, 0, nullptr);  // populate/update the descriptor set.
+    }
+}
+
 void Renderer::fillVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)
 {
     vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -127,7 +223,7 @@ void Renderer::fillRasterizationCreateInfo(VkPipelineRasterizationStateCreateInf
     rasterizationCreateInfo.lineWidth = 1.0f;
     
     rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizationCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;  // vertex order for faces to be considered front-facing.
+    rasterizationCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;  // vertex order for faces to be considered front-facing, counter-clockwise due to the GLM y-axis flip.
     
     rasterizationCreateInfo.depthBiasEnable = VK_FALSE;
     rasterizationCreateInfo.depthBiasConstantFactor = 0.0f;
@@ -187,8 +283,8 @@ void Renderer::createMemberPipelineLayout()
     pipelineLayoutCreateInfo.pNext = nullptr;
     pipelineLayoutCreateInfo.flags = 0;
     
-    pipelineLayoutCreateInfo.setLayoutCount = 0;
-    pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+    pipelineLayoutCreateInfo.setLayoutCount = 1;
+    pipelineLayoutCreateInfo.pSetLayouts = &m_descriptorSetLayout;
     
     pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
     pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
@@ -332,7 +428,10 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
 
 
     vkResetCommandBuffer(m_graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, m_vertexBuffer, m_indexBuffer);
+    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_pipelineLayout, m_descriptorSets, m_currentFrame);
+
+    
+    vertexHandler::updateUniformBuffer(m_currentFrame, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_mappedUniformBuffersMemory);
 
     
     VkSubmitInfo submitInfo{};
@@ -385,23 +484,31 @@ void Renderer::setVulkanLogicalDevice(VkDevice *vulkanLogicalDevice)
 
 void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice)
 {
-    createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat);
-    
-    createMemberGraphicsPipeline();
-
-    swapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
-
-
-    CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
-
     deviceHandler::VulkanDevices temporaryVulkanDevices{};
     temporaryVulkanDevices.physicalDevice = vulkanPhysicalDevice;
     temporaryVulkanDevices.logicalDevice = *m_vulkanLogicalDevice;
     
+    
+    createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat);
+
+    createMemberDescriptorSetLayout();
+        
+    createMemberGraphicsPipeline();
+
+    swapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
+
+    CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
+    
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
     vertexHandler::createDataBufferComponents(vertexHandler::vertices.data(), sizeof(vertexHandler::vertices[0]) * vertexHandler::vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory);
     vertexHandler::createDataBufferComponents(vertexHandler::indices.data(), sizeof(vertexHandler::indices[0]) * vertexHandler::indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_indexBuffer, m_indexBufferMemory);
+
+    vertexHandler::createUniformBuffers(temporaryVulkanDevices, m_uniformBuffers, m_uniformBuffersMemory, m_mappedUniformBuffersMemory);
     
+    createMemberDescriptorPool();
+    createMemberDescriptorSets();
+    populateMemberDescriptorSets();
+
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 
     createMemberSynchronizationObjects();
@@ -423,6 +530,9 @@ void Renderer::cleanupRenderer()
         vkDestroySemaphore(*m_vulkanLogicalDevice, m_imageAvailibleSemaphores[i], nullptr);
         vkDestroySemaphore(*m_vulkanLogicalDevice, m_renderFinishedSemaphores[i], nullptr);
         vkDestroyFence(*m_vulkanLogicalDevice, m_inFlightFences[i], nullptr);
+
+        vkDestroyBuffer(*m_vulkanLogicalDevice, m_uniformBuffers[i], nullptr);
+        vkFreeMemory(*m_vulkanLogicalDevice, m_uniformBuffersMemory[i], nullptr);
     }
     
     vkDestroyCommandPool(*m_vulkanLogicalDevice, m_graphicsCommandPool, nullptr);  // child command buffers automatically freed.
@@ -431,7 +541,10 @@ void Renderer::cleanupRenderer()
     vkFreeMemory(*m_vulkanLogicalDevice, m_vertexBufferMemory, nullptr);
 
     vkDestroyBuffer(*m_vulkanLogicalDevice, m_indexBuffer, nullptr);
-    vkFreeMemory(*m_vulkanLogicalDevice, m_indexBufferMemory, nullptr);    
+    vkFreeMemory(*m_vulkanLogicalDevice, m_indexBufferMemory, nullptr);
+
+    vkDestroyDescriptorPool(*m_vulkanLogicalDevice, m_descriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(*m_vulkanLogicalDevice, m_descriptorSetLayout, nullptr);
     
     vkDestroyPipeline(*m_vulkanLogicalDevice, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(*m_vulkanLogicalDevice, m_pipelineLayout, nullptr);

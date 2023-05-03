@@ -6,8 +6,8 @@
     <br>
 </h1>
 <p align="center">
-    <img src="https://img.shields.io/static/v1?label=release-version&message=1.0.3&color=green">
-    <img src="https://img.shields.io/static/v1?label=build-version&message=1.0.3&color=green">
+    <img src="https://img.shields.io/static/v1?label=release-version&message=1.0.4&color=green">
+    <img src="https://img.shields.io/static/v1?label=build-version&message=1.0.4&color=green">
     <img src="https://img.shields.io/static/v1?label=language&message=C%2B%2B17&color=green">
     <img src="https://img.shields.io/static/v1?label=platform&message=Linux&color=green">
     <img src="https://img.shields.io/static/v1?label=development&message=Active&color=green">
