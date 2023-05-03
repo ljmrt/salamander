@@ -39,7 +39,7 @@ void CommandManager::allocateChildCommandBuffers(VkCommandPool parentCommandPool
     }
 }
 
-void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer)
+void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, VkPipelineLayout pipelineLayout, std::vector<VkDescriptorSet>& descriptorSets, size_t currentFrame)
 {
     VkCommandBufferBeginInfo commandBufferBeginInfo{};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -92,6 +92,8 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     
     vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(graphicsCommandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+
+    vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
     vkCmdDrawIndexed(graphicsCommandBuffer, static_cast<uint32_t>(vertexHandler::indices.size()), 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
 

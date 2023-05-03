@@ -18,7 +18,11 @@ private:
     
     VkRenderPass m_renderPass;  // this graphics pipeline's render pass.
     Shader::PipelineShaders m_pipelineShaders;  // graphics pipeline shader stages.
+    
     VkDescriptorSetLayout m_descriptorSetLayout;  // this pipeline layout's descriptor set layout.
+    VkDescriptorPool m_descriptorPool;  // the descriptor pool to use in descriptor set creation.
+    std::vector<VkDescriptorSet> m_descriptorSets;  // uniform buffer descriptor sets.
+    
     VkPipelineLayout m_pipelineLayout;  // this graphics pipeline's pipeline layout.
     VkPipeline m_graphicsPipeline;  // graphics pipeline
 
@@ -30,6 +34,10 @@ private:
     VkDeviceMemory m_vertexBufferMemory;  // the vertex buffer's memory.
     VkBuffer m_indexBuffer;  // index buffer.
     VkDeviceMemory m_indexBufferMemory;  // the index buffer's memory.
+
+    std::vector<VkBuffer> m_uniformBuffers;  // the shader uniform buffers.
+    std::vector<VkDeviceMemory> m_uniformBuffersMemory;  // the uniform buffers' memory.
+    std::vector<void *> m_mappedUniformBuffersMemory;  // the mapped memory of the uniform buffers.
 
     std::vector<VkVertexInputAttributeDescription> m_attributeDescriptions;  // preserved attribute descriptions.
     VkVertexInputBindingDescription m_bindingDescription;  // preserved binding description.
@@ -61,6 +69,15 @@ private:
 
     // create member descriptor set layout.
     void createMemberDescriptorSetLayout();
+
+    // create member descriptor pool.
+    void createMemberDescriptorPool();
+
+    // create member descriptor sets.
+    void createMemberDescriptorSets();
+
+    // populate member descriptor sets.
+    void populateMemberDescriptorSets();
 
     // fill out a vertex input's create info.
     //
