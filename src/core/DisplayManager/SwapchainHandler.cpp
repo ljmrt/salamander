@@ -1,9 +1,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <core/DisplayManager/swapchainHandler.h>
+#include <core/DisplayManager/SwapchainHandler.h>
 #include <core/DisplayManager/DisplayManager.h>
-#include <core/VulkanInstance/deviceHandler.h>
+#include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Queue/Queue.h>
 #include <core/Logging/ErrorLogger.h>
 
@@ -11,7 +11,7 @@
 #include <algorithm>
 
 
-void swapchainHandler::querySwapchainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, SwapchainSupportDetails& queriedSwapchainSupportDetails)
+void SwapchainHandler::querySwapchainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, SwapchainSupportDetails& queriedSwapchainSupportDetails)
 {
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, windowSurface, &queriedSwapchainSupportDetails.surfaceCapabilities);
 
@@ -30,7 +30,7 @@ void swapchainHandler::querySwapchainSupportDetails(VkPhysicalDevice physicalDev
     }
 }
 
-void swapchainHandler::selectSwapchainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> availibleSurfaceFormats, VkSurfaceFormatKHR& selectedSurfaceFormat)
+void SwapchainHandler::selectSwapchainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> availibleSurfaceFormats, VkSurfaceFormatKHR& selectedSurfaceFormat)
 {
     for (VkSurfaceFormatKHR surfaceFormat : availibleSurfaceFormats) {
         if (surfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB && surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -41,7 +41,7 @@ void swapchainHandler::selectSwapchainSurfaceFormat(const std::vector<VkSurfaceF
     selectedSurfaceFormat = availibleSurfaceFormats[0];  // select first format in the availible surface formats as a fallback.
 }
 
-void swapchainHandler::selectSwapchainPresentationMode(const std::vector<VkPresentModeKHR> availiblePresentationModes, VkPresentModeKHR& selectedPresentationMode)
+void SwapchainHandler::selectSwapchainPresentationMode(const std::vector<VkPresentModeKHR> availiblePresentationModes, VkPresentModeKHR& selectedPresentationMode)
 {
     for (VkPresentModeKHR presentationMode : availiblePresentationModes) {
         if (presentationMode == VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -52,7 +52,7 @@ void swapchainHandler::selectSwapchainPresentationMode(const std::vector<VkPrese
     selectedPresentationMode = VK_PRESENT_MODE_FIFO_KHR;  // a less preferred but guarenteed to be availible presentation mode.
 }
 
-void swapchainHandler::selectSwapchainImageExtent(const VkSurfaceCapabilitiesKHR extentCapabilities, GLFWwindow *glfwWindow, VkExtent2D& selectedImageExtent)
+void SwapchainHandler::selectSwapchainImageExtent(const VkSurfaceCapabilitiesKHR extentCapabilities, GLFWwindow *glfwWindow, VkExtent2D& selectedImageExtent)
 {
     if (extentCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         selectedImageExtent = extentCapabilities.currentExtent;  // swap chain extent is not flexible.
@@ -70,7 +70,7 @@ void swapchainHandler::selectSwapchainImageExtent(const VkSurfaceCapabilitiesKHR
     }
 }
 
-void swapchainHandler::createSwapchainComponents(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, GLFWwindow *glfwWindow, VkSurfaceKHR windowSurface, VkSwapchainKHR& createdSwapchain, std::vector<VkImage>& createdSwapchainImages, VkFormat& createdSwapchainImageFormat, VkExtent2D& createdSwapchainExtent)
+void SwapchainHandler::createSwapchainComponents(VkPhysicalDevice physicalDevice, VkDevice logicalDevice, GLFWwindow *glfwWindow, VkSurfaceKHR windowSurface, VkSwapchainKHR& createdSwapchain, std::vector<VkImage>& createdSwapchainImages, VkFormat& createdSwapchainImageFormat, VkExtent2D& createdSwapchainExtent)
 {
     SwapchainSupportDetails swapchainSupportDetails;
     querySwapchainSupportDetails(physicalDevice, windowSurface, swapchainSupportDetails);
@@ -140,12 +140,12 @@ void swapchainHandler::createSwapchainComponents(VkPhysicalDevice physicalDevice
     createdSwapchainExtent = swapchainExtent;
 }
 
-void swapchainHandler::createSwapchainComponentsWrapper(deviceHandler::VulkanDevices vulkanDevices, DisplayManager::DisplayDetails& displayDetails)
+void SwapchainHandler::createSwapchainComponentsWrapper(DeviceHandler::VulkanDevices vulkanDevices, DisplayManager::DisplayDetails& displayDetails)
 {
     createSwapchainComponents(vulkanDevices.physicalDevice, vulkanDevices.logicalDevice, displayDetails.glfwWindow, displayDetails.vulkanDisplayDetails.windowSurface, displayDetails.vulkanDisplayDetails.swapchain, displayDetails.vulkanDisplayDetails.swapchainImages, displayDetails.vulkanDisplayDetails.swapchainImageFormat, displayDetails.vulkanDisplayDetails.swapchainImageExtent);
 }
 
-void swapchainHandler::createSwapchainImageViews(std::vector<VkImage> swapchainImages, VkFormat swapchainImageFormat, VkDevice vulkanLogicalDevice, std::vector<VkImageView>& createdSwapchainImageViews)
+void SwapchainHandler::createSwapchainImageViews(std::vector<VkImage> swapchainImages, VkFormat swapchainImageFormat, VkDevice vulkanLogicalDevice, std::vector<VkImageView>& createdSwapchainImageViews)
 {
     createdSwapchainImageViews.resize(swapchainImages.size());
     for (size_t i = 0; i < swapchainImages.size(); i += 1) {
@@ -172,7 +172,7 @@ void swapchainHandler::createSwapchainImageViews(std::vector<VkImage> swapchainI
     }
 }
 
-void swapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers)
+void SwapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers)
 {
     createdSwapchainFramebuffers.resize(swapchainImageViews.size());
     for (size_t i = 0; i < swapchainImageViews.size(); i += 1) {
@@ -201,7 +201,7 @@ void swapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swap
     }
 }
 
-void swapchainHandler::recreateSwapchain(deviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, DisplayManager::DisplayDetails& displayDetails)
+void SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, DisplayManager::DisplayDetails& displayDetails)
 {
     // stall window if minimized.
     // prefer to use size_t, but complying with GLFW is better.
@@ -224,7 +224,7 @@ void swapchainHandler::recreateSwapchain(deviceHandler::VulkanDevices vulkanDevi
     createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);
 }
 
-void swapchainHandler::cleanupSwapchain(VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer> swapchainFramebuffers, std::vector<VkImageView> swapchainImageViews, VkSwapchainKHR swapchain)
+void SwapchainHandler::cleanupSwapchain(VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer> swapchainFramebuffers, std::vector<VkImageView> swapchainImageViews, VkSwapchainKHR swapchain)
 {
     for (VkFramebuffer swapchainFramebuffer : swapchainFramebuffers) {
         vkDestroyFramebuffer(vulkanLogicalDevice, swapchainFramebuffer, nullptr);

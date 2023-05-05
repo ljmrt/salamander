@@ -1,51 +1,16 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-#include <core/Model/vertexHandler.h>
-#include <core/VulkanInstance/deviceHandler.h>
+#include <core/Buffer/Buffer.h>
+#include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Defaults/Defaults.h>
 #include <core/Logging/ErrorLogger.h>
 
 #include <vector>
 #include <cstring>
-#include <chrono>
 
 
-VkMemoryRequirements vertexHandler::m_memoryRequirements;
-
-void vertexHandler::fetchBindingDescription(VkVertexInputBindingDescription& bindingDescription)
-{
-    bindingDescription.binding = 0;  // binding index in the "array" of bindings.
-    bindingDescription.stride = sizeof(Vertex);  // byte distance from one entry to another.
-    bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-}
-
-void vertexHandler::fetchAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
-{
-    VkVertexInputAttributeDescription attributeDescription{};
-    
-    // position description.
-    attributeDescription.binding = 0;
-    attributeDescription.location = 0;  // "location" keyword in shader.
-    attributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
-    attributeDescription.offset = offsetof(Vertex, position);
-
-    attributeDescriptions.push_back(attributeDescription);
-
-    // color description.
-    attributeDescription.binding = 0;
-    attributeDescription.location = 1;  // "location" keyword in shader.
-    attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    attributeDescription.offset = offsetof(Vertex, color);
-
-    attributeDescriptions.push_back(attributeDescription);
-}
-
-void vertexHandler::createBufferComponents(VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags memoryProperties, deviceHandler::VulkanDevices vulkanDevices, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+void Buffer::createBufferComponents(VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 {
     VkBufferCreateInfo bufferCreateInfo{};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -67,7 +32,7 @@ void vertexHandler::createBufferComponents(VkDeviceSize bufferSize, VkBufferUsag
     vkBindBufferMemory(vulkanDevices.logicalDevice, buffer, bufferMemory, 0);
 }
 
-void vertexHandler::createDataBufferComponents(const void *bufferData, VkDeviceSize buffersSize, VkBufferUsageFlagBits bufferUsage, VkCommandPool commandPool, VkQueue transferQueue, deviceHandler::VulkanDevices vulkanDevices, VkBuffer& dataBuffer, VkDeviceMemory& dataBufferMemory)
+void Buffer::createDataBufferComponents(const void *bufferData, VkDeviceSize buffersSize, VkBufferUsageFlagBits bufferUsage, VkCommandPool commandPool, VkQueue transferQueue, DeviceHandler::VulkanDevices vulkanDevices, VkBuffer& dataBuffer, VkDeviceMemory& dataBufferMemory)
 {
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
@@ -89,7 +54,7 @@ void vertexHandler::createDataBufferComponents(const void *bufferData, VkDeviceS
     vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
 }
 
-bool vertexHandler::findBufferMemoryType(VkPhysicalDevice vulkanPhysicalDevice, uint32_t memoryTypeFilter, VkMemoryPropertyFlags requiredMemoryPropertyFlags, uint32_t& memoryType)
+bool Buffer::findBufferMemoryType(VkPhysicalDevice vulkanPhysicalDevice, uint32_t memoryTypeFilter, VkMemoryPropertyFlags requiredMemoryPropertyFlags, uint32_t& memoryType)
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(vulkanPhysicalDevice, &memoryProperties);
@@ -106,7 +71,7 @@ bool vertexHandler::findBufferMemoryType(VkPhysicalDevice vulkanPhysicalDevice, 
     return false;
 }
 
-void vertexHandler::allocateBufferMemory(VkMemoryRequirements memoryRequirements, VkMemoryPropertyFlags memoryProperties, deviceHandler::VulkanDevices vulkanDevices, VkDeviceMemory& bufferMemory)
+void Buffer::allocateBufferMemory(VkMemoryRequirements memoryRequirements, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, VkDeviceMemory& bufferMemory)
 {
     VkMemoryAllocateInfo memoryAllocateInfo{};
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -125,7 +90,7 @@ void vertexHandler::allocateBufferMemory(VkMemoryRequirements memoryRequirements
     }
 }
 
-void vertexHandler::copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuffer, VkDeviceSize buffersSize, VkCommandPool commandPool, VkQueue transferQueue, VkDevice vulkanLogicalDevice)
+void Buffer::copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuffer, VkDeviceSize buffersSize, VkCommandPool commandPool, VkQueue transferQueue, VkDevice vulkanLogicalDevice)
 {
     VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -168,39 +133,4 @@ void vertexHandler::copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuff
     vkQueueWaitIdle(transferQueue);  // could use fences for optimization.
 
     vkFreeCommandBuffers(vulkanLogicalDevice, commandPool, 1, &disposableCommandBuffer);
-}
-
-void vertexHandler::createUniformBuffers(deviceHandler::VulkanDevices vulkanDevices, std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void *>& mappedUniformBuffersMemory)
-{
-    VkDeviceSize uniformBufferObjectSize = sizeof(UniformBufferObject);
-
-    uniformBuffers.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-    uniformBuffersMemory.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-    mappedUniformBuffersMemory.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-
-    for (size_t i = 0; i < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; i += 1) {
-        createBufferComponents(uniformBufferObjectSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vulkanDevices, uniformBuffers[i], uniformBuffersMemory[i]);
-
-        vkMapMemory(vulkanDevices.logicalDevice, uniformBuffersMemory[i], 0, uniformBufferObjectSize, 0, &mappedUniformBuffersMemory[i]);
-    }
-}
-
-void vertexHandler::updateUniformBuffer(size_t currentImage, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedUniformBuffersMemory)
-{
-    // necessary to doing operations regardless of frame rate.
-    static std::chrono::time_point startTime = std::chrono::high_resolution_clock::now();
-
-    std::chrono::time_point currentTime = std::chrono::high_resolution_clock::now();
-    float passedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-
-    UniformBufferObject uniformBufferObject{};
-
-    uniformBufferObject.modelMatrix = glm::rotate(glm::mat4(1.0f), passedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));  // rotate around the z-axis over time.
-    uniformBufferObject.viewMatrix = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));  // look down at the geometry from above at a 45-degree angle.
-    uniformBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), swapchainImageExtent.width / (float)(swapchainImageExtent.height), 0.1f, 10.0f);  // 45-degree vertical field-of-view.
-    uniformBufferObject.projectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
-
-
-    memcpy(mappedUniformBuffersMemory[currentImage], &uniformBufferObject, sizeof(uniformBufferObject));
 }

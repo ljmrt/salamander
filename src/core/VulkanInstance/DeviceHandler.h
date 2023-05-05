@@ -10,7 +10,7 @@
 #include <vector>
 
 
-namespace deviceHandler
+namespace DeviceHandler
 {
     struct VulkanDevices {
         VkPhysicalDevice physicalDevice;

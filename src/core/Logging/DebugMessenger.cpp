@@ -4,7 +4,7 @@
 #include <core/Logging/DebugMessenger.h>
 #include <core/Logging/ErrorLogger.h>
 #include <core/VulkanInstance/VulkanInstance.h>
-#include <core/VulkanInstance/supportUtils.h>
+#include <core/VulkanInstance/SupportUtils.h>
 #include <core/VulkanExtensions/VulkanExtensions.h>
 #include <core/Callbacks/Callbacks.h>
 #include <core/Defaults/Defaults.h>
@@ -39,7 +39,7 @@ void DebugMessenger::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreat
 
 void DebugMessenger::createDebugMessenger(VkInstance vkInstance, VkDebugUtilsMessengerEXT& createdDebugMessenger)
 {
-    if (supportUtils::DEBUG_ENABLED == false) {
+    if (SupportUtils::DEBUG_ENABLED == false) {
         return;
     }
     

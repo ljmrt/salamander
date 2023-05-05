@@ -8,7 +8,7 @@
 #include <vector>
 
 
-namespace supportUtils
+namespace SupportUtils
 {
     #ifdef NDEBUG
         const bool DEBUG_ENABLED = false;

@@ -5,12 +5,12 @@
 #include <GLFW/glfw3.h>
 
 #include <core/DisplayManager/DisplayManager.h>
-#include <core/VulkanInstance/deviceHandler.h>
+#include <core/VulkanInstance/DeviceHandler.h>
 
 #include <vector>
 
 
-namespace swapchainHandler
+namespace SwapchainHandler
 {
     struct SwapchainSupportDetails {
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
@@ -63,7 +63,7 @@ namespace swapchainHandler
     //
     // @param vulkanDevices Vulkan logical and physical devices.
     // @param displayDetails display details to create with and store swapchain components.
-    void createSwapchainComponentsWrapper(deviceHandler::VulkanDevices vulkanDevices, DisplayManager::DisplayDetails& displayDetails);
+    void createSwapchainComponentsWrapper(DeviceHandler::VulkanDevices vulkanDevices, DisplayManager::DisplayDetails& displayDetails);
 
     // create swapchain image views.
     //
@@ -89,7 +89,7 @@ namespace swapchainHandler
     // @param vulkanDevices Vulkan logical and physical devices.
     // @param renderPass render pass to use in recreation.
     // @param displayDetails display details to use and store recreated components in.
-    void recreateSwapchain(deviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, DisplayManager::DisplayDetails& displayDetails);
+    void recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, DisplayManager::DisplayDetails& displayDetails);
 
     // clean up a swapchain.
     //

@@ -3,7 +3,7 @@
 
 #include <core/Command/CommandManager.h>
 #include <core/Logging/ErrorLogger.h>
-#include <core/Model/vertexHandler.h>
+#include <core/Model/VertexHandler.h>
 
 #include <vector>
 
@@ -95,7 +95,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
 
     vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
-    vkCmdDrawIndexed(graphicsCommandBuffer, static_cast<uint32_t>(vertexHandler::indices.size()), 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
+    vkCmdDrawIndexed(graphicsCommandBuffer, static_cast<uint32_t>(VertexHandler::indices.size()), 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
 
     vkCmdEndRenderPass(graphicsCommandBuffer);
 

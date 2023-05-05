@@ -5,7 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <core/VulkanInstance/deviceHandler.h>
+#include <core/VulkanInstance/DeviceHandler.h>
 #include <core/DisplayManager/DisplayManager.h>
 #include <core/Queue/Queue.h>
 
@@ -27,7 +27,7 @@ public:
     
     Queue::QueueFamilyIndices m_familyIndices;
 
-    deviceHandler::VulkanDevices m_devices;  // selected physical device and created logical device.
+    DeviceHandler::VulkanDevices m_devices;  // selected physical device and created logical device.
 
 
     // clean up this class/instance.

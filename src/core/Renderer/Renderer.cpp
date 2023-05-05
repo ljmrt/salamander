@@ -3,11 +3,14 @@
 
 #include <core/Renderer/Renderer.h>
 #include <core/Shader/Shader.h>
+#include <core/Shader/ResourceDescriptor.h>
+#include <core/Shader/Uniform.h>
+#include <core/Buffer/Buffer.h>
 #include <core/DisplayManager/DisplayManager.h>
-#include <core/DisplayManager/swapchainHandler.h>
+#include <core/DisplayManager/SwapchainHandler.h>
 #include <core/Command/CommandManager.h>
 #include <core/VulkanInstance/VulkanInstance.h>
-#include <core/Model/vertexHandler.h>
+#include <core/Model/VertexHandler.h>
 #include <core/Logging/ErrorLogger.h>
 #include <core/Defaults/Defaults.h>
 
@@ -17,7 +20,7 @@
 #include <vector>
 
 
-void Renderer::fillColorAttachment(VkFormat swapchainImageFormat, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference)
+void Renderer::populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference)
 {
     colorAttachmentDescription.format = swapchainImageFormat;
     colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -35,7 +38,7 @@ void Renderer::fillColorAttachment(VkFormat swapchainImageFormat, VkAttachmentDe
     colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 }
 
-void Renderer::fillSubpassDescription(VkAttachmentReference *colorAttachmentReference, VkSubpassDescription& subpassDescription)
+void Renderer::populateSubpassDescription(VkAttachmentReference *colorAttachmentReference, VkSubpassDescription& subpassDescription)
 {
     subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpassDescription.colorAttachmentCount = 1;
@@ -46,11 +49,11 @@ void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat)
 {
     VkAttachmentDescription colorAttachmentDescription{};
     VkAttachmentReference colorAttachmentReference{};
-    fillColorAttachment(swapchainImageFormat, colorAttachmentDescription, colorAttachmentReference);
+    populateColorAttachmentComponents(swapchainImageFormat, colorAttachmentDescription, colorAttachmentReference);
     
     
     VkSubpassDescription subpassDescription{};
-    fillSubpassDescription(&colorAttachmentReference, subpassDescription);
+    populateSubpassDescription(&colorAttachmentReference, subpassDescription);
     
     VkRenderPassCreateInfo renderPassCreateInfo{};
     renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -82,125 +85,7 @@ void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat)
     }
 }
 
-void Renderer::createMemberDescriptorSetLayout()
-{
-    VkDescriptorSetLayoutBinding uniformBufferLayoutBinding{};
-    
-    uniformBufferLayoutBinding.binding = 0;  // specified in the vertex shader.
-    
-    uniformBufferLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uniformBufferLayoutBinding.descriptorCount = 1;
-
-    uniformBufferLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;  // descriptor only referenced in the vertex shader.
-
-    uniformBufferLayoutBinding.pImmutableSamplers = nullptr;
-
-
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
-    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    
-    descriptorSetLayoutCreateInfo.bindingCount = 1;
-    descriptorSetLayoutCreateInfo.pBindings = &uniformBufferLayoutBinding;
-
-    VkResult descriptorSetLayoutCreationResult = vkCreateDescriptorSetLayout(*m_vulkanLogicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &m_descriptorSetLayout);
-    if (descriptorSetLayoutCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create descriptor set layout.");
-    }
-}
-
-void Renderer::createMemberDescriptorPool()
-{
-    VkDescriptorPoolSize descriptorPoolSize{};
-    descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    
-    descriptorPoolSize.descriptorCount = static_cast<uint32_t>(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-
-
-    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
-    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-
-    descriptorPoolCreateInfo.poolSizeCount = 1;
-    descriptorPoolCreateInfo.pPoolSizes = &descriptorPoolSize;
-
-    descriptorPoolCreateInfo.maxSets = static_cast<uint32_t>(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-
-    VkResult descriptorPoolCreationResult = vkCreateDescriptorPool(*m_vulkanLogicalDevice, &descriptorPoolCreateInfo, nullptr, &m_descriptorPool);
-    if (descriptorPoolCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create descriptor pool.");
-    }
-}
-
-void Renderer::createMemberDescriptorSets()
-{
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, m_descriptorSetLayout);
-    
-    VkDescriptorSetAllocateInfo descriptorSetsAllocateInfo{};
-    descriptorSetsAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-
-    descriptorSetsAllocateInfo.descriptorPool = m_descriptorPool;
-    
-    descriptorSetsAllocateInfo.descriptorSetCount = static_cast<uint32_t>(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-    descriptorSetsAllocateInfo.pSetLayouts = descriptorSetLayouts.data();
-
-    m_descriptorSets.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-    VkResult descriptorSetsAllocationResult = vkAllocateDescriptorSets(*m_vulkanLogicalDevice, &descriptorSetsAllocateInfo, m_descriptorSets.data());
-    if (descriptorSetsAllocationResult != VK_SUCCESS) {
-        throwDebugException("Failed to allocate descriptor sets.");
-    }
-}
-
-void Renderer::populateMemberDescriptorSets()
-{
-    for (size_t i = 0; i < m_descriptorSets.size(); i += 1) {
-        VkDescriptorBufferInfo descriptorBufferInfo{};
-
-        descriptorBufferInfo.buffer = m_uniformBuffers[i];
-        
-        descriptorBufferInfo.offset = 0;
-        descriptorBufferInfo.range = VK_WHOLE_SIZE;  // we're overwriting the entire buffer.
-
-
-        VkWriteDescriptorSet writeDescriptorSet{};
-        writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-
-        writeDescriptorSet.dstSet = m_descriptorSets[i];
-        writeDescriptorSet.dstBinding = 0;  // the uniform buffer binding index.
-        writeDescriptorSet.dstArrayElement = 0;  // we're not using an array.
-
-        writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;  // we're using this for our uniform buffer.
-        writeDescriptorSet.descriptorCount = 1;
-
-        writeDescriptorSet.pBufferInfo = &descriptorBufferInfo;
-        writeDescriptorSet.pImageInfo = nullptr;
-        writeDescriptorSet.pTexelBufferView = nullptr;
-
-        vkUpdateDescriptorSets(*m_vulkanLogicalDevice, 1, &writeDescriptorSet, 0, nullptr);  // populate/update the descriptor set.
-    }
-}
-
-void Renderer::fillVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)
-{
-    vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-    vertexHandler::fetchBindingDescription(m_bindingDescription);
-
-    vertexHandler::fetchAttributeDescriptions(m_attributeDescriptions);
-    
-    vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-    vertexInputCreateInfo.pVertexBindingDescriptions = &m_bindingDescription;
-    vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(m_attributeDescriptions.size());
-    vertexInputCreateInfo.pVertexAttributeDescriptions = m_attributeDescriptions.data();
-}
-
-void Renderer::fillInputAssemblyCreateInfo(VkPipelineInputAssemblyStateCreateInfo& inputAssemblyCreateInfo)
-{
-    inputAssemblyCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    
-    inputAssemblyCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  // form triangle primitives without vertex reuse.
-    inputAssemblyCreateInfo.primitiveRestartEnable = VK_FALSE;  // disable the possibility of vertex reuse.
-}
-
-void Renderer::fillViewportCreateInfo(VkPipelineViewportStateCreateInfo& viewportCreateInfo)
+void Renderer::populateViewportCreateInfo(VkPipelineViewportStateCreateInfo& viewportCreateInfo)
 {
     viewportCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 
@@ -209,7 +94,7 @@ void Renderer::fillViewportCreateInfo(VkPipelineViewportStateCreateInfo& viewpor
     viewportCreateInfo.scissorCount = 1;
 }
 
-void Renderer::fillRasterizationCreateInfo(VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo)
+void Renderer::populateRasterizationCreateInfo(VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo)
 {
     rasterizationCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     
@@ -231,7 +116,7 @@ void Renderer::fillRasterizationCreateInfo(VkPipelineRasterizationStateCreateInf
     rasterizationCreateInfo.depthBiasSlopeFactor = 0.0f;
 }
 
-void Renderer::fillMultisamplingCreateInfo(VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo)
+void Renderer::populateMultisamplingCreateInfo(VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo)
 {
     multisamplingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     
@@ -244,7 +129,7 @@ void Renderer::fillMultisamplingCreateInfo(VkPipelineMultisampleStateCreateInfo&
     multisamplingCreateInfo.alphaToOneEnable = VK_FALSE;
 }
 
-void Renderer::fillColorBlend(VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo)
+void Renderer::populateColorBlendComponents(VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo)
 {
     // "local" pipeline-specific color blending(hence the name attachment).
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -268,7 +153,7 @@ void Renderer::fillColorBlend(VkPipelineColorBlendAttachmentState& colorBlendAtt
     colorBlendCreateInfo.blendConstants[3] = 0.0f;
 }
 
-void Renderer::fillDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicStates, VkPipelineDynamicStateCreateInfo& dynamicStatesCreateInfo)
+void Renderer::populateDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicStates, VkPipelineDynamicStateCreateInfo& dynamicStatesCreateInfo)
 {
     dynamicStatesCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     
@@ -307,36 +192,36 @@ void Renderer::createMemberGraphicsPipeline()
     
 
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
-    fillVertexInputCreateInfo(vertexInputCreateInfo);
+    VertexHandler::populateVertexInputCreateInfo(vertexInputCreateInfo);
 
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
-    fillInputAssemblyCreateInfo(inputAssemblyCreateInfo);
+    VertexHandler::populateInputAssemblyCreateInfo(inputAssemblyCreateInfo);
 
 
     VkPipelineViewportStateCreateInfo viewportCreateInfo{};
-    fillViewportCreateInfo(viewportCreateInfo);
+    populateViewportCreateInfo(viewportCreateInfo);
 
     
     VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
-    fillRasterizationCreateInfo(rasterizationCreateInfo);
+    populateRasterizationCreateInfo(rasterizationCreateInfo);
 
 
     // multisampling is currently disabled.
     VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
-    fillMultisamplingCreateInfo(multisamplingCreateInfo);
+    populateMultisamplingCreateInfo(multisamplingCreateInfo);
 
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
     VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
-    fillColorBlend(colorBlendAttachment, colorBlendCreateInfo);
+    populateColorBlendComponents(colorBlendAttachment, colorBlendCreateInfo);
 
     std::vector<VkDynamicState> dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR
     };
     VkPipelineDynamicStateCreateInfo dynamicStatesCreateInfo{};
-    fillDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
+    populateDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
 
 
     createMemberPipelineLayout();
@@ -412,14 +297,10 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
     uint32_t swapchainImageIndex;  // prefer to use size_t, but want to avoid weird casts to uint32_t.
     VkResult imageAcquisitionResult = vkAcquireNextImageKHR(*m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchain, UINT64_MAX, m_imageAvailibleSemaphores[m_currentFrame], VK_NULL_HANDLE, &swapchainImageIndex);  // get the index of an availbile swapchain image.
 
-    // commented out parts are non-functional code checking framebuffer resize.
     if (imageAcquisitionResult == VK_ERROR_OUT_OF_DATE_KHR) {
- // if (imageAcquisitionResult == VK_ERROR_OUT_OF_DATE_KHR || imageAcquisitionResult == VK_SUBOPTIMAL_KHR || Defaults::callbacksVariables.FRAMEBUFFER_RESIZED) {
-        // Defaults::callbacksVariables.FRAMEBUFFER_RESIZED = false;
-        swapchainHandler::recreateSwapchain(deviceHandler::VulkanDevices{vulkanPhysicalDevice, *m_vulkanLogicalDevice}, m_renderPass, displayDetails);
+        SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices{vulkanPhysicalDevice, *m_vulkanLogicalDevice}, m_renderPass, displayDetails);
         return;
     } else if (imageAcquisitionResult != VK_SUCCESS && imageAcquisitionResult != VK_SUBOPTIMAL_KHR) {
- // } else if (imageAcquisitionResult != VK_SUCCESS) {
         throwDebugException("Failed to acquire swapchain image.");
     }
     
@@ -431,7 +312,7 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
     CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, m_vertexBuffer, m_indexBuffer, m_pipelineLayout, m_descriptorSets, m_currentFrame);
 
     
-    vertexHandler::updateUniformBuffer(m_currentFrame, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_mappedUniformBuffersMemory);
+    Uniform::updateFrameUniformBuffer(m_currentFrame, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_mappedUniformBuffersMemory);
 
     
     VkSubmitInfo submitInfo{};
@@ -484,30 +365,30 @@ void Renderer::setVulkanLogicalDevice(VkDevice *vulkanLogicalDevice)
 
 void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice)
 {
-    deviceHandler::VulkanDevices temporaryVulkanDevices{};
+    DeviceHandler::VulkanDevices temporaryVulkanDevices{};
     temporaryVulkanDevices.physicalDevice = vulkanPhysicalDevice;
     temporaryVulkanDevices.logicalDevice = *m_vulkanLogicalDevice;
     
     
     createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat);
 
-    createMemberDescriptorSetLayout();
+    ResourceDescriptor::createDescriptorSetLayout(*m_vulkanLogicalDevice, m_descriptorSetLayout);
         
     createMemberGraphicsPipeline();
 
-    swapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
+    SwapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
 
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
     
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
-    vertexHandler::createDataBufferComponents(vertexHandler::vertices.data(), sizeof(vertexHandler::vertices[0]) * vertexHandler::vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory);
-    vertexHandler::createDataBufferComponents(vertexHandler::indices.data(), sizeof(vertexHandler::indices[0]) * vertexHandler::indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_indexBuffer, m_indexBufferMemory);
+    Buffer::createDataBufferComponents(VertexHandler::vertices.data(), sizeof(VertexHandler::vertices[0]) * VertexHandler::vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory);
+    Buffer::createDataBufferComponents(VertexHandler::indices.data(), sizeof(VertexHandler::indices[0]) * VertexHandler::indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_indexBuffer, m_indexBufferMemory);
 
-    vertexHandler::createUniformBuffers(temporaryVulkanDevices, m_uniformBuffers, m_uniformBuffersMemory, m_mappedUniformBuffersMemory);
+    Uniform::createUniformBuffers(temporaryVulkanDevices, m_uniformBuffers, m_uniformBuffersMemory, m_mappedUniformBuffersMemory);
     
-    createMemberDescriptorPool();
-    createMemberDescriptorSets();
-    populateMemberDescriptorSets();
+    ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_descriptorPool);
+    ResourceDescriptor::createDescriptorSets(m_descriptorSetLayout, m_descriptorPool, *m_vulkanLogicalDevice, m_descriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, *m_vulkanLogicalDevice, m_descriptorSets);
 
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 

@@ -1,10 +1,10 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <core/VulkanInstance/deviceHandler.h>
+#include <core/VulkanInstance/DeviceHandler.h>
 #include <core/VulkanInstance/VulkanInstance.h>
-#include <core/VulkanInstance/supportUtils.h>
-#include <core/DisplayManager/swapchainHandler.h>
+#include <core/VulkanInstance/SupportUtils.h>
+#include <core/DisplayManager/SwapchainHandler.h>
 #include <core/Queue/Queue.h>
 #include <core/Logging/ErrorLogger.h>
 
@@ -12,7 +12,7 @@
 #include <set>
 
 
-void deviceHandler::selectPhysicalDevice(VkInstance vkInstance, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& queueFamilyIndices, VkPhysicalDevice& selectedPhysicalDevice)
+void DeviceHandler::selectPhysicalDevice(VkInstance vkInstance, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& queueFamilyIndices, VkPhysicalDevice& selectedPhysicalDevice)
 {
     uint32_t physicalDeviceCount = 0;
     vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, nullptr);
@@ -23,7 +23,7 @@ void deviceHandler::selectPhysicalDevice(VkInstance vkInstance, VkSurfaceKHR win
     std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
     vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, physicalDevices.data());
     for (VkPhysicalDevice physicalDevice : physicalDevices) {
-        if (deviceHandler::deviceSuitable(physicalDevice, windowSurface, queueFamilyIndices)) {
+        if (DeviceHandler::deviceSuitable(physicalDevice, windowSurface, queueFamilyIndices)) {
             selectedPhysicalDevice = physicalDevice;
             break;
         }
@@ -34,15 +34,15 @@ void deviceHandler::selectPhysicalDevice(VkInstance vkInstance, VkSurfaceKHR win
     }
 }
 
-bool deviceHandler::deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& queueFamilyIndices)
+bool DeviceHandler::deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& queueFamilyIndices)
 {
     // TODO: ranking system depending on necessary features, if the device is a dedicated graphics card, etc.
-    bool extensionsSupported = deviceHandler::deviceExtensionsSuitable(physicalDevice);
+    bool extensionsSupported = DeviceHandler::deviceExtensionsSuitable(physicalDevice);
 
     bool swapchainDetailsComplete = false;
     if (extensionsSupported) {
-        swapchainHandler::SwapchainSupportDetails swapchainSupportDetails;
-        swapchainHandler::querySwapchainSupportDetails(physicalDevice, windowSurface, swapchainSupportDetails);
+        SwapchainHandler::SwapchainSupportDetails swapchainSupportDetails;
+        SwapchainHandler::querySwapchainSupportDetails(physicalDevice, windowSurface, swapchainSupportDetails);
         swapchainDetailsComplete = !swapchainSupportDetails.supportedSurfaceFormats.empty() && !swapchainSupportDetails.supportedPresentationModes.empty();
     }
     
@@ -51,7 +51,7 @@ bool deviceHandler::deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR
     return extensionsSupported && swapchainDetailsComplete && queueFamiliesSupported;
 }
 
-bool deviceHandler::deviceExtensionsSuitable(VkPhysicalDevice physicalDevice)
+bool DeviceHandler::deviceExtensionsSuitable(VkPhysicalDevice physicalDevice)
 {
     uint32_t supportedDeviceExtensionCount;
     vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &supportedDeviceExtensionCount, nullptr);
@@ -67,7 +67,7 @@ bool deviceHandler::deviceExtensionsSuitable(VkPhysicalDevice physicalDevice)
     return requiredExtensions.empty();  // if all the required extensions were found(removed individually from required extensions list.
 }
 
-void deviceHandler::createLogicalDevice(VkPhysicalDevice physicalDevice, Queue::QueueFamilyIndices queueFamilyIndices, VkDevice& createdLogicalDevice)
+void DeviceHandler::createLogicalDevice(VkPhysicalDevice physicalDevice, Queue::QueueFamilyIndices queueFamilyIndices, VkDevice& createdLogicalDevice)
 {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     Queue::populateQueueCreateInfos(queueFamilyIndices, queueCreateInfos);
@@ -82,9 +82,9 @@ void deviceHandler::createLogicalDevice(VkPhysicalDevice physicalDevice, Queue::
     logicalCreateInfo.enabledExtensionCount = static_cast<uint32_t>(requiredDeviceExtensions.size());
     logicalCreateInfo.ppEnabledExtensionNames = requiredDeviceExtensions.data();
 
-    if (supportUtils::enableValidationLayers) {
-        logicalCreateInfo.enabledLayerCount = static_cast<uint32_t>(supportUtils::requiredValidationLayers.size());
-        logicalCreateInfo.ppEnabledLayerNames = supportUtils::requiredValidationLayers.data();
+    if (SupportUtils::enableValidationLayers) {
+        logicalCreateInfo.enabledLayerCount = static_cast<uint32_t>(SupportUtils::requiredValidationLayers.size());
+        logicalCreateInfo.ppEnabledLayerNames = SupportUtils::requiredValidationLayers.data();
     } else {
         logicalCreateInfo.enabledLayerCount = 0;
     }

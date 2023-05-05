@@ -39,9 +39,6 @@ private:
     std::vector<VkDeviceMemory> m_uniformBuffersMemory;  // the uniform buffers' memory.
     std::vector<void *> m_mappedUniformBuffersMemory;  // the mapped memory of the uniform buffers.
 
-    std::vector<VkVertexInputAttributeDescription> m_attributeDescriptions;  // preserved attribute descriptions.
-    VkVertexInputBindingDescription m_bindingDescription;  // preserved binding description.
-
     std::vector<VkSemaphore> m_imageAvailibleSemaphores;  // semaphore used to make the GPU wait to continue until the next availible image index in the swapchain has been fetched.
     std::vector<VkSemaphore> m_renderFinishedSemaphores;  // semaphore used to make the GPU wait to continue until the current frame has finished rendering.
     std::vector<VkFence> m_inFlightFences;  // fence used to synchronize the GPU and CPU before begining to draw another frame.]
@@ -49,72 +46,50 @@ private:
     size_t m_currentFrame = 0;  // the current "frame" in context of the "in flight" frames.
     
 
-    // fill out a color attachment description and reference.
+    // populate a color attachment description and reference.
     //
-    // @param swapchainImageFormat the image format of the swapchain, used in filling out as the color attachment is ultimately sent to the swapchain.
-    // @param colorAttachmentDescription stored filled color attachment description.
-    // @param colorAttachmentReference stored filled color attachment reference.
-    void fillColorAttachment(VkFormat swapchainImageFormat, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference);
+    // @param swapchainImageFormat the image format of the swapchain, used in populating the color attachment components.
+    // @param colorAttachmentDescription stored populated color attachment description.
+    // @param colorAttachmentReference stored populated color attachment reference.
+    void populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference);
     
-    // fill out a subpass's description.
+    // populate a subpass's description.
     //
     // @param colorAttachmentReference color attachment reference to use in subpass description.
-    // @param subpassDescription stored filled subpass description.
-    void fillSubpassDescription(VkAttachmentReference *colorAttachmentReference, VkSubpassDescription& subpassDescription);
+    // @param subpassDescription stored populated subpass description.
+    void populateSubpassDescription(VkAttachmentReference *colorAttachmentReference, VkSubpassDescription& subpassDescription);
     
     // create member render pass.
     //
     // @param swapchainImageFormat the swapchain image format to use in render pass creation.
     void createMemberRenderPass(VkFormat swapchainImageFormat);
 
-    // create member descriptor set layout.
-    void createMemberDescriptorSetLayout();
-
-    // create member descriptor pool.
-    void createMemberDescriptorPool();
-
-    // create member descriptor sets.
-    void createMemberDescriptorSets();
-
-    // populate member descriptor sets.
-    void populateMemberDescriptorSets();
-
-    // fill out a vertex input's create info.
+    // populate a viewport's create info.
     //
-    // @param vertexInputCreateInfo stored filled vertex input create info.
-    void fillVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo);
+    // @param viewportCreateInfo stored populated viewport create info.
+    void populateViewportCreateInfo(VkPipelineViewportStateCreateInfo& viewportCreateInfo);
 
-    // fill out a input assembly's create info.
+    // populate a rasterization's create info.
     //
-    // @param inputAssemblyCreateInfo stored filled input assembly create info.
-    void fillInputAssemblyCreateInfo(VkPipelineInputAssemblyStateCreateInfo& inputAssemblyCreateInfo);
+    // @param rasterizationCreateInfo stored populated rasterization create info.
+    void populateRasterizationCreateInfo(VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo);
 
-    // fill out a viewport's create info.
+    // populate a multisampling's create info.
     //
-    // @param viewportCreateInfo stored filled viewport create info.
-    void fillViewportCreateInfo(VkPipelineViewportStateCreateInfo& viewportCreateInfo);
+    // @param multisamplingCreateInfo stored populated multisampling create info.
+    void populateMultisamplingCreateInfo(VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo);
 
-    // fill out a rasterization's create info.
+    // populate color blend components(color attachment and color blend's create info).
     //
-    // @param rasterizationCreateInfo stored filled rasterization create info.
-    void fillRasterizationCreateInfo(VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo);
+    // @param colorblendAttachment stored populated color blend attachment.
+    // @param colorBlendCreateInfo stored populated color blend create info.
+    void populateColorBlendComponents(VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo);
 
-    // fill out a multisampling's create info.
+    // populate a dynamic states's create info.
     //
-    // @param multisamplingCreateInfo stored filled multisampling create info.
-    void fillMultisamplingCreateInfo(VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo);
-
-    // fill out a color blend attachment and color blend's create info.
-    //
-    // @param colorBlendAttachment stored filled color blend attachment.
-    // @param colorBlendCreateInfo stored filled color blend create info.
-    void fillColorBlend(VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo);
-
-    // fill out a dynamic states's create info.
-    //
-    // @param dynamicStates dynamic states to use in filling.
-    // @param dynamicStatesCreateInfo stored filled dynamic states create info.
-    void fillDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicStates, VkPipelineDynamicStateCreateInfo& dynamicStatesCreateInfo);
+    // @param dynamicStates dynamic states to use in populating.
+    // @param dynamicStatesCreateInfo stored populated dynamic states create info.
+    void populateDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicStates, VkPipelineDynamicStateCreateInfo& dynamicStatesCreateInfo);
 
     // create a pipeline layout.
     void createMemberPipelineLayout();

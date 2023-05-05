@@ -1,4 +1,4 @@
-# Logging configuration file.
+# The application's logging configuration file.
 # Note: Automatically enabled in debug builds.
 
 # Displayed message severities, 1 = enabled 0 = disabled.

@@ -5,19 +5,22 @@ This(.) is the Salamander configuration directory. Here, you will find Salamande
 Configuration file tree:
 ```diff
 .
-├── logging.scfg # Control over the severity and type of logged messages.
-└── window.scfg  # Control over the window name and dimensions.
+├── logging.scfg   # Logged message type and severity configuration.
+├── renderer.scfg  # Max frames in flight configuration.
+└── window.scfg    # Window name and default dimensions configuration.
 ```
 
-Syntax is database-oriented and relatively easy. The value "key" or name comes first, seperated with a ":", and then the value follows. The character "#" specifies that anything following is a comment.
+Syntax is database-oriented and relatively easy. The "key" or name comes first, seperated with a ":", and then the value follows. The character "#" specifies that anything following is a comment.
 
 Below is an example of a Salamander configuration file(file extension ".scfg").
 ```diff
-# LINE COMMENT
-KEY:VALUE#EOL COMMENT
-# NOTE: SEPERATOR(':') AND EOL INDENTATION ARE ALLOWED
-KEY : VALUE  # EOL COMMENT
-MAIN_WINDOW_WIDTH : 800  # Application main window width.
-```
+# Line comment
 
-##
+KEY:VALUE#EOL comment
+
+# Seperator(':') or EOL comments can be indented or spaced out.
+KEY : VALUE  # EOL comment
+
+# Example from "window.scfg".
+MAIN_WINDOW_WIDTH : 800  # The application's default window width.
+```

@@ -40,13 +40,16 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Logging/DebugMessenger.cpp
     ${PROJECT_SOURCE_DIR}/core/Renderer/Renderer.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/Shader.cpp
-    ${PROJECT_SOURCE_DIR}/core/Model/vertexHandler.cpp
+    ${PROJECT_SOURCE_DIR}/core/Shader/ResourceDescriptor.cpp
+    ${PROJECT_SOURCE_DIR}/core/Shader/Uniform.cpp
+    ${PROJECT_SOURCE_DIR}/core/Buffer/Buffer.cpp
+    ${PROJECT_SOURCE_DIR}/core/Model/VertexHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/DisplayManager.cpp
-    ${PROJECT_SOURCE_DIR}/core/DisplayManager/swapchainHandler.cpp
+    ${PROJECT_SOURCE_DIR}/core/DisplayManager/SwapchainHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/Command/CommandManager.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanExtensions/VulkanExtensions.cpp
-    ${PROJECT_SOURCE_DIR}/core/VulkanInstance/supportUtils.cpp
-    ${PROJECT_SOURCE_DIR}/core/VulkanInstance/deviceHandler.cpp
+    ${PROJECT_SOURCE_DIR}/core/VulkanInstance/SupportUtils.cpp
+    ${PROJECT_SOURCE_DIR}/core/VulkanInstance/DeviceHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanInstance/VulkanInstance.cpp
     ${PROJECT_SOURCE_DIR}/core/Queue/Queue.cpp
     ${PROJECT_SOURCE_DIR}/core/Callbacks/Callbacks.cpp

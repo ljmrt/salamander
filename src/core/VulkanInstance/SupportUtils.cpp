@@ -1,7 +1,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <core/VulkanInstance/supportUtils.h>
+#include <core/VulkanInstance/SupportUtils.h>
 
 #include <vector>
 #include <algorithm>
@@ -9,7 +9,7 @@
 #include <string>
 
 
-void supportUtils::fetchRequiredExtensions(std::vector<const char *>& requiredExtensions)
+void SupportUtils::fetchRequiredExtensions(std::vector<const char *>& requiredExtensions)
 {
     uint32_t glfwExtensionCount = 0;
     const char **glfwExtensions;
@@ -24,7 +24,7 @@ void supportUtils::fetchRequiredExtensions(std::vector<const char *>& requiredEx
     requiredExtensions = extensions;
 }
 
-bool supportUtils::checkValidationLayerSupport()
+bool SupportUtils::checkValidationLayerSupport()
 {
     uint32_t supportedLayerCount;
     vkEnumerateInstanceLayerProperties(&supportedLayerCount, nullptr);
