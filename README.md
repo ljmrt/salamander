@@ -16,7 +16,7 @@
 
 ## Notice
 
-This is the "release" branch! Fully released features and builds will be here. However, this may not be as cutting-edge as the "development" branch, but anything notable and stable will be released here.
+This is the "development" branch! Most builds here will run, but may not be fully finished. Stable releases can be found on the "release" branch, but may not be as bleeding-edge as this.
 
 ## Features
 
