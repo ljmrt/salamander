@@ -32,6 +32,9 @@ add_subdirectory(${GLFW_DIR} EXCLUDE_FROM_ALL)
 set(GLM_DIR "${PROJECT_LIBRARIES_DIR}/glm")
 add_subdirectory(${GLM_DIR} EXCLUDE_FROM_ALL)
 
+set(STB_DIR "${PROJECT_LIBRARIES_DIR}/stb")
+add_subdirectory(${STB_DIR} EXCLUDE_FROM_ALL)
+
 include_directories(${PROJECT_SOURCE_DIR})
 
 add_executable(${PROJECT_NAME}
@@ -42,6 +45,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Shader/Shader.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/ResourceDescriptor.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/Uniform.cpp
+    ${PROJECT_SOURCE_DIR}/core/Shader/Image.cpp
     ${PROJECT_SOURCE_DIR}/core/Buffer/Buffer.cpp
     ${PROJECT_SOURCE_DIR}/core/Model/VertexHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/DisplayManager.cpp

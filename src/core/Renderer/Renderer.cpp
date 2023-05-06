@@ -379,6 +379,9 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     SwapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
 
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
+
+    const std::string textureImageFilePath = Defaults::miscDefaults.SALAMANDER_ROOT + "/assets/textures/" + m_textureImageFilename;
+    Image::createTextureImage(textureImageFilePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_textureImage, m_textureImageMemory);
     
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
     Buffer::createDataBufferComponents(VertexHandler::vertices.data(), sizeof(VertexHandler::vertices[0]) * VertexHandler::vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory);
@@ -415,6 +418,9 @@ void Renderer::cleanupRenderer()
         vkDestroyBuffer(*m_vulkanLogicalDevice, m_uniformBuffers[i], nullptr);
         vkFreeMemory(*m_vulkanLogicalDevice, m_uniformBuffersMemory[i], nullptr);
     }
+
+    vkDestroyImage(*m_vulkanLogicalDevice, m_textureImage, nullptr);
+    vkFreeMemory(*m_vulkanLogicalDevice, m_textureImageMemory, nullptr);
     
     vkDestroyCommandPool(*m_vulkanLogicalDevice, m_graphicsCommandPool, nullptr);  // child command buffers automatically freed.
 

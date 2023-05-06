@@ -3,6 +3,7 @@
 
 #include <core/Buffer/Buffer.h>
 #include <core/VulkanInstance/DeviceHandler.h>
+#include <core/Command/CommandManager.h>
 #include <core/Defaults/Defaults.h>
 #include <core/Logging/ErrorLogger.h>
 
@@ -92,27 +93,10 @@ void Buffer::allocateBufferMemory(VkMemoryRequirements memoryRequirements, VkMem
 
 void Buffer::copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuffer, VkDeviceSize buffersSize, VkCommandPool commandPool, VkQueue transferQueue, VkDevice vulkanLogicalDevice)
 {
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    
-    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-
-    commandBufferAllocateInfo.commandPool = commandPool;
-    commandBufferAllocateInfo.commandBufferCount = 1;
-
     VkCommandBuffer disposableCommandBuffer;
+    CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanLogicalDevice, disposableCommandBuffer);
+
     
-    vkAllocateCommandBuffers(vulkanLogicalDevice, &commandBufferAllocateInfo, &disposableCommandBuffer);
-
-
-    VkCommandBufferBeginInfo commandBufferBeginInfo{};
-    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    
-    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    
-    vkBeginCommandBuffer(disposableCommandBuffer, &commandBufferBeginInfo);
-
-
     VkBufferCopy bufferCopyRegion;
     
     bufferCopyRegion.srcOffset = 0;
@@ -120,17 +104,7 @@ void Buffer::copyBuffer(VkBuffer& sourceBuffer, VkBuffer& destinationBuffer, VkD
     bufferCopyRegion.size = buffersSize;
 
     vkCmdCopyBuffer(disposableCommandBuffer, sourceBuffer, destinationBuffer, 1, &bufferCopyRegion);
-    vkEndCommandBuffer(disposableCommandBuffer);
 
 
-    VkSubmitInfo queueSubmitInfo{};
-    queueSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    queueSubmitInfo.commandBufferCount = 1;
-    queueSubmitInfo.pCommandBuffers = &disposableCommandBuffer;
-
-    vkQueueSubmit(transferQueue, 1, &queueSubmitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(transferQueue);  // could use fences for optimization.
-
-    vkFreeCommandBuffers(vulkanLogicalDevice, commandPool, 1, &disposableCommandBuffer);
+    CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, transferQueue, vulkanLogicalDevice);
 }

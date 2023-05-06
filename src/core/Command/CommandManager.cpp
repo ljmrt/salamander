@@ -39,6 +39,45 @@ void CommandManager::allocateChildCommandBuffers(VkCommandPool parentCommandPool
     }
 }
 
+void CommandManager::beginRecordingSingleSubmitCommands(VkCommandPool parentCommandPool, VkDevice vulkanLogicalDevice, VkCommandBuffer& begunCommandBuffer)
+{
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    
+    commandBufferAllocateInfo.commandPool = parentCommandPool;
+    commandBufferAllocateInfo.commandBufferCount = 1;
+
+    vkAllocateCommandBuffers(vulkanLogicalDevice, &commandBufferAllocateInfo, &begunCommandBuffer);
+
+
+    VkCommandBufferBeginInfo commandBufferBeginInfo{};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+    commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;  // command buffer only to be used/submitted once.
+
+    vkBeginCommandBuffer(begunCommandBuffer, &commandBufferBeginInfo);
+}
+
+void CommandManager::submitSingleSubmitCommands(VkCommandBuffer recordedCommandBuffer, VkCommandPool parentCommandPool, VkQueue submissionQueue, VkDevice vulkanLogicalDevice)
+{
+    vkEndCommandBuffer(recordedCommandBuffer);
+
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &recordedCommandBuffer;
+
+    vkQueueSubmit(submissionQueue, 1, &submitInfo, VK_NULL_HANDLE);
+
+    
+    vkQueueWaitIdle(submissionQueue);
+    vkFreeCommandBuffers(vulkanLogicalDevice, parentCommandPool, 1, &recordedCommandBuffer);
+}
+
 void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, VkPipelineLayout pipelineLayout, std::vector<VkDescriptorSet>& descriptorSets, size_t currentFrame)
 {
     VkCommandBufferBeginInfo commandBufferBeginInfo{};

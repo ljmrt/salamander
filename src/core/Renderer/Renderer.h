@@ -26,10 +26,10 @@ private:
     VkPipelineLayout m_pipelineLayout;  // this graphics pipeline's pipeline layout.
     VkPipeline m_graphicsPipeline;  // graphics pipeline
 
+    // TODO: move these to vulkan display details.
     VkCommandPool m_graphicsCommandPool;  // a command pool used for graphics command buffers.
     std::vector<VkCommandBuffer> m_graphicsCommandBuffers;  // child command buffers under the graphics command pool.
 
-    // TODO: add vertexHandler struct of data buffers.
     VkBuffer m_vertexBuffer;  // vertex buffer.
     VkDeviceMemory m_vertexBufferMemory;  // the vertex buffer's memory.
     VkBuffer m_indexBuffer;  // index buffer.
@@ -38,6 +38,10 @@ private:
     std::vector<VkBuffer> m_uniformBuffers;  // the shader uniform buffers.
     std::vector<VkDeviceMemory> m_uniformBuffersMemory;  // the uniform buffers' memory.
     std::vector<void *> m_mappedUniformBuffersMemory;  // the mapped memory of the uniform buffers.
+
+    VkImage m_textureImage;  // the main texture image.
+    const std::string m_textureImageFilename = "gnulogo.png";  // the main texture image's filename(under "assets/textures").
+    VkDeviceMemory m_textureImageMemory;  // the main texture image's memory.
 
     std::vector<VkSemaphore> m_imageAvailibleSemaphores;  // semaphore used to make the GPU wait to continue until the next availible image index in the swapchain has been fetched.
     std::vector<VkSemaphore> m_renderFinishedSemaphores;  // semaphore used to make the GPU wait to continue until the current frame has finished rendering.

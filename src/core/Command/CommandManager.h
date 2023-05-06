@@ -25,6 +25,21 @@ namespace CommandManager
     // @param allocatedChildCommandBuffers stored allocated child command buffers.
     void allocateChildCommandBuffers(VkCommandPool parentCommandPool, size_t commandBufferCount, VkDevice vulkanLogicalDevice, std::vector<VkCommandBuffer>& allocatedChildCommandBuffers);
 
+    // record single-submit commands(allocates a disposable command buffer).
+    //
+    // @param parentCommandPool parent command pool to allocate the disposable command buffer from.
+    // @param vulkanLogicalDevice Vulkan logical device to use in initial command buffer creation.
+    // @param begunCommandBuffer the allocated begun command buffer.
+    void beginRecordingSingleSubmitCommands(VkCommandPool parentCommandPool, VkDevice vulkanLogicalDevice, VkCommandBuffer& begunCommandBuffer);
+
+    // submit single-submit commands(submit commands from a disposable command buffer).
+    //
+    // @param recordedCommandBuffer the disposable recorded command buffer.
+    // @param parentCommandPool the parent command pool that initially allocated the command buffer.
+    // @param submissionQueue queue to submit the single-submit commands on.
+    // @param vulkanLogicalDevice Vulkan logical device to use in single-submit command submission.
+    void submitSingleSubmitCommands(VkCommandBuffer recordedCommandBuffer, VkCommandPool parentCommandPool, VkQueue submissionQueue, VkDevice vulkanLogicalDevice);
+
     // record necessary drawing commands in a graphics command buffer.
     //
     // @param graphicsCommandBuffer graphics command buffer to record in.
