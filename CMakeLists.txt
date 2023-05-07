@@ -73,4 +73,5 @@ target_link_libraries(${PROJECT_NAME}
         ${Vulkan_LIBRARY}
         glfw
         glm
+        stb
 )

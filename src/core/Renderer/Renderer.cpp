@@ -5,6 +5,7 @@
 #include <core/Shader/Shader.h>
 #include <core/Shader/ResourceDescriptor.h>
 #include <core/Shader/Uniform.h>
+#include <core/Shader/Image.h>
 #include <core/Buffer/Buffer.h>
 #include <core/DisplayManager/DisplayManager.h>
 #include <core/DisplayManager/SwapchainHandler.h>
@@ -380,7 +381,7 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
 
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
 
-    const std::string textureImageFilePath = Defaults::miscDefaults.SALAMANDER_ROOT + "/assets/textures/" + m_textureImageFilename;
+    const std::string textureImageFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/textures/" + m_textureImageFilename;
     Image::createTextureImage(textureImageFilePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_textureImage, m_textureImageMemory);
     
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).

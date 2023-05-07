@@ -53,7 +53,7 @@ void Image::createImage(uint32_t width, uint32_t height, VkFormat format, VkImag
     Buffer::findBufferMemoryType(vulkanDevices.physicalDevice, imageMemoryRequirements.memoryTypeBits, memoryProperties, selectedMemoryTypeIndex);
     memoryAllocateInfo.memoryTypeIndex = selectedMemoryTypeIndex;
 
-    VkResult memoryAllocationResult = vkAllocateMemory(vulkanDevices.logicalDevice, &memoryAllocationInfo, nullptr, &imageMemory);
+    VkResult memoryAllocationResult = vkAllocateMemory(vulkanDevices.logicalDevice, &memoryAllocateInfo, nullptr, &imageMemory);
     if (memoryAllocationResult != VK_SUCCESS) {
         throwDebugException("Failed to allocate image memory.");
     }
@@ -63,9 +63,10 @@ void Image::createImage(uint32_t width, uint32_t height, VkFormat format, VkImag
 
 void Image::createTextureImage(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
 {
-    size_t textureImageWidth;
-    size_t textureImageHeight;
-    size_t textureImageChannels;
+    // prefer to use size_t, but better to conform to function requirements.
+    int textureImageWidth;
+    int textureImageHeight;
+    int textureImageChannels;
     
     stbi_uc *textureImagePixels = stbi_load(textureImageFilePath.c_str(), &textureImageWidth, &textureImageHeight, &textureImageChannels, STBI_rgb_alpha);
     if (!textureImagePixels) {  // if image not loaded.
@@ -82,7 +83,7 @@ void Image::createTextureImage(std::string textureImageFilePath, VkCommandPool c
 
     // copy texture image pixel data into the staging buffer's memory.
     void *mappedStagingBufferMemory;
-    vkMapMemory(vulkanDevices.logicalDevice, stagingBufferMemory, 0, textureImageSize, 0, mappedStagingBufferMemory);
+    vkMapMemory(vulkanDevices.logicalDevice, stagingBufferMemory, 0, textureImageSize, 0, &mappedStagingBufferMemory);
     memcpy(mappedStagingBufferMemory, textureImagePixels, textureImageSize);
     vkUnmapMemory(vulkanDevices.logicalDevice, stagingBufferMemory);
 
@@ -97,7 +98,7 @@ void Image::createTextureImage(std::string textureImageFilePath, VkCommandPool c
     Image::transitionImageLayout(textureImage, textureImageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandPool, commandQueue, vulkanDevices.logicalDevice);
     Image::copyBufferToImage(stagingBuffer, textureImage, textureImageWidth, textureImageHeight, commandPool, commandQueue, vulkanDevices.logicalDevice);
     
-    Image::transitionImageLayout(textureImage, textureImageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    Image::transitionImageLayout(textureImage, textureImageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandPool, commandQueue, vulkanDevices.logicalDevice);
 
 
     vkDestroyBuffer(vulkanDevices.logicalDevice, stagingBuffer, nullptr);
@@ -107,14 +108,14 @@ void Image::createTextureImage(std::string textureImageFilePath, VkCommandPool c
 void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandPool commandPool, VkQueue commandQueue, VkDevice vulkanLogicalDevice)
 {
     VkCommandBuffer disposableCommandBuffer;
-    CommandManager::beginSingleSubmitCommands(commandPool, vulkanLogicalDevice, disposableCommandBuffer);
+    CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanLogicalDevice, disposableCommandBuffer);
 
 
     VkImageMemoryBarrier imageMemoryBarrier{};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 
-    imageMemoryBarrier.oldLayout = initialLayout;
-    imageMemoryBarrier.newLayout = targetLayout;
+    imageMemoryBarrier.oldLayout = initialImageLayout;
+    imageMemoryBarrier.newLayout = targetImageLayout;
 
     // we aren't transferring explicit queue family ownership.
     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -131,14 +132,14 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout 
     VkPipelineStageFlags sourceStage;
     VkPipelineStageFlags destinationStage;
 
-    if (initialLayout == VK_IMAGE_LAYOUT_UNDEFINED && targetLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {  // transitioning to write image pixels.
+    if (initialImageLayout == VK_IMAGE_LAYOUT_UNDEFINED && targetImageLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {  // transitioning to write image pixels.
         imageMemoryBarrier.srcAccessMask = 0;
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if (initialLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && targetLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {  // transitioning to read from the fragment shader.
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE;
+    } else if (initialImageLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && targetImageLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {  // transitioning to read from the fragment shader.
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
@@ -147,7 +148,7 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout 
         throwDebugException("Unsupported/invalid layout transition.");
     }
 
-    VkCmdPipelineBarrier(disposableCommandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+    vkCmdPipelineBarrier(disposableCommandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
 
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanLogicalDevice);
@@ -156,14 +157,24 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout 
 void Image::copyBufferToImage(VkBuffer sourceBuffer, VkImage destinationImage, uint32_t imageWidth, uint32_t imageHeight, VkCommandPool commandPool, VkQueue commandQueue, VkDevice vulkanLogicalDevice)
 {
     VkCommandBuffer disposableCommandBuffer;
-    CommandManager::beginSingleSubmitCommands(commandPool, vulkanLogicalDevice, disposableCommandBuffer);
+    CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanLogicalDevice, disposableCommandBuffer);
     
     
     VkBufferImageCopy bufferImageCopy{};
-    bufferImageCopy.imageSubresource.layerCount = 0;
+
+    bufferImageCopy.bufferOffset = 0;
+
+    // image pixels are tightly packed.
+    bufferImageCopy.bufferRowLength = 0;
+    bufferImageCopy.bufferImageHeight = 0;
+
+    bufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    bufferImageCopy.imageSubresource.mipLevel = 0;
+    bufferImageCopy.imageSubresource.baseArrayLayer = 0;
+    bufferImageCopy.imageSubresource.layerCount = 1;
 
     bufferImageCopy.imageOffset = {0, 0, 0};
-    bufferImageCopy.imageExtent = {width, height, 1};
+    bufferImageCopy.imageExtent = {imageWidth, imageHeight, 1};
 
     vkCmdCopyBufferToImage(disposableCommandBuffer, sourceBuffer, destinationImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopy);
 
