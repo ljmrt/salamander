@@ -105,6 +105,63 @@ void Image::createTextureImage(std::string textureImageFilePath, VkCommandPool c
     vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
 }
 
+void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkDevice vulkanLogicalDevice, VkImageView& imageView)
+{
+    VkImageViewCreateInfo imageViewCreateInfo{};
+    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+
+    imageViewCreateInfo.image = baseImage;
+    imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.format = baseFormat;
+
+    imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+    imageViewCreateInfo.subresourceRange.levelCount = 1;
+    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+    VkResult imageViewCreationResult = vkCreateImageView(vulkanLogicalDevice, &imageViewCreateInfo, nullptr, &imageView);
+    if (imageViewCreationResult != VK_SUCCESS) {
+        throwDebugException("Failed to create image view.");
+    }
+}
+
+void Image::createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, VkSampler& textureSampler)
+{
+    VkSamplerCreateInfo samplerCreateInfo{};
+    samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    
+    samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+    samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+
+    samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+    VkPhysicalDeviceProperties physicalDeviceProperties{};
+    vkGetPhysicalDeviceProperties(vulkanDevices.physicalDevice, &physicalDeviceProperties);
+
+    samplerCreateInfo.anisotropyEnable = VK_TRUE;
+    samplerCreateInfo.maxAnisotropy = physicalDeviceProperties.limits.maxSamplerAnisotropy;
+
+    samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;  // used when sampling out of the image in a clamp-to-border addressing mode.
+    
+    samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;  // we want to use coordinates in the range of 0..1.
+    
+    samplerCreateInfo.compareEnable = VK_FALSE;
+    samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+    samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerCreateInfo.mipLodBias = 0.0f;
+    samplerCreateInfo.minLod = 0.0f;
+    samplerCreateInfo.maxLod = 0.0f;
+
+    VkResult textureSamplerCreationResult = vkCreateSampler(vulkanDevices.logicalDevice, &samplerCreateInfo, nullptr, &textureSampler);
+    if (textureSamplerCreationResult != VK_SUCCESS) {
+        throwDebugException("Failed to create a texture sampler.");
+    }
+}
+
 void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandPool commandPool, VkQueue commandQueue, VkDevice vulkanLogicalDevice)
 {
     VkCommandBuffer disposableCommandBuffer;

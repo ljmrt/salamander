@@ -384,6 +384,9 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     const std::string textureImageFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/textures/" + m_textureImageFilename;
     Image::createTextureImage(textureImageFilePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_textureImage, m_textureImageMemory);
     
+    Image::createImageView(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, *m_vulkanLogicalDevice, m_textureImageView);
+    Image::createTextureSampler(temporaryVulkanDevices, m_textureSampler);
+    
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
     Buffer::createDataBufferComponents(VertexHandler::vertices.data(), sizeof(VertexHandler::vertices[0]) * VertexHandler::vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory);
     Buffer::createDataBufferComponents(VertexHandler::indices.data(), sizeof(VertexHandler::indices[0]) * VertexHandler::indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_indexBuffer, m_indexBufferMemory);
@@ -420,6 +423,9 @@ void Renderer::cleanupRenderer()
         vkFreeMemory(*m_vulkanLogicalDevice, m_uniformBuffersMemory[i], nullptr);
     }
 
+    vkDestroySampler(*m_vulkanLogicalDevice, m_textureSampler, nullptr);
+    vkDestroyImageView(*m_vulkanLogicalDevice, m_textureImageView, nullptr);
+    
     vkDestroyImage(*m_vulkanLogicalDevice, m_textureImage, nullptr);
     vkFreeMemory(*m_vulkanLogicalDevice, m_textureImageMemory, nullptr);
     

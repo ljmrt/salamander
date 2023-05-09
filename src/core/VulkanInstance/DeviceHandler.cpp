@@ -47,8 +47,12 @@ bool DeviceHandler::deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR
     }
     
     bool queueFamiliesSupported = Queue::deviceQueueFamiliesSuitable(physicalDevice, windowSurface, queueFamilyIndices);
+
+    VkPhysicalDeviceFeatures supportedPhysicalDeviceFeatures;
+    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedPhysicalDeviceFeatures);
+    bool samplerAnisotropySupported = supportedPhysicalDeviceFeatures.samplerAnisotropy;
     
-    return extensionsSupported && swapchainDetailsComplete && queueFamiliesSupported;
+    return extensionsSupported && swapchainDetailsComplete && queueFamiliesSupported && samplerAnisotropySupported;
 }
 
 bool DeviceHandler::deviceExtensionsSuitable(VkPhysicalDevice physicalDevice)

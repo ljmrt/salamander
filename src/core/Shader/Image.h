@@ -18,6 +18,10 @@ namespace Image
     
     void createTextureImage(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
 
+    void createImageView(VkImage baseImage, VkFormat baseFormat, VkDevice vulkanLogicalDevice, VkImageView& imageView);
+
+    void createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, VkSampler& textureSampler);
+
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandPool commandPool, VkQueue commandQueue, VkDevice vulkanLogicalDevice);
 
     void copyBufferToImage(VkBuffer sourceBuffer, VkImage destinationImage, uint32_t imageWidth, uint32_t imageHeight, VkCommandPool commandPool, VkQueue commandQueue, VkDevice vulkanLogicalDevice);

@@ -42,6 +42,9 @@ private:
     VkImage m_textureImage;  // the main texture image.
     const std::string m_textureImageFilename = "gnulogo.png";  // the main texture image's filename(under "assets/textures").
     VkDeviceMemory m_textureImageMemory;  // the main texture image's memory.
+    
+    VkImageView m_textureImageView;  // the main texture image view.
+    VkSampler m_textureSampler;  // the main texture sampler.
 
     std::vector<VkSemaphore> m_imageAvailibleSemaphores;  // semaphore used to make the GPU wait to continue until the next availible image index in the swapchain has been fetched.
     std::vector<VkSemaphore> m_renderFinishedSemaphores;  // semaphore used to make the GPU wait to continue until the current frame has finished rendering.

@@ -4,6 +4,7 @@
 #include <core/DisplayManager/SwapchainHandler.h>
 #include <core/DisplayManager/DisplayManager.h>
 #include <core/VulkanInstance/DeviceHandler.h>
+#include <core/Shader/Image.h>
 #include <core/Queue/Queue.h>
 #include <core/Logging/ErrorLogger.h>
 
@@ -149,26 +150,7 @@ void SwapchainHandler::createSwapchainImageViews(std::vector<VkImage> swapchainI
 {
     createdSwapchainImageViews.resize(swapchainImages.size());
     for (size_t i = 0; i < swapchainImages.size(); i += 1) {
-        VkImageViewCreateInfo imageViewCreateInfo{};
-        imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        imageViewCreateInfo.image = swapchainImages[i];
-        imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        imageViewCreateInfo.format = swapchainImageFormat;
-        // swizzle/modify color channels, currently set to default mapping.
-        imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;  // use image as color target.
-        imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-        imageViewCreateInfo.subresourceRange.levelCount = 1;
-        imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-        imageViewCreateInfo.subresourceRange.layerCount = 1;
-
-        VkResult imageViewCreationResult = vkCreateImageView(vulkanLogicalDevice, &imageViewCreateInfo, nullptr, &createdSwapchainImageViews[i]);
-        if (imageViewCreationResult != VK_SUCCESS) {
-            throwDebugException("Failed to create image views.");
-        }
+        Image::createImageView(swapchainImages[i], swapchainImageFormat, vulkanLogicalDevice, createdSwapchainImageViews[i]);
     }
 }
 
