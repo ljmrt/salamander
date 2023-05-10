@@ -36,15 +36,14 @@ namespace Buffer
     // @param dataBufferMemory the data buffer's allocated memory.
     void createDataBufferComponents(const void *bufferData, VkDeviceSize buffersSize, VkBufferUsageFlagBits bufferUsage, VkCommandPool commandPool, VkQueue transferQueue, DeviceHandler::VulkanDevices vulkanDevices, VkBuffer& dataBuffer, VkDeviceMemory& dataBufferMemory);
     
-    // find a memory type comformant to memory type filter and required property flags.
-    //
-    // used mainly in vertex buffer memory allocation.
+    // locate a memory type comformant to memory type filter and required property flags.
     //
     // @param vulkanPhysicalDevice Vulkan physical device to use in selection.
     // @param memoryTypeFilter memory type bitmask/filter.
-    // @param requiredMemoryPropertyFlags required for the memory property to have.
-    // @param memoryType stored selected memory type.
-    bool findBufferMemoryType(VkPhysicalDevice vulkanPhysicalDevice, uint32_t memoryTypeFilter, VkMemoryPropertyFlags requiredMemoryPropertyFlags, uint32_t& memoryType);
+    // @param requiredMemoryPropertyFlags required memory properties for the memory to have.
+    // @param memoryType located memory type.
+    // @return location success.
+    bool locateMemoryType(VkPhysicalDevice vulkanPhysicalDevice, uint32_t memoryTypeFilter, VkMemoryPropertyFlags requiredMemoryPropertyFlags, uint32_t& memoryType);
 
     // allocate a Vulkan buffer's memory.
     //

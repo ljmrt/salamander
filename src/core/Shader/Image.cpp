@@ -50,7 +50,7 @@ void Image::createImage(uint32_t width, uint32_t height, VkFormat format, VkImag
 
     memoryAllocateInfo.allocationSize = imageMemoryRequirements.size;
     uint32_t selectedMemoryTypeIndex;
-    Buffer::findBufferMemoryType(vulkanDevices.physicalDevice, imageMemoryRequirements.memoryTypeBits, memoryProperties, selectedMemoryTypeIndex);
+    Buffer::locateMemoryType(vulkanDevices.physicalDevice, imageMemoryRequirements.memoryTypeBits, memoryProperties, selectedMemoryTypeIndex);
     memoryAllocateInfo.memoryTypeIndex = selectedMemoryTypeIndex;
 
     VkResult memoryAllocationResult = vkAllocateMemory(vulkanDevices.logicalDevice, &memoryAllocateInfo, nullptr, &imageMemory);
@@ -63,6 +63,10 @@ void Image::createImage(uint32_t width, uint32_t height, VkFormat format, VkImag
 
 void Image::createTextureImage(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
 {
+    VkCommandBuffer disposableCommandBuffer;
+    CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanDevices.logicalDevice, disposableCommandBuffer);
+    
+    
     // prefer to use size_t, but better to conform to function requirements.
     int textureImageWidth;
     int textureImageHeight;
@@ -95,11 +99,13 @@ void Image::createTextureImage(std::string textureImageFilePath, VkCommandPool c
     Image::createImage(textureImageWidth, textureImageHeight, textureImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureImage, textureImageMemory);
 
     // could optimize single-submit commands functions with setup and flush command buffer functions.
-    Image::transitionImageLayout(textureImage, textureImageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandPool, commandQueue, vulkanDevices.logicalDevice);
-    Image::copyBufferToImage(stagingBuffer, textureImage, textureImageWidth, textureImageHeight, commandPool, commandQueue, vulkanDevices.logicalDevice);
+    Image::transitionImageLayout(textureImage, textureImageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
+    Image::copyBufferToImage(stagingBuffer, textureImage, textureImageWidth, textureImageHeight, disposableCommandBuffer);
     
-    Image::transitionImageLayout(textureImage, textureImageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandPool, commandQueue, vulkanDevices.logicalDevice);
+    Image::transitionImageLayout(textureImage, textureImageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, disposableCommandBuffer);
 
+    
+    CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
 
     vkDestroyBuffer(vulkanDevices.logicalDevice, stagingBuffer, nullptr);
     vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
@@ -162,12 +168,8 @@ void Image::createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, VkS
     }
 }
 
-void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandPool commandPool, VkQueue commandQueue, VkDevice vulkanLogicalDevice)
+void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandBuffer commandBuffer)
 {
-    VkCommandBuffer disposableCommandBuffer;
-    CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanLogicalDevice, disposableCommandBuffer);
-
-
     VkImageMemoryBarrier imageMemoryBarrier{};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 
@@ -205,18 +207,11 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout 
         throwDebugException("Unsupported/invalid layout transition.");
     }
 
-    vkCmdPipelineBarrier(disposableCommandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-
-
-    CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanLogicalDevice);
+    vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 }
 
-void Image::copyBufferToImage(VkBuffer sourceBuffer, VkImage destinationImage, uint32_t imageWidth, uint32_t imageHeight, VkCommandPool commandPool, VkQueue commandQueue, VkDevice vulkanLogicalDevice)
+void Image::copyBufferToImage(VkBuffer sourceBuffer, VkImage destinationImage, uint32_t imageWidth, uint32_t imageHeight, VkCommandBuffer commandBuffer)
 {
-    VkCommandBuffer disposableCommandBuffer;
-    CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanLogicalDevice, disposableCommandBuffer);
-    
-    
     VkBufferImageCopy bufferImageCopy{};
 
     bufferImageCopy.bufferOffset = 0;
@@ -233,8 +228,5 @@ void Image::copyBufferToImage(VkBuffer sourceBuffer, VkImage destinationImage, u
     bufferImageCopy.imageOffset = {0, 0, 0};
     bufferImageCopy.imageExtent = {imageWidth, imageHeight, 1};
 
-    vkCmdCopyBufferToImage(disposableCommandBuffer, sourceBuffer, destinationImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopy);
-
-
-    CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanLogicalDevice);
+    vkCmdCopyBufferToImage(commandBuffer, sourceBuffer, destinationImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopy);
 }

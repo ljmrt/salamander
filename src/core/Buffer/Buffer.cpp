@@ -55,7 +55,7 @@ void Buffer::createDataBufferComponents(const void *bufferData, VkDeviceSize buf
     vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
 }
 
-bool Buffer::findBufferMemoryType(VkPhysicalDevice vulkanPhysicalDevice, uint32_t memoryTypeFilter, VkMemoryPropertyFlags requiredMemoryPropertyFlags, uint32_t& memoryType)
+bool Buffer::locateMemoryType(VkPhysicalDevice vulkanPhysicalDevice, uint32_t memoryTypeFilter, VkMemoryPropertyFlags requiredMemoryPropertyFlags, uint32_t& memoryType)
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(vulkanPhysicalDevice, &memoryProperties);
@@ -80,7 +80,7 @@ void Buffer::allocateBufferMemory(VkMemoryRequirements memoryRequirements, VkMem
     memoryAllocateInfo.allocationSize = memoryRequirements.size;
     
     uint32_t memoryTypeIndex;  // prefer size_t, but better to cohere.
-    if (findBufferMemoryType(vulkanDevices.physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memoryTypeIndex) == false) {
+    if (locateMemoryType(vulkanDevices.physicalDevice, memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memoryTypeIndex) == false) {
         throwDebugException("Failed to find a suitable memory type.");
     }
     memoryAllocateInfo.memoryTypeIndex = memoryTypeIndex;
