@@ -4,8 +4,10 @@
 #include <core/Model/VertexHandler.h>
 #include <core/Shader/ResourceDescriptor.h>
 
+#include <array>
 
-std::vector<VkVertexInputAttributeDescription> VertexHandler::preservedAttributeDescriptions;
+
+std::array<VkVertexInputAttributeDescription, 3> VertexHandler::preservedAttributeDescriptions;
 VkVertexInputBindingDescription VertexHandler::preservedBindingDescription;
 
 void VertexHandler::populateVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)

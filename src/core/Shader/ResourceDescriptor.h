@@ -5,6 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <array>
 #include <vector>
 
 
@@ -18,7 +19,7 @@ namespace ResourceDescriptor
     // fetch the attribute descriptions used for the vertices.
     //
     // @param attributeDescriptions stored fetched attribute descriptions.
-    void fetchAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
+    void fetchAttributeDescriptions(std::array<VkVertexInputAttributeDescription, 3>& attributeDescriptions);
     
     // create descriptor set layout.
     //
@@ -43,9 +44,11 @@ namespace ResourceDescriptor
     // populate descriptor sets.
     //
     // @param uniformBuffers uniform buffers to populate the descriptor sets with.
+    // @param textureImageView the main texture's image view to use in descriptor sets population.
+    // @param textureSampler the main texture's sampler to use in descriptor sets population.
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor sets population.
     // @param descriptorSets populated descriptor sets.
-    void populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
+    void populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageView, VkSampler textureSampler, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
 }
 
 

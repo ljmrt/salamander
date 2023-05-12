@@ -6,8 +6,8 @@
     <br>
 </h1>
 <p align="center">
-    <img src="https://img.shields.io/static/v1?label=release-version&message=1.0.4&color=green">
-    <img src="https://img.shields.io/static/v1?label=build-version&message=1.0.5&color=green">
+    <img src="https://img.shields.io/static/v1?label=release-version&message=1.0.6&color=green">
+    <img src="https://img.shields.io/static/v1?label=build-version&message=1.0.6&color=green">
     <img src="https://img.shields.io/static/v1?label=language&message=C%2B%2B17&color=green">
     <img src="https://img.shields.io/static/v1?label=platform&message=Linux&color=green">
     <img src="https://img.shields.io/static/v1?label=development&message=Active&color=green">
@@ -16,7 +16,7 @@
 
 ## Notice
 
-This is the "development" branch! Most builds here will run, but may not be fully finished. Stable releases can be found on the "release" branch, but may not be as bleeding-edge as this.
+This is the "release" branch! Fully released features and builds will be here. However, this may not be as cutting-edge as the "development" branch, but anything notable and stable will be released here.
 
 ## Features
 

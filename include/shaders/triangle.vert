@@ -6,17 +6,16 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 projectionMatrix;
 } uniformBufferObject;
 
-layout(location = 0) in vec3 positionAttribute;
+layout(location = 0) in vec2 positionAttribute;
 layout(location = 1) in vec3 colorAttribute;
+layout(location = 2) in vec2 textureCoordinatesAttribute;
 
 layout(location = 0) out vec3 fragmentColor;
-
-out gl_PerVertex {
-    vec4 gl_Position;
-};
+layout(location = 1) out vec2 fragmentTextureCoordinates;
 
 void main()
 {
-    gl_Position = uniformBufferObject.projectionMatrix * uniformBufferObject.viewMatrix * uniformBufferObject.modelMatrix * vec4(positionAttribute, 1.0);
+    gl_Position = uniformBufferObject.projectionMatrix * uniformBufferObject.viewMatrix * uniformBufferObject.modelMatrix * vec4(positionAttribute, 0.0, 1.0);
     fragmentColor = colorAttribute;
+    fragmentTextureCoordinates = textureCoordinatesAttribute;
 }
