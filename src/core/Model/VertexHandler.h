@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 
 #include <vector>
+#include <array>
 
 
 namespace VertexHandler
@@ -15,21 +16,22 @@ namespace VertexHandler
     struct Vertex {
         glm::vec2 position;
         glm::vec3 color;
+        glm::vec2 textureCoordinates;
     };
 
     const std::vector<Vertex> vertices = {  // represents the vertex buffer's data.
-        // position(vec2), color(vec3).
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+        // position(vec2), color(vec3), texture coordinates(vec2).
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
     };
 
     const std::vector<uint16_t> indices = {  // represents the index buffer.
         0, 1, 2, 2, 3, 0
     };
 
-    extern std::vector<VkVertexInputAttributeDescription> preservedAttributeDescriptions;  // preserved attribute descriptions(pointer reasons).
+    extern std::array<VkVertexInputAttributeDescription, 3> preservedAttributeDescriptions;  // preserved attribute descriptions(pointer reasons).
     extern VkVertexInputBindingDescription preservedBindingDescription;  // preserved binding description(pointer reasons).
 
 
