@@ -39,9 +39,10 @@ namespace Image
     //
     // @param baseImage image to base the image view off of.
     // @param baseFormat the base image's format.
+    // @param imageAspectFlags image aspect flags to use in image view creation.
     // @param vulkanLogicalDevice Vulkan logical device to use in image view creation.
     // @param imageView created image view.
-    void createImageView(VkImage baseImage, VkFormat baseFormat, VkDevice vulkanLogicalDevice, VkImageView& imageView);
+    void createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView);
 
     // create an texture sampler.
     //

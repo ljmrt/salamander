@@ -134,20 +134,28 @@ void Renderer::populateColorBlendComponents(VkPipelineColorBlendAttachmentState&
 {
     // "local" pipeline-specific color blending(hence the name attachment).
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.blendEnable = VK_TRUE;
+    
     colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
     colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    
     colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    
     colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
     colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    
     colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
+    
     // "global" application-specific color blending.
     colorBlendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    
     colorBlendCreateInfo.logicOpEnable = VK_FALSE;
     colorBlendCreateInfo.logicOp = VK_LOGIC_OP_COPY;
+    
     colorBlendCreateInfo.attachmentCount = 1;
     colorBlendCreateInfo.pAttachments = &colorBlendAttachment;
+    
     colorBlendCreateInfo.blendConstants[0] = 0.0f;
     colorBlendCreateInfo.blendConstants[1] = 0.0f;
     colorBlendCreateInfo.blendConstants[2] = 0.0f;
@@ -384,7 +392,7 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     const std::string textureImageFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/textures/" + m_textureImageFilename;
     Image::createTextureImage(textureImageFilePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_textureImage, m_textureImageMemory);
     
-    Image::createImageView(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, *m_vulkanLogicalDevice, m_textureImageView);
+    Image::createImageView(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, *m_vulkanLogicalDevice, m_textureImageView);
     Image::createTextureSampler(temporaryVulkanDevices, m_textureSampler);
     
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
