@@ -84,7 +84,7 @@ void VulkanInstance::createVkInstance(std::string instanceApplicationName, VkIns
 
 void VulkanInstance::cleanupInstance(DisplayManager::DisplayDetails displayDetails)
 {
-    SwapchainHandler::cleanupSwapchain(m_devices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers, displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.swapchain);  // clean up the swapchain and its details.
+    SwapchainHandler::cleanupSwapchain(displayDetails.vulkanDisplayDetails, m_devices.logicalDevice);  // clean up the swapchain and its details.
     
     vkDestroyDevice(m_devices.logicalDevice, nullptr);
     

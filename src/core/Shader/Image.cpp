@@ -5,6 +5,7 @@
 #include <stb/stb_image.h>
 
 #include <core/Shader/Image.h>
+#include <core/Shader/Depth.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Command/CommandManager.h>
 #include <core/Buffer/Buffer.h>
@@ -166,6 +167,25 @@ void Image::createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, VkS
     if (textureSamplerCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create a texture sampler.");
     }
+}
+
+void Image::selectSupportedImageFormat(const std::vector<VkFormat> candidateImageFormats, VkImageTiling imageTiling, VkFormatFeatureFlags imageFormatFeatureFlags, VkPhysicalDevice vulkanPhysicalDevice, VkFormat& imageFormat)
+{
+    for (VkFormat candidateImageFormat : candidateImageFormats) {
+        VkFormatProperties candidateImageFormatProperties;
+        vkGetPhysicalDeviceFormatProperties(vulkanPhysicalDevice, candidateImageFormat, &candidateImageFormatProperties);
+
+        // while we could use a ||(or) and use a single if statement, it would get too complex/unreadable.
+        if ((imageTiling == VK_IMAGE_TILING_LINEAR) && ((candidateImageFormatProperties.linearTilingFeatures & imageFormatFeatureFlags) == imageFormatFeatureFlags)) {
+            imageFormat = candidateImageFormat;
+            return;
+        } else if ((imageTiling == VK_IMAGE_TILING_OPTIMAL) && ((candidateImageFormatProperties.optimalTilingFeatures & imageFormatFeatureFlags) == imageFormatFeatureFlags)) {
+            imageFormat = candidateImageFormat;
+            return;
+        }
+    }
+
+    throwDebugException("Failed to select a supported image format.");  // no supported image format was selected.
 }
 
 void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandBuffer commandBuffer)

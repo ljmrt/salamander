@@ -50,6 +50,15 @@ namespace Image
     // @param textureSampler created texture sampler.
     void createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, VkSampler& textureSampler);
 
+    // select a supported image format out of the candidate formats conformant to image format flags.
+    //
+    // @param candidateImageFormats the image formats to select from.
+    // @param imageTiling the tiling of the image using the selected format.
+    // @param imageFormatFeatureFlags image format feature flags for the image format to conform to.
+    // @param vulkanPhysicalDevice Vulkan physical device to use in supported image format selection.
+    // @param imageFormat selected supported image format.
+    void selectSupportedImageFormat(const std::vector<VkFormat> candidateImageFormats, VkImageTiling imageTiling, VkFormatFeatureFlags imageFormatFeatureFlags, VkPhysicalDevice vulkanPhysicalDevice, VkFormat& imageFormat);
+
     // transition a Vulkan image's layout from one to another.
     //
     // @param image the image to transition the image layout of.

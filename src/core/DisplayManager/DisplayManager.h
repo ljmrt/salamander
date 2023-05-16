@@ -24,6 +24,10 @@ namespace DisplayManager
         VkExtent2D swapchainImageExtent;
         std::vector<VkImageView> swapchainImageViews;
         std::vector<VkFramebuffer> swapchainFramebuffers;
+
+        VkImage depthImage;
+        VkDeviceMemory depthImageMemory;
+        VkImageView depthImageView;
     };
     
     struct DisplayDetails {
