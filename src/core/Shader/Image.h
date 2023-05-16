@@ -39,15 +39,25 @@ namespace Image
     //
     // @param baseImage image to base the image view off of.
     // @param baseFormat the base image's format.
+    // @param imageAspectFlags image aspect flags to use in image view creation.
     // @param vulkanLogicalDevice Vulkan logical device to use in image view creation.
     // @param imageView created image view.
-    void createImageView(VkImage baseImage, VkFormat baseFormat, VkDevice vulkanLogicalDevice, VkImageView& imageView);
+    void createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView);
 
     // create an texture sampler.
     //
     // @param vulkanDevices Vulkan physical and logical device.
     // @param textureSampler created texture sampler.
     void createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, VkSampler& textureSampler);
+
+    // select a supported image format out of the candidate formats conformant to image format flags.
+    //
+    // @param candidateImageFormats the image formats to select from.
+    // @param imageTiling the tiling of the image using the selected format.
+    // @param imageFormatFeatureFlags image format feature flags for the image format to conform to.
+    // @param vulkanPhysicalDevice Vulkan physical device to use in supported image format selection.
+    // @param imageFormat selected supported image format.
+    void selectSupportedImageFormat(const std::vector<VkFormat> candidateImageFormats, VkImageTiling imageTiling, VkFormatFeatureFlags imageFormatFeatureFlags, VkPhysicalDevice vulkanPhysicalDevice, VkFormat& imageFormat);
 
     // transition a Vulkan image's layout from one to another.
     //

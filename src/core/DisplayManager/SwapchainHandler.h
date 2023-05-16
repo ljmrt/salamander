@@ -76,28 +76,29 @@ namespace SwapchainHandler
     // create the framebuffers necessary for all swapchain image views.
     //
     // @param swapchainImageViews swapchain image views to use in framebuffer creation.
+    // @param depthImageView the depth image view to use in framebuffer creation.
     // @param renderPass render pass to use in framebuffer creation.
     // @param swapchainExtent swapchain image extent to use in framebuffer creation.
     // @param vulkanLogicalDevice this Vulkan instance's logical device.
     // @param createdSwapchainFramebuffers stored created swapchain framebuffers.
-    void createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers);
+    void createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers);
 
     // recreate the swapchain after some form of incompatibility.
     //
     // uses swapchain creation wrapper.
     //
     // @param vulkanDevices Vulkan logical and physical devices.
-    // @param renderPass render pass to use in recreation.
+    // @param renderPass render pass to use in swapchain recreation.
+    // @param commandPool command pool to use in swapchain recreation.
+    // @param commandQueue queue to sumbit necessary commands on.
     // @param displayDetails display details to use and store recreated components in.
-    void recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, DisplayManager::DisplayDetails& displayDetails);
+    void recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, VkCommandPool commandPool, VkQueue commandQueue, DisplayManager::DisplayDetails& displayDetails);
 
     // clean up a swapchain.
     //
+    // @param vulkanDisplayDetails vulkan display details to use in swapchain cleanup.
     // @param vulkanLogicalDevice the Vulkan instance's logical device.
-    // @param swapchainFramebuffers swapchain framebuffers to clean up.
-    // @param swapchainImageViews swapchain image views to clean up.
-    // @param swapchain swapchain to clean up.
-    void cleanupSwapchain(VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer> swapchainFramebuffers, std::vector<VkImageView> swapchainImageViews, VkSwapchainKHR swapchain);
+    void cleanupSwapchain(DisplayManager::VulkanDisplayDetails vulkanDisplayDetails, VkDevice vulkanLogicalDevice);
 }
 
 

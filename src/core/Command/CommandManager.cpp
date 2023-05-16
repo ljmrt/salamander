@@ -101,10 +101,13 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     renderPassBeginInfo.renderArea.offset = {0, 0};
     renderPassBeginInfo.renderArea.extent = swapchainImageExtent;
 
-    // clear color and info to use in color attachment load op clearing.
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};  // black clear color.
-    renderPassBeginInfo.clearValueCount = 1;
-    renderPassBeginInfo.pClearValues = &clearColor;
+    // attachment clear values are used in load operation clearing.
+    VkClearValue colorAttachmentClearValue = {{{0.0f, 0.0f, 0.0f, 1.0f}}};  // black clear color.
+    VkClearValue depthAttachmentClearValue = {1.0f, 0};
+    std::array<VkClearValue, 2> attachmentClearValues = {colorAttachmentClearValue, depthAttachmentClearValue};
+    
+    renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(attachmentClearValues.size());
+    renderPassBeginInfo.pClearValues = attachmentClearValues.data();
 
     vkCmdBeginRenderPass(graphicsCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.
 

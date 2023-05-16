@@ -5,11 +5,13 @@
 #include <core/DisplayManager/DisplayManager.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Shader/Image.h>
+#include <core/Shader/Depth.h>
 #include <core/Queue/Queue.h>
 #include <core/Logging/ErrorLogger.h>
 
 #include <limits>
 #include <algorithm>
+#include <array>
 
 
 void SwapchainHandler::querySwapchainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR windowSurface, SwapchainSupportDetails& queriedSwapchainSupportDetails)
@@ -150,25 +152,23 @@ void SwapchainHandler::createSwapchainImageViews(std::vector<VkImage> swapchainI
 {
     createdSwapchainImageViews.resize(swapchainImages.size());
     for (size_t i = 0; i < swapchainImages.size(); i += 1) {
-        Image::createImageView(swapchainImages[i], swapchainImageFormat, vulkanLogicalDevice, createdSwapchainImageViews[i]);
+        Image::createImageView(swapchainImages[i], swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, vulkanLogicalDevice, createdSwapchainImageViews[i]);
     }
 }
 
-void SwapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers)
+void SwapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers)
 {
     createdSwapchainFramebuffers.resize(swapchainImageViews.size());
     for (size_t i = 0; i < swapchainImageViews.size(); i += 1) {
-        VkImageView framebufferAttachments[1] = {  // framebuffer create info requires a array of attachments.
-            swapchainImageViews[i]
-        };
+        std::array<VkImageView, 2> framebufferAttachments = {swapchainImageViews[i], depthImageView};
 
         VkFramebufferCreateInfo framebufferCreateInfo{};
         framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 
         framebufferCreateInfo.renderPass = renderPass;
         
-        framebufferCreateInfo.attachmentCount = 1;
-        framebufferCreateInfo.pAttachments = framebufferAttachments;
+        framebufferCreateInfo.attachmentCount = static_cast<uint32_t>(framebufferAttachments.size());
+        framebufferCreateInfo.pAttachments = framebufferAttachments.data();
 
         // set framebuffer width and height to the same resolution as the swapchain images.
         framebufferCreateInfo.width = swapchainImageExtent.width;
@@ -178,12 +178,12 @@ void SwapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swap
 
         VkResult framebufferCreationResult = vkCreateFramebuffer(vulkanLogicalDevice, &framebufferCreateInfo, nullptr, &createdSwapchainFramebuffers[i]);
         if (framebufferCreationResult != VK_SUCCESS) {
-            throwDebugException("Failed to create framebuffer.");
+            throwDebugException("Failed to create a swapchain framebuffer.");
         }
     }
 }
 
-void SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, DisplayManager::DisplayDetails& displayDetails)
+void SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, VkCommandPool commandPool, VkQueue commandQueue, DisplayManager::DisplayDetails& displayDetails)
 {
     // stall window if minimized.
     // prefer to use size_t, but complying with GLFW is better.
@@ -199,22 +199,29 @@ void SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevi
     
     vkDeviceWaitIdle(vulkanDevices.logicalDevice);  // wait for logical device processing to finish.
 
-    cleanupSwapchain(vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers, displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.swapchain);
+    cleanupSwapchain(displayDetails.vulkanDisplayDetails, vulkanDevices.logicalDevice);
 
     createSwapchainComponentsWrapper(vulkanDevices, displayDetails);
     createSwapchainImageViews(displayDetails.vulkanDisplayDetails.swapchainImages, displayDetails.vulkanDisplayDetails.swapchainImageFormat, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainImageViews);
-    createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);
+
+    Depth::createDepthComponents(displayDetails.vulkanDisplayDetails.swapchainImageExtent, commandPool, commandQueue, vulkanDevices, displayDetails.vulkanDisplayDetails.depthImage, displayDetails.vulkanDisplayDetails.depthImageMemory, displayDetails.vulkanDisplayDetails.depthImageView);
+    
+    createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.depthImageView, renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);
 }
 
-void SwapchainHandler::cleanupSwapchain(VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer> swapchainFramebuffers, std::vector<VkImageView> swapchainImageViews, VkSwapchainKHR swapchain)
+void SwapchainHandler::cleanupSwapchain(DisplayManager::VulkanDisplayDetails vulkanDisplayDetails, VkDevice vulkanLogicalDevice)
 {
-    for (VkFramebuffer swapchainFramebuffer : swapchainFramebuffers) {
+    vkDestroyImageView(vulkanLogicalDevice, vulkanDisplayDetails.depthImageView, nullptr);
+    vkDestroyImage(vulkanLogicalDevice, vulkanDisplayDetails.depthImage, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, vulkanDisplayDetails.depthImageMemory, nullptr);
+    
+    for (VkFramebuffer swapchainFramebuffer : vulkanDisplayDetails.swapchainFramebuffers) {
         vkDestroyFramebuffer(vulkanLogicalDevice, swapchainFramebuffer, nullptr);
     }
     
-    for (VkImageView imageView : swapchainImageViews) {
+    for (VkImageView imageView : vulkanDisplayDetails.swapchainImageViews) {
         vkDestroyImageView(vulkanLogicalDevice, imageView, nullptr);
     }
     
-    vkDestroySwapchainKHR(vulkanLogicalDevice, swapchain, nullptr);
+    vkDestroySwapchainKHR(vulkanLogicalDevice, vulkanDisplayDetails.swapchain, nullptr);
 }

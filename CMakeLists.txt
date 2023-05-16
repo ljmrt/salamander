@@ -46,6 +46,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Shader/ResourceDescriptor.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/Uniform.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/Image.cpp
+    ${PROJECT_SOURCE_DIR}/core/Shader/Depth.cpp
     ${PROJECT_SOURCE_DIR}/core/Buffer/Buffer.cpp
     ${PROJECT_SOURCE_DIR}/core/Model/VertexHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/DisplayManager.cpp

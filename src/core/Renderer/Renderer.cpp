@@ -6,6 +6,7 @@
 #include <core/Shader/ResourceDescriptor.h>
 #include <core/Shader/Uniform.h>
 #include <core/Shader/Image.h>
+#include <core/Shader/Depth.h>
 #include <core/Buffer/Buffer.h>
 #include <core/DisplayManager/DisplayManager.h>
 #include <core/DisplayManager/SwapchainHandler.h>
@@ -26,42 +27,63 @@ void Renderer::populateColorAttachmentComponents(VkFormat swapchainImageFormat, 
     colorAttachmentDescription.format = swapchainImageFormat;
     colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
     
-    colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;  // clear framebuffer to black before renderering.
+    colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;  // clears framebuffer to black.
     colorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;  // ignore stencil buffer loading and storing.
+    colorAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     colorAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     
     colorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;  // transition image into swapchain-ready format.
+    colorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     
     colorAttachmentReference.attachment = 0;
     colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 }
 
-void Renderer::populateSubpassDescription(VkAttachmentReference *colorAttachmentReference, VkSubpassDescription& subpassDescription)
+void Renderer::populateDepthAttachmentComponents(VkPhysicalDevice vulkanPhysicalDevice, VkAttachmentDescription& depthAttachmentDescription, VkAttachmentReference& depthAttachmentReference)
 {
-    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescription.colorAttachmentCount = 1;
-    subpassDescription.pColorAttachments = colorAttachmentReference;
+    VkFormat depthAttachmentDescriptionFormat;
+    Depth::selectDepthImageFormat(vulkanPhysicalDevice, depthAttachmentDescriptionFormat);
+    depthAttachmentDescription.format = depthAttachmentDescriptionFormat;
+    depthAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+
+    depthAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+    depthAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;  // we have no need for the previous depth buffer's contents.
+    depthAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+
+    depthAttachmentReference.attachment = 1;
+    depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 }
 
-void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat)
+void Renderer::populateSubpassDescription(VkAttachmentReference& colorAttachmentReference, VkAttachmentReference& depthAttachmentReference, VkSubpassDescription& subpassDescription)
+{
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    
+    subpassDescription.colorAttachmentCount = 1;
+    subpassDescription.pColorAttachments = &colorAttachmentReference;
+
+    subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
+}
+
+void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat, VkPhysicalDevice vulkanPhysicalDevice)
 {
     VkAttachmentDescription colorAttachmentDescription{};
     VkAttachmentReference colorAttachmentReference{};
     populateColorAttachmentComponents(swapchainImageFormat, colorAttachmentDescription, colorAttachmentReference);
+
+
+    VkAttachmentDescription depthAttachmentDescription{};
+    VkAttachmentReference depthAttachmentReference{};
+    populateDepthAttachmentComponents(vulkanPhysicalDevice, depthAttachmentDescription, depthAttachmentReference);
     
     
     VkSubpassDescription subpassDescription{};
-    populateSubpassDescription(&colorAttachmentReference, subpassDescription);
-    
-    VkRenderPassCreateInfo renderPassCreateInfo{};
-    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassCreateInfo.attachmentCount = 1;
-    renderPassCreateInfo.pAttachments = &colorAttachmentDescription;
-    renderPassCreateInfo.subpassCount = 1;
-    renderPassCreateInfo.pSubpasses = &subpassDescription;
+    populateSubpassDescription(colorAttachmentReference, depthAttachmentReference, subpassDescription);
 
     
     VkSubpassDependency subpassDependency{};
@@ -69,16 +91,29 @@ void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat)
     subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     subpassDependency.dstSubpass = 0;
 
-    // operations to wait on.
-    subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;  // wait for the swapchain to finish reading the image before accessing.
+    // operations to wait on/operations that should wait.
+    subpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    
     subpassDependency.srcAccessMask = 0;
+    subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-    // operations that should wait.
-    subpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    subpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+
+    std::array<VkAttachmentDescription, 2> attachmentDescriptions = {colorAttachmentDescription, depthAttachmentDescription};
+    
+    VkRenderPassCreateInfo renderPassCreateInfo{};
+    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    
+    renderPassCreateInfo.attachmentCount = static_cast<uint32_t>(attachmentDescriptions.size());
+    renderPassCreateInfo.pAttachments = attachmentDescriptions.data();
+    
+    renderPassCreateInfo.subpassCount = 1;
+    renderPassCreateInfo.pSubpasses = &subpassDescription;
 
     renderPassCreateInfo.dependencyCount = 1;
     renderPassCreateInfo.pDependencies = &subpassDependency;
+
     
     size_t renderPassCreationResult = vkCreateRenderPass(*m_vulkanLogicalDevice, &renderPassCreateInfo, nullptr, &m_renderPass);
     if (renderPassCreationResult != VK_SUCCESS) {
@@ -130,24 +165,50 @@ void Renderer::populateMultisamplingCreateInfo(VkPipelineMultisampleStateCreateI
     multisamplingCreateInfo.alphaToOneEnable = VK_FALSE;
 }
 
+void Renderer::populateDepthStencilCreateInfo(VkPipelineDepthStencilStateCreateInfo& depthStencilCreateInfo)
+{
+    depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+
+    depthStencilCreateInfo.depthTestEnable = VK_TRUE;
+    depthStencilCreateInfo.depthWriteEnable = VK_TRUE;
+
+    depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;  // lower depth means closer object.
+    
+    depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;
+    depthStencilCreateInfo.minDepthBounds = 0.0f;
+    depthStencilCreateInfo.maxDepthBounds = 1.0f;
+
+    depthStencilCreateInfo.stencilTestEnable = VK_FALSE;
+    depthStencilCreateInfo.front = {};
+    depthStencilCreateInfo.back = {};
+}
+
 void Renderer::populateColorBlendComponents(VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo)
 {
     // "local" pipeline-specific color blending(hence the name attachment).
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.blendEnable = VK_TRUE;
+    
     colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
     colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    
     colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    
     colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
     colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    
     colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
+    
     // "global" application-specific color blending.
     colorBlendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    
     colorBlendCreateInfo.logicOpEnable = VK_FALSE;
     colorBlendCreateInfo.logicOp = VK_LOGIC_OP_COPY;
+    
     colorBlendCreateInfo.attachmentCount = 1;
     colorBlendCreateInfo.pAttachments = &colorBlendAttachment;
+    
     colorBlendCreateInfo.blendConstants[0] = 0.0f;
     colorBlendCreateInfo.blendConstants[1] = 0.0f;
     colorBlendCreateInfo.blendConstants[2] = 0.0f;
@@ -213,6 +274,10 @@ void Renderer::createMemberGraphicsPipeline()
     populateMultisamplingCreateInfo(multisamplingCreateInfo);
 
 
+    VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
+    populateDepthStencilCreateInfo(depthStencilCreateInfo);
+
+
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
     VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
     populateColorBlendComponents(colorBlendAttachment, colorBlendCreateInfo);
@@ -239,7 +304,7 @@ void Renderer::createMemberGraphicsPipeline()
     pipelineCreateInfo.pViewportState = &viewportCreateInfo;
     pipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
     pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
-    pipelineCreateInfo.pDepthStencilState = nullptr;
+    pipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
     pipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
     pipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
 
@@ -299,7 +364,7 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
     VkResult imageAcquisitionResult = vkAcquireNextImageKHR(*m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchain, UINT64_MAX, m_imageAvailibleSemaphores[m_currentFrame], VK_NULL_HANDLE, &swapchainImageIndex);  // get the index of an availbile swapchain image.
 
     if (imageAcquisitionResult == VK_ERROR_OUT_OF_DATE_KHR) {
-        SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices{vulkanPhysicalDevice, *m_vulkanLogicalDevice}, m_renderPass, displayDetails);
+        SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices{vulkanPhysicalDevice, *m_vulkanLogicalDevice}, m_renderPass, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, displayDetails);
         return;
     } else if (imageAcquisitionResult != VK_SUCCESS && imageAcquisitionResult != VK_SUBOPTIMAL_KHR) {
         throwDebugException("Failed to acquire swapchain image.");
@@ -371,20 +436,22 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     temporaryVulkanDevices.logicalDevice = *m_vulkanLogicalDevice;
     
     
-    createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat);
+    createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat, vulkanPhysicalDevice);
 
     ResourceDescriptor::createDescriptorSetLayout(*m_vulkanLogicalDevice, m_descriptorSetLayout);
         
     createMemberGraphicsPipeline();
 
-    SwapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
-
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
+
+    Depth::createDepthComponents(displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, displayDetails.vulkanDisplayDetails.depthImage, displayDetails.vulkanDisplayDetails.depthImageMemory, displayDetails.vulkanDisplayDetails.depthImageView);
+
+    SwapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.depthImageView, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
 
     const std::string textureImageFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/textures/" + m_textureImageFilename;
     Image::createTextureImage(textureImageFilePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_textureImage, m_textureImageMemory);
     
-    Image::createImageView(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, *m_vulkanLogicalDevice, m_textureImageView);
+    Image::createImageView(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, *m_vulkanLogicalDevice, m_textureImageView);
     Image::createTextureSampler(temporaryVulkanDevices, m_textureSampler);
     
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).

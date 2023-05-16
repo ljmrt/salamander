@@ -19,12 +19,13 @@ void ResourceDescriptor::populateBindingDescription(VkVertexInputBindingDescript
 
 void ResourceDescriptor::fetchAttributeDescriptions(std::array<VkVertexInputAttributeDescription, 3>& attributeDescriptions)
 {
+    // attribute formats use RGB for some reason.
     VkVertexInputAttributeDescription positionAttributeDescription{};
     
     positionAttributeDescription.binding = 0;
     positionAttributeDescription.location = 0;
     
-    positionAttributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
+    positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
     positionAttributeDescription.offset = offsetof(VertexHandler::Vertex, position);
 
 

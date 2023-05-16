@@ -5,6 +5,7 @@
 #include <stb/stb_image.h>
 
 #include <core/Shader/Image.h>
+#include <core/Shader/Depth.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Command/CommandManager.h>
 #include <core/Buffer/Buffer.h>
@@ -111,7 +112,7 @@ void Image::createTextureImage(std::string textureImageFilePath, VkCommandPool c
     vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
 }
 
-void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkDevice vulkanLogicalDevice, VkImageView& imageView)
+void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView)
 {
     VkImageViewCreateInfo imageViewCreateInfo{};
     imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -120,7 +121,7 @@ void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkDevice vul
     imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     imageViewCreateInfo.format = baseFormat;
 
-    imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageViewCreateInfo.subresourceRange.aspectMask = imageAspectFlags;
     imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
     imageViewCreateInfo.subresourceRange.levelCount = 1;
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
@@ -168,6 +169,25 @@ void Image::createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, VkS
     }
 }
 
+void Image::selectSupportedImageFormat(const std::vector<VkFormat> candidateImageFormats, VkImageTiling imageTiling, VkFormatFeatureFlags imageFormatFeatureFlags, VkPhysicalDevice vulkanPhysicalDevice, VkFormat& imageFormat)
+{
+    for (VkFormat candidateImageFormat : candidateImageFormats) {
+        VkFormatProperties candidateImageFormatProperties;
+        vkGetPhysicalDeviceFormatProperties(vulkanPhysicalDevice, candidateImageFormat, &candidateImageFormatProperties);
+
+        // while we could use a ||(or) and use a single if statement, it would get too complex/unreadable.
+        if ((imageTiling == VK_IMAGE_TILING_LINEAR) && ((candidateImageFormatProperties.linearTilingFeatures & imageFormatFeatureFlags) == imageFormatFeatureFlags)) {
+            imageFormat = candidateImageFormat;
+            return;
+        } else if ((imageTiling == VK_IMAGE_TILING_OPTIMAL) && ((candidateImageFormatProperties.optimalTilingFeatures & imageFormatFeatureFlags) == imageFormatFeatureFlags)) {
+            imageFormat = candidateImageFormat;
+            return;
+        }
+    }
+
+    throwDebugException("Failed to select a supported image format.");  // no supported image format was selected.
+}
+
 void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandBuffer commandBuffer)
 {
     VkImageMemoryBarrier imageMemoryBarrier{};
@@ -182,7 +202,16 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout 
 
     imageMemoryBarrier.image = image;
     
-    imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    if (targetImageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {  // image is a depth/stencil attachment.
+        imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        
+        if (Depth::depthImageFormatHasStencilComponent(format)) {  // include stencil aspect mask if supported by the image format.
+            imageMemoryBarrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+    } else {  // image is a color attachment.
+        imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+    
     imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
     imageMemoryBarrier.subresourceRange.levelCount = 1;
     imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
@@ -203,6 +232,12 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout 
 
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    } else if (initialImageLayout == VK_IMAGE_LAYOUT_UNDEFINED && targetImageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {  // transitioning to use as a depth/stencil attachment.
+        imageMemoryBarrier.srcAccessMask = 0;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;        
     } else {
         throwDebugException("Unsupported/invalid layout transition.");
     }

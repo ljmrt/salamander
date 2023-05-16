@@ -56,46 +56,60 @@ private:
     // populate a color attachment description and reference.
     //
     // @param swapchainImageFormat the image format of the swapchain, used in populating the color attachment components.
-    // @param colorAttachmentDescription stored populated color attachment description.
-    // @param colorAttachmentReference stored populated color attachment reference.
+    // @param colorAttachmentDescription populated color attachment description.
+    // @param colorAttachmentReference populated color attachment reference.
     void populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference);
+
+    // populate a depth attachment description and reference.
+    //
+    // @param vulkanPhysicalDevice Vulkan physical device to use in depth attachment population.
+    // @param depthAttachmentDescription populated depth attachment description.
+    // @param depthAttachmentReference populated depth attachment reference.
+    void populateDepthAttachmentComponents(VkPhysicalDevice vulkanPhysicalDevice, VkAttachmentDescription& depthAttachmentDescription, VkAttachmentReference& depthAttachmentReference);
     
     // populate a subpass's description.
     //
     // @param colorAttachmentReference color attachment reference to use in subpass description.
-    // @param subpassDescription stored populated subpass description.
-    void populateSubpassDescription(VkAttachmentReference *colorAttachmentReference, VkSubpassDescription& subpassDescription);
+    // @param depthAttachmentReference depth attachment reference to use in subpass description.
+    // @param subpassDescription populated subpass description.
+    void populateSubpassDescription(VkAttachmentReference& colorAttachmentReference, VkAttachmentReference& depthAttachmentReference, VkSubpassDescription& subpassDescription);
     
     // create member render pass.
     //
-    // @param swapchainImageFormat the swapchain image format to use in render pass creation.
-    void createMemberRenderPass(VkFormat swapchainImageFormat);
+    // @param swapchainImageFormat the swapchain image format to use in member render pass creation.
+    // @param vulkanPhysicalDevice Vulkan physical device to use in member render pass creation.
+    void createMemberRenderPass(VkFormat swapchainImageFormat, VkPhysicalDevice vulkanPhysicalDevice);
 
     // populate a viewport's create info.
     //
-    // @param viewportCreateInfo stored populated viewport create info.
+    // @param viewportCreateInfo populated viewport create info.
     void populateViewportCreateInfo(VkPipelineViewportStateCreateInfo& viewportCreateInfo);
 
     // populate a rasterization's create info.
     //
-    // @param rasterizationCreateInfo stored populated rasterization create info.
+    // @param rasterizationCreateInfo populated rasterization create info.
     void populateRasterizationCreateInfo(VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo);
 
     // populate a multisampling's create info.
     //
-    // @param multisamplingCreateInfo stored populated multisampling create info.
+    // @param multisamplingCreateInfo populated multisampling create info.
     void populateMultisamplingCreateInfo(VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo);
+
+    // populate a depth stencil's create info.
+    //
+    // @param depthStencilCreateInfo populated depth stencil create info.
+    void populateDepthStencilCreateInfo(VkPipelineDepthStencilStateCreateInfo& depthStencilCreateInfo);
 
     // populate color blend components(color attachment and color blend's create info).
     //
-    // @param colorblendAttachment stored populated color blend attachment.
-    // @param colorBlendCreateInfo stored populated color blend create info.
+    // @param colorblendAttachment populated color blend attachment.
+    // @param colorBlendCreateInfo populated color blend create info.
     void populateColorBlendComponents(VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo);
 
     // populate a dynamic states's create info.
     //
     // @param dynamicStates dynamic states to use in populating.
-    // @param dynamicStatesCreateInfo stored populated dynamic states create info.
+    // @param dynamicStatesCreateInfo populated dynamic states create info.
     void populateDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicStates, VkPipelineDynamicStateCreateInfo& dynamicStatesCreateInfo);
 
     // create a pipeline layout.
