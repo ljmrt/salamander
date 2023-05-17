@@ -449,10 +449,7 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     SwapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.depthImageView, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
 
     const std::string textureImageFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/textures/" + m_textureImageFilename;
-    Image::createTextureImage(textureImageFilePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_textureImage, m_textureImageMemory);
-    
-    Image::createImageView(m_textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, *m_vulkanLogicalDevice, m_textureImageView);
-    Image::createTextureSampler(temporaryVulkanDevices, m_textureSampler);
+    Image::createTextureImage(textureImageFilePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_texture);
     
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
     Buffer::createDataBufferComponents(VertexHandler::vertices.data(), sizeof(VertexHandler::vertices[0]) * VertexHandler::vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_vertexBuffer, m_vertexBufferMemory);
@@ -493,8 +490,8 @@ void Renderer::cleanupRenderer()
     vkDestroySampler(*m_vulkanLogicalDevice, m_textureSampler, nullptr);
     vkDestroyImageView(*m_vulkanLogicalDevice, m_textureImageView, nullptr);
     
-    vkDestroyImage(*m_vulkanLogicalDevice, m_textureImage, nullptr);
-    vkFreeMemory(*m_vulkanLogicalDevice, m_textureImageMemory, nullptr);
+    vkDestroyImage(*m_vulkanLogicalDevice, m_texture.image, nullptr);
+    vkFreeMemory(*m_vulkanLogicalDevice, m_texture.imageMemory, nullptr);
     
     vkDestroyCommandPool(*m_vulkanLogicalDevice, m_graphicsCommandPool, nullptr);  // child command buffers automatically freed.
 

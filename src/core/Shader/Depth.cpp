@@ -13,18 +13,18 @@
 #include <core/Logging/ErrorLogger.h>
 
 
-void Depth::createDepthComponents(VkExtent2D swapchainImageExtent, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, VkImage& depthImage, VkDeviceMemory& depthImageMemory, VkImageView& depthImageView)
+void Depth::createDepthComponents(VkExtent2D swapchainImageExtent, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::Image& depthImage)
 {
-    VkFormat depthImageFormat;
-    Depth::selectDepthImageFormat(vulkanDevices.physicalDevice, depthImageFormat);
+    Depth::selectDepthImageFormat(vulkanDevices.physicalDevice, depthImage.imageFormat);
+    Image::createImage(swapchainImageExtent.width, swapchainImageExtent.height, depthImage.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, depthImage);
+    Image::createImageView(depthImage.image, depthImage.imageFormat, VK_IMAGE_ASPECT_DEPTH_BIT, vulkanDevices.logicalDevice, depthImage.imageView);
 
-    Image::createImage(swapchainImageExtent.width, swapchainImageExtent.height, depthImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, depthImage, depthImageMemory);
-    Image::createImageView(depthImage, depthImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT, vulkanDevices.logicalDevice, depthImageView);
-
+    
     VkCommandBuffer disposableCommandBuffer;
     CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanDevices.logicalDevice, disposableCommandBuffer);
     
-    Image::transitionImageLayout(depthImage, depthImageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, disposableCommandBuffer);
+    Image::transitionImageLayout(depthImage.image, depthImage.imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, disposableCommandBuffer);
+    depthImage.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
 }

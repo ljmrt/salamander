@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 
 #include <core/VulkanInstance/DeviceHandler.h>
+#include <core/Shader/Image.h>
 
 
 namespace Depth
@@ -16,10 +17,8 @@ namespace Depth
     // @param commandPool command pool to use in command buffer creation.
     // @param commandQueue queue to submit necessary commands on.
     // @param vulkanDevices Vulkan physical and logical device to use in depth component creation.
-    // @param depthImage created depth image.
-    // @param depthImageMemory allocated depth image memory.
-    // @param depthImageView created depth image view.
-    void createDepthComponents(VkExtent2D swapchainImageExtent, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, VkImage& depthImage, VkDeviceMemory& depthImageMemory, VkImageView& depthImageView);
+    // @param depthImage populated depth image struct.
+    void createDepthImage(VkExtent2D swapchainImageExtent, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::Image& depthImage);
 
     // select a depth image format.
     //
