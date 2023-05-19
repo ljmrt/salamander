@@ -24,14 +24,16 @@
 std::array<VkVertexInputAttributeDescription, 3> ModelHandler::preservedAttributeDescriptions;
 VkVertexInputBindingDescription ModelHandler::preservedBindingDescription;
 
-void ModelHandler::Model::loadModelFromPath(std::string modelPath)
+void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPath)
 {
+    absoluteModelDirectory = absoluteModelPath.substr(0, absoluteModelPath.find_last_of("/"));
+    
     tinygltf::Model loadedModel;
     tinygltf::TinyGLTF modelLoader;
     std::string loaderWarnings;
     std::string loaderErrors;
 
-    bool modelLoadingSuccess = modelLoader.LoadASCIIFromFile(&loadedModel, &loaderErrors, &loaderWarnings, modelPath.c_str());
+    bool modelLoadingSuccess = modelLoader.LoadASCIIFromFile(&loadedModel, &loaderErrors, &loaderWarnings, absoluteModelPath.c_str());
     if (modelLoadingSuccess == false) {
         throwDebugException("Failed to load model/parse glTF.");
     }
@@ -47,13 +49,28 @@ void ModelHandler::Model::loadModelFromPath(std::string modelPath)
         const float *positionAttributes = reinterpret_cast<const float *>(&positionAttributeBuffer.data[positionAttributeBufferView.byteOffset + positionAttributeAccessor.byteOffset]);  // get the position attribute data from the buffer starting at the actual data offset to the end of the buffer(position attributes are only up to positionAttributeAccessor.count multiplied by the entire data type stride).
         const uint32_t POSITION_STRIDE = 3;  // positions are vec3 components.
 
-        std::vector<ModelHandler::Vertex> primitiveVertices(positionAttributeAccessor.count);
-        for (size_t positionIndex = 0; positionIndex < positionAttributeAccessor.count; positionIndex += 1) {
-            // position attribute data is packed tightly.
-            const uint32_t POSITION_INDEX_OFFSET = (positionIndex * POSITION_STRIDE);
-            primitiveVertices[positionIndex].position.x = positionAttributes[POSITION_INDEX_OFFSET + 0];
-            primitiveVertices[positionIndex].position.y = positionAttributes[POSITION_INDEX_OFFSET + 1];
-            primitiveVertices[positionIndex].position.z = positionAttributes[POSITION_INDEX_OFFSET + 2];
+        const tinygltf::Accessor& UVCoordinateAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["TEXCOORD_0"]];
+        const tinygltf::BufferView& UVCoordinateAttributeBufferView = loadedModel.bufferViews[UVCoordinateAttributeAccessor.bufferView];
+        const tinygltf::Buffer& UVCoordinateAttributeBuffer = loadedModel.buffers[UVCoordinateAttributeBufferView.buffer];
+        
+        if ((UVCoordinateAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && UVCoordinateAttributeAccessor.type == TINYGLTF_TYPE_VEC2) == false) {
+            throwDebugException("Model vertices UV coordinate data is in an incorrect component type or type.");
+        }
+        const float *UVCoordinateAttributes = reinterpret_cast<const float *>(&UVCoordinateAttributeBuffer.data[UVCoordinateAttributeBufferView.byteOffset + UVCoordinateAttributeAccessor.byteOffset]);
+        const uint32_t UV_COORDINATES_STRIDE = 2;  // UV coordinates are vec2 components.
+
+        std::vector<ModelHandler::Vertex> primitiveVertices(positionAttributeAccessor.count);  // the amount of vertices is equivalent to the amount of positions in a primitive.
+        for (size_t vertexIndex = 0; vertexIndex < positionAttributeAccessor.count; vertexIndex += 1) {
+            const uint32_t VERTEX_INDEX_POSITION_OFFSET = (vertexIndex * POSITION_STRIDE);
+            primitiveVertices[vertexIndex].position.x = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 0];
+            primitiveVertices[vertexIndex].position.y = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 1];
+            primitiveVertices[vertexIndex].position.z = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 2];
+
+            primitiveVertices[vertexIndex].color = {1.0f, 1.0f, 0.0f};
+
+            const uint32_t VERTEX_INDEX_UV_COORDINATES_OFFSET = (vertexIndex * UV_COORDINATES_STRIDE);
+            primitiveVertices[vertexIndex].UVCoordinates.x = UVCoordinateAttributes[VERTEX_INDEX_UV_COORDINATES_OFFSET + 0];
+            primitiveVertices[vertexIndex].UVCoordinates.y = UVCoordinateAttributes[VERTEX_INDEX_UV_COORDINATES_OFFSET + 1];
         }
 
         meshVertices.insert(meshVertices.end(), primitiveVertices.begin(), primitiveVertices.end());
@@ -70,6 +87,13 @@ void ModelHandler::Model::loadModelFromPath(std::string modelPath)
         std::vector<uint32_t> primitiveIndices(indices, (indices + indicesAccessor.count));
 
         meshIndices.insert(meshIndices.end(), primitiveIndices.begin(), primitiveIndices.end());
+
+
+        const tinygltf::Material modelMaterial = loadedModel.materials[0];
+        const tinygltf::TextureInfo baseColorTextureInfo = modelMaterial.pbrMetallicRoughness.baseColorTexture;
+        const tinygltf::Texture baseColorTexture = loadedModel.textures[baseColorTextureInfo.index];
+        const tinygltf::Image baseColorTextureImage = loadedModel.images[baseColorTexture.source];
+        absoluteTextureImagePath = (absoluteModelDirectory + "/" + baseColorTextureImage.uri);
     }
 }
 
@@ -86,6 +110,12 @@ void ModelHandler::Model::cleanupModel(VkDevice vulkanLogicalDevice)
 
     vkDestroyBuffer(vulkanLogicalDevice, indexBuffer, nullptr);
     vkFreeMemory(vulkanLogicalDevice, indexBufferMemory, nullptr);
+
+    vkDestroySampler(vulkanLogicalDevice, textureDetails.textureSampler, nullptr);
+    vkDestroyImageView(vulkanLogicalDevice, textureDetails.textureImage.imageView, nullptr);
+    
+    vkDestroyImage(vulkanLogicalDevice, textureDetails.textureImage.image, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, textureDetails.textureImage.imageMemory, nullptr);
 }
 
 void ModelHandler::populateVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)

@@ -42,9 +42,6 @@ private:
     size_t m_currentFrame = 0;  // the current "frame" in context of the "in flight" frames.
 
     ModelHandler::Model avocadoModel;  // the testing avocado model.
-
-    const std::string m_textureImageFilename = "gnulogo.png";  // the main texture image's filename(under "assets/textures").
-    Image::TextureDetails m_textureDetails;
     
 
     // populate a color attachment description and reference.

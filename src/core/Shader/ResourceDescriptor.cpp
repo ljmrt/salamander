@@ -38,16 +38,16 @@ void ResourceDescriptor::fetchAttributeDescriptions(std::array<VkVertexInputAttr
     colorAttributeDescription.offset = offsetof(ModelHandler::Vertex, color);
 
     
-    VkVertexInputAttributeDescription textureCoordinatesAttributeDescription{};
+    VkVertexInputAttributeDescription UVCoordinatesAttributeDescription{};
 
-    textureCoordinatesAttributeDescription.binding = 0;
-    textureCoordinatesAttributeDescription.location = 2;
+    UVCoordinatesAttributeDescription.binding = 0;
+    UVCoordinatesAttributeDescription.location = 2;
     
-    textureCoordinatesAttributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
-    textureCoordinatesAttributeDescription.offset = offsetof(ModelHandler::Vertex, textureCoordinates);
+    UVCoordinatesAttributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
+    UVCoordinatesAttributeDescription.offset = offsetof(ModelHandler::Vertex, UVCoordinates);
 
 
-    attributeDescriptions = {positionAttributeDescription, colorAttributeDescription, textureCoordinatesAttributeDescription};
+    attributeDescriptions = {positionAttributeDescription, colorAttributeDescription, UVCoordinatesAttributeDescription};
 }
 
 void ResourceDescriptor::createDescriptorSetLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout)

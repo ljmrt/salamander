@@ -7,6 +7,7 @@
 
 #include <glm/glm.hpp>
 
+#include <core/Shader/Image.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 
 #include <vector>
@@ -19,13 +20,19 @@ namespace ModelHandler
     struct Vertex {
         glm::vec3 position;
         glm::vec3 color;
-        glm::vec2 textureCoordinates;
+        glm::vec2 UVCoordinates;
     };
 
     struct Model
     {
+        std::string absoluteModelDirectory;  // the absolute directory of the model.
+        
         std::vector<ModelHandler::Vertex> meshVertices;
         std::vector<uint32_t> meshIndices;
+
+        // TODO: support for URI-encoded textures.
+        std::string absoluteTextureImagePath;  // the absolute path of the texture image.
+        Image::TextureDetails textureDetails;
 
         // vertex and index buffer personally created for the model.
         VkBuffer vertexBuffer;
@@ -37,8 +44,8 @@ namespace ModelHandler
 
         // load a glTF model from an absolute path.
         //
-        // @param modelPath the absolute path of the model.
-        void loadModelFromPath(std::string modelPath);
+        // @param absoluteModelPath the absolute path of the model.
+        void loadModelFromAbsolutePath(std::string absoluteModelPath);
 
         // create vertex and index buffers for this model.
         //

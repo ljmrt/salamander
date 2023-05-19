@@ -143,7 +143,7 @@ void Renderer::populateRasterizationCreateInfo(VkPipelineRasterizationStateCreat
     
     rasterizationCreateInfo.lineWidth = 1.0f;
     
-    rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizationCreateInfo.cullMode = VK_CULL_MODE_NONE;
     rasterizationCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;  // vertex order for faces to be considered front-facing, counter-clockwise due to the GLM y-axis flip.
     
     rasterizationCreateInfo.depthBiasEnable = VK_FALSE;
@@ -187,7 +187,7 @@ void Renderer::populateColorBlendComponents(VkPipelineColorBlendAttachmentState&
 {
     // "local" pipeline-specific color blending(hence the name attachment).
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_TRUE;
+    colorBlendAttachment.blendEnable = VK_FALSE;
     
     colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
     colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -375,7 +375,7 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
 
 
     vkResetCommandBuffer(m_graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, avocadoModel.vertexBuffer, avocadoModel.indexBuffer, m_pipelineLayout, m_descriptorSets, m_currentFrame);
+    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, avocadoModel.vertexBuffer, avocadoModel.indexBuffer, m_pipelineLayout, m_descriptorSets, m_currentFrame, static_cast<uint32_t>(avocadoModel.meshIndices.size()));
 
     
     Uniform::updateFrameUniformBuffer(m_currentFrame, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_mappedUniformBuffersMemory);
@@ -447,19 +447,17 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     Depth::populateDepthImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, displayDetails.vulkanDisplayDetails.depthImageDetails);
 
     SwapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.depthImageDetails.imageView, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
-
-    const std::string textureImageFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/textures/" + m_textureImageFilename;
-    Image::populateTextureDetails(textureImageFilePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_textureDetails);
     
-    avocadoModel.loadModelFromPath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Avocado/Avocado.gltf"));
+    avocadoModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Avocado/Avocado.gltf"));
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
     avocadoModel.createModelBuffers(m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
+    Image::populateTextureDetails(avocadoModel.absoluteTextureImagePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, avocadoModel.textureDetails);
 
     Uniform::createUniformBuffers(temporaryVulkanDevices, m_uniformBuffers, m_uniformBuffersMemory, m_mappedUniformBuffersMemory);
     
     ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_descriptorSetLayout, m_descriptorPool, *m_vulkanLogicalDevice, m_descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, m_textureDetails.textureImage.imageView, m_textureDetails.textureSampler, *m_vulkanLogicalDevice, m_descriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, avocadoModel.textureDetails.textureImage.imageView, avocadoModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_descriptorSets);
 
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 
@@ -487,12 +485,6 @@ void Renderer::cleanupRenderer()
         vkDestroyBuffer(*m_vulkanLogicalDevice, m_uniformBuffers[i], nullptr);
         vkFreeMemory(*m_vulkanLogicalDevice, m_uniformBuffersMemory[i], nullptr);
     }
-
-    vkDestroySampler(*m_vulkanLogicalDevice, m_textureDetails.textureSampler, nullptr);
-    vkDestroyImageView(*m_vulkanLogicalDevice, m_textureDetails.textureImage.imageView, nullptr);
-    
-    vkDestroyImage(*m_vulkanLogicalDevice, m_textureDetails.textureImage.image, nullptr);
-    vkFreeMemory(*m_vulkanLogicalDevice, m_textureDetails.textureImage.imageMemory, nullptr);
     
     vkDestroyCommandPool(*m_vulkanLogicalDevice, m_graphicsCommandPool, nullptr);  // child command buffers automatically freed.
 
