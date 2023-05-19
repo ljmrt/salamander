@@ -204,16 +204,16 @@ void SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevi
     createSwapchainComponentsWrapper(vulkanDevices, displayDetails);
     createSwapchainImageViews(displayDetails.vulkanDisplayDetails.swapchainImages, displayDetails.vulkanDisplayDetails.swapchainImageFormat, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainImageViews);
 
-    Depth::createDepthComponents(displayDetails.vulkanDisplayDetails.swapchainImageExtent, commandPool, commandQueue, vulkanDevices, displayDetails.vulkanDisplayDetails.depthImage, displayDetails.vulkanDisplayDetails.depthImageMemory, displayDetails.vulkanDisplayDetails.depthImageView);
+    Depth::populateDepthImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent, commandPool, commandQueue, vulkanDevices, displayDetails.vulkanDisplayDetails.depthImageDetails);
     
-    createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.depthImageView, renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);
+    createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.depthImageDetails.imageView, renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);
 }
 
 void SwapchainHandler::cleanupSwapchain(DisplayManager::VulkanDisplayDetails vulkanDisplayDetails, VkDevice vulkanLogicalDevice)
 {
-    vkDestroyImageView(vulkanLogicalDevice, vulkanDisplayDetails.depthImageView, nullptr);
-    vkDestroyImage(vulkanLogicalDevice, vulkanDisplayDetails.depthImage, nullptr);
-    vkFreeMemory(vulkanLogicalDevice, vulkanDisplayDetails.depthImageMemory, nullptr);
+    vkDestroyImageView(vulkanLogicalDevice, vulkanDisplayDetails.depthImageDetails.imageView, nullptr);
+    vkDestroyImage(vulkanLogicalDevice, vulkanDisplayDetails.depthImageDetails.image, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, vulkanDisplayDetails.depthImageDetails.imageMemory, nullptr);
     
     for (VkFramebuffer swapchainFramebuffer : vulkanDisplayDetails.swapchainFramebuffers) {
         vkDestroyFramebuffer(vulkanLogicalDevice, swapchainFramebuffer, nullptr);

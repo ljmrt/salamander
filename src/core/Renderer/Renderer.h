@@ -7,6 +7,7 @@
 
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/Shader/Shader.h>
+#include <core/Model/ModelHandler.h>
 
 #include <vector>
 
@@ -30,27 +31,17 @@ private:
     VkCommandPool m_graphicsCommandPool;  // a command pool used for graphics command buffers.
     std::vector<VkCommandBuffer> m_graphicsCommandBuffers;  // child command buffers under the graphics command pool.
 
-    VkBuffer m_vertexBuffer;  // vertex buffer.
-    VkDeviceMemory m_vertexBufferMemory;  // the vertex buffer's memory.
-    VkBuffer m_indexBuffer;  // index buffer.
-    VkDeviceMemory m_indexBufferMemory;  // the index buffer's memory.
-
     std::vector<VkBuffer> m_uniformBuffers;  // the shader uniform buffers.
     std::vector<VkDeviceMemory> m_uniformBuffersMemory;  // the uniform buffers' memory.
     std::vector<void *> m_mappedUniformBuffersMemory;  // the mapped memory of the uniform buffers.
-
-    VkImage m_textureImage;  // the main texture image.
-    const std::string m_textureImageFilename = "gnulogo.png";  // the main texture image's filename(under "assets/textures").
-    VkDeviceMemory m_textureImageMemory;  // the main texture image's memory.
-    
-    VkImageView m_textureImageView;  // the main texture image view.
-    VkSampler m_textureSampler;  // the main texture sampler.
 
     std::vector<VkSemaphore> m_imageAvailibleSemaphores;  // semaphore used to make the GPU wait to continue until the next availible image index in the swapchain has been fetched.
     std::vector<VkSemaphore> m_renderFinishedSemaphores;  // semaphore used to make the GPU wait to continue until the current frame has finished rendering.
     std::vector<VkFence> m_inFlightFences;  // fence used to synchronize the GPU and CPU before begining to draw another frame.]
 
     size_t m_currentFrame = 0;  // the current "frame" in context of the "in flight" frames.
+
+    ModelHandler::Model avocadoModel;  // the testing avocado model.
     
 
     // populate a color attachment description and reference.

@@ -7,3 +7,6 @@
 [submodule "libs/stb"]
 	path = libs/stb
 	url = https://github.com/merrittlj/stb_image_only.git
+[submodule "libs/tinygltf"]
+	path = libs/tinygltf
+	url = https://github.com/merrittlj/tinygltf-header-files-only.git

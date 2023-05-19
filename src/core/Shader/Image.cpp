@@ -14,7 +14,7 @@
 #include <string>
 
 
-void Image::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, VkImage& image, VkDeviceMemory& imageMemory)
+void Image::populateImageDetails(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails)
 {
     VkImageCreateInfo imageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -37,14 +37,14 @@ void Image::createImage(uint32_t width, uint32_t height, VkFormat format, VkImag
 
     imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;  // only relevant for multisampling.
 
-    VkResult imageCreationResult = vkCreateImage(vulkanDevices.logicalDevice, &imageCreateInfo, nullptr, &image);
+    VkResult imageCreationResult = vkCreateImage(vulkanDevices.logicalDevice, &imageCreateInfo, nullptr, &imageDetails.image);
     if (imageCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create image.");
     }
 
 
     VkMemoryRequirements imageMemoryRequirements;
-    vkGetImageMemoryRequirements(vulkanDevices.logicalDevice, image, &imageMemoryRequirements);
+    vkGetImageMemoryRequirements(vulkanDevices.logicalDevice, imageDetails.image, &imageMemoryRequirements);
 
     VkMemoryAllocateInfo memoryAllocateInfo{};
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -54,32 +54,36 @@ void Image::createImage(uint32_t width, uint32_t height, VkFormat format, VkImag
     Buffer::locateMemoryType(vulkanDevices.physicalDevice, imageMemoryRequirements.memoryTypeBits, memoryProperties, selectedMemoryTypeIndex);
     memoryAllocateInfo.memoryTypeIndex = selectedMemoryTypeIndex;
 
-    VkResult memoryAllocationResult = vkAllocateMemory(vulkanDevices.logicalDevice, &memoryAllocateInfo, nullptr, &imageMemory);
+    VkResult memoryAllocationResult = vkAllocateMemory(vulkanDevices.logicalDevice, &memoryAllocateInfo, nullptr, &imageDetails.imageMemory);
     if (memoryAllocationResult != VK_SUCCESS) {
         throwDebugException("Failed to allocate image memory.");
     }
 
-    vkBindImageMemory(vulkanDevices.logicalDevice, image, imageMemory, 0);
+    vkBindImageMemory(vulkanDevices.logicalDevice, imageDetails.image, imageDetails.imageMemory, 0);
+
+
+    // image itself and image memory are populated in the struct previously in this function.
+    imageDetails.imageLayout = imageCreateInfo.initialLayout;
+    imageDetails.imageWidth = width;
+    imageDetails.imageHeight = height;
+    imageDetails.imageFormat = format;
+    imageDetails.imageMipmapLevels = imageCreateInfo.mipLevels;
 }
 
-void Image::createTextureImage(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, VkImage& textureImage, VkDeviceMemory& textureImageMemory)
+void Image::populateTextureDetails(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::TextureDetails& textureDetails)
 {
     VkCommandBuffer disposableCommandBuffer;
     CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanDevices.logicalDevice, disposableCommandBuffer);
     
     
-    // prefer to use size_t, but better to conform to function requirements.
-    int textureImageWidth;
-    int textureImageHeight;
-    int textureImageChannels;
-    
-    stbi_uc *textureImagePixels = stbi_load(textureImageFilePath.c_str(), &textureImageWidth, &textureImageHeight, &textureImageChannels, STBI_rgb_alpha);
+    stbi_uc *textureImagePixels = stbi_load(textureImageFilePath.c_str(), &textureDetails.textureImage.imageWidth, &textureDetails.textureImage.imageHeight, &textureDetails.textureImage.imageChannels, STBI_rgb_alpha);
+    textureDetails.textureImage.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
     if (!textureImagePixels) {  // if image not loaded.
         throwDebugException("Failed to load texture image.");
     }
 
-    VkDeviceSize textureImageSize = textureImageWidth * textureImageHeight * 4;  // 4 bytes per pixel.
-
+    VkDeviceSize textureImageSize = textureDetails.textureImage.imageWidth * textureDetails.textureImage.imageHeight * 4;  // 4 bytes per pixel.
+    
 
     // similar process to Buffer::createDataBufferComponents, but with an buffer and an image rather than a buffer and a buffer.
     VkBuffer stagingBuffer;
@@ -95,24 +99,27 @@ void Image::createTextureImage(std::string textureImageFilePath, VkCommandPool c
     stbi_image_free(textureImagePixels);
 
 
-    VkFormat textureImageFormat = VK_FORMAT_R8G8B8A8_SRGB;
-        
-    Image::createImage(textureImageWidth, textureImageHeight, textureImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureImage, textureImageMemory);
+    Image::populateImageDetails(textureDetails.textureImage.imageWidth, textureDetails.textureImage.imageHeight, textureDetails.textureImage.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureDetails.textureImage);
 
-    // could optimize single-submit commands functions with setup and flush command buffer functions.
-    Image::transitionImageLayout(textureImage, textureImageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
-    Image::copyBufferToImage(stagingBuffer, textureImage, textureImageWidth, textureImageHeight, disposableCommandBuffer);
+    Image::transitionImageLayout(textureDetails.textureImage.image, textureDetails.textureImage.imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
+    Image::copyBufferToImage(stagingBuffer, textureDetails.textureImage.image, textureDetails.textureImage.imageWidth, textureDetails.textureImage.imageHeight, disposableCommandBuffer);
     
-    Image::transitionImageLayout(textureImage, textureImageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, disposableCommandBuffer);
+    Image::transitionImageLayout(textureDetails.textureImage.image, textureDetails.textureImage.imageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, disposableCommandBuffer);
+    textureDetails.textureImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
 
     vkDestroyBuffer(vulkanDevices.logicalDevice, stagingBuffer, nullptr);
     vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
+
+
+    Image::createImageView(textureDetails.textureImage.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, textureDetails.textureImage.imageView, &textureDetails.textureImage.imageViewLayerCount);
+
+    Image::createTextureSampler(vulkanDevices, textureDetails.textureSampler);
 }
 
-void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView)
+void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView, uint32_t *optionalImageViewLayerCount)  // optionalImageViewLayerCount = nullptr.
 {
     VkImageViewCreateInfo imageViewCreateInfo{};
     imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -130,6 +137,10 @@ void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspec
     VkResult imageViewCreationResult = vkCreateImageView(vulkanLogicalDevice, &imageViewCreateInfo, nullptr, &imageView);
     if (imageViewCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create image view.");
+    }
+
+    if (optionalImageViewLayerCount != nullptr) {
+        *optionalImageViewLayerCount = imageViewCreateInfo.subresourceRange.layerCount;
     }
 }
 

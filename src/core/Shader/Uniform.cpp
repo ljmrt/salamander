@@ -40,9 +40,11 @@ void Uniform::updateFrameUniformBuffer(size_t currentImage, VkExtent2D swapchain
 
     Uniform::UniformBufferObject uniformBufferObject{};
 
-    uniformBufferObject.modelMatrix = glm::rotate(glm::mat4(1.0f), passedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));  // rotate around the z-axis over time.
-    uniformBufferObject.viewMatrix = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));  // look down at the geometry from above at a 45-degree angle.
-    uniformBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), swapchainImageExtent.width / (float)(swapchainImageExtent.height), 0.1f, 10.0f);  // 45-degree vertical field-of-view.
+    uniformBufferObject.modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    uniformBufferObject.modelMatrix *= glm::rotate(glm::mat4(1.0f), passedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));  // rotate around the z-axis over time.
+    
+    uniformBufferObject.viewMatrix = glm::lookAt(glm::vec3(0.1f, 0.1f, 0.1f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));  // look down at the geometry from above at a 45-degree angle.
+    uniformBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), swapchainImageExtent.width / (float)(swapchainImageExtent.height), 0.00001f, 10.0f);  // 45-degree vertical field-of-view.
     uniformBufferObject.projectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
 
 

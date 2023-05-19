@@ -12,7 +12,28 @@
 
 namespace Image
 {
-    // create an Vulkan image.
+    struct ImageDetails {
+        VkImage image;
+        VkDeviceMemory imageMemory;
+        VkImageView imageView;
+        VkImageLayout imageLayout;
+
+        // prefer to use size_t, but better to conform to function requirements.
+        int imageWidth;
+        int imageHeight;
+        int imageChannels;
+        VkFormat imageFormat;
+
+        uint32_t imageMipmapLevels;
+        uint32_t imageViewLayerCount;
+    };
+    struct TextureDetails {
+        Image::ImageDetails textureImage;  // guarenteed to be completely populated after Image::createTexture.
+        
+        VkSampler textureSampler;
+    };
+    
+    // populate an image struct.
     //
     // @param width the image's width.
     // @param height the image's height.
@@ -21,19 +42,18 @@ namespace Image
     // @param usage the image's Vulkan usage.
     // @param memoryProperties the memory properties that the image memory must abide to.
     // @param vulkanDevices Vulkan physical and logical device.
-    // @param image created image.
-    // @param imageMemory allocated image memory.
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, VkImage& image, VkDeviceMemory& imageMemory);
+    // @param image populated image details.
+    // @param optionalImageMipmapLevels optional stored image mipmap levels.
+    void populateImageDetails(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails);
 
-    // create an Vulkan image to be used as a texture.
+    // populate an texture struct.
     //
     // @param textureFilePath the texture image's (absolute)file path.
     // @param commandPool command pool to use in texture image creation.
     // @param commandQueue queue to submit creation and similar commands on.
     // @param vulkanDevices Vulkan physical and logical device.
-    // @param textureImage created texture image.
-    // @param textureImageMemory allocated texture image memory.
-    void createTextureImage(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
+    // @param texture populated texture details.
+    void populateTextureDetails(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::TextureDetails& textureDetails);
 
     // create an Vulkan image view.
     //
@@ -42,7 +62,8 @@ namespace Image
     // @param imageAspectFlags image aspect flags to use in image view creation.
     // @param vulkanLogicalDevice Vulkan logical device to use in image view creation.
     // @param imageView created image view.
-    void createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView);
+    // @param optionalImageViewLayerCount an optional storage of the image view's layer count.
+    void createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView, uint32_t *optionalImageViewLayerCount = nullptr);
 
     // create an texture sampler.
     //

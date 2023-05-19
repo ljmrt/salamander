@@ -8,14 +8,14 @@ layout(binding = 0) uniform UniformBufferObject {
 
 layout(location = 0) in vec3 positionAttribute;
 layout(location = 1) in vec3 colorAttribute;
-layout(location = 2) in vec2 textureCoordinatesAttribute;
+layout(location = 2) in vec2 UVCoordinatesAttribute;
 
 layout(location = 0) out vec3 fragmentColor;
-layout(location = 1) out vec2 fragmentTextureCoordinates;
+layout(location = 1) out vec2 fragmentUVCoordinates;
 
 void main()
 {
     gl_Position = uniformBufferObject.projectionMatrix * uniformBufferObject.viewMatrix * uniformBufferObject.modelMatrix * vec4(positionAttribute, 1.0);
     fragmentColor = colorAttribute;
-    fragmentTextureCoordinates = textureCoordinatesAttribute;
+    fragmentUVCoordinates = UVCoordinatesAttribute;
 }

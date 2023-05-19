@@ -4,7 +4,7 @@ project(salamander)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
 set(PROJECT_OUTPUT_DIR ${CMAKE_BINARY_DIR})
@@ -19,7 +19,7 @@ if (!UNIX)
    message("WARNING: Salamander is only supported on Linux!")
 endif()
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Werror -Wextra -O0 -Wno-unused-parameter -fsanitize=address,undefined")
+   set(CMAKE_CXX_FLAGS "-g -Wall -Werror -Wextra -O0 -Wno-unused-parameter -fsanitize=address,undefined")
 endif()
 
 ###############################
@@ -35,6 +35,10 @@ add_subdirectory(${GLM_DIR} EXCLUDE_FROM_ALL)
 set(STB_DIR "${PROJECT_LIBRARIES_DIR}/stb")
 add_subdirectory(${STB_DIR} EXCLUDE_FROM_ALL)
 
+set(TINYGLTF_DIR "${PROJECT_LIBRARIES_DIR}/tinygltf")
+add_subdirectory(${TINYGLTF_DIR} EXCLUDE_FROM_ALL)
+set_target_properties(tinygltf PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:tinygltf,INTERFACE_INCLUDE_DIRECTORIES>)  # ignores build errors in tinygltf
+
 include_directories(${PROJECT_SOURCE_DIR})
 
 add_executable(${PROJECT_NAME}
@@ -48,7 +52,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Shader/Image.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/Depth.cpp
     ${PROJECT_SOURCE_DIR}/core/Buffer/Buffer.cpp
-    ${PROJECT_SOURCE_DIR}/core/Model/VertexHandler.cpp
+    ${PROJECT_SOURCE_DIR}/core/Model/ModelHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/DisplayManager.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/SwapchainHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/Command/CommandManager.cpp
@@ -75,4 +79,5 @@ target_link_libraries(${PROJECT_NAME}
         glfw
         glm
         stb
+        tinygltf
 )
