@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 
 #include <core/Shader/ResourceDescriptor.h>
-#include <core/Model/VertexHandler.h>
+#include <core/Model/ModelHandler.h>
 #include <core/Logging/ErrorLogger.h>
 #include <core/Defaults/Defaults.h>
 
@@ -13,7 +13,7 @@
 void ResourceDescriptor::populateBindingDescription(VkVertexInputBindingDescription& bindingDescription)
 {
     bindingDescription.binding = 0;  // binding index in the "array" of bindings.
-    bindingDescription.stride = sizeof(VertexHandler::Vertex);  // byte distance from one entry to another.
+    bindingDescription.stride = sizeof(ModelHandler::Vertex);  // byte distance from one entry to another.
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 }
 
@@ -26,7 +26,7 @@ void ResourceDescriptor::fetchAttributeDescriptions(std::array<VkVertexInputAttr
     positionAttributeDescription.location = 0;
     
     positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    positionAttributeDescription.offset = offsetof(VertexHandler::Vertex, position);
+    positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
 
 
     VkVertexInputAttributeDescription colorAttributeDescription{};
@@ -35,7 +35,7 @@ void ResourceDescriptor::fetchAttributeDescriptions(std::array<VkVertexInputAttr
     colorAttributeDescription.location = 1;
     
     colorAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    colorAttributeDescription.offset = offsetof(VertexHandler::Vertex, color);
+    colorAttributeDescription.offset = offsetof(ModelHandler::Vertex, color);
 
     
     VkVertexInputAttributeDescription textureCoordinatesAttributeDescription{};
@@ -44,7 +44,7 @@ void ResourceDescriptor::fetchAttributeDescriptions(std::array<VkVertexInputAttr
     textureCoordinatesAttributeDescription.location = 2;
     
     textureCoordinatesAttributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
-    textureCoordinatesAttributeDescription.offset = offsetof(VertexHandler::Vertex, textureCoordinates);
+    textureCoordinatesAttributeDescription.offset = offsetof(ModelHandler::Vertex, textureCoordinates);
 
 
     attributeDescriptions = {positionAttributeDescription, colorAttributeDescription, textureCoordinatesAttributeDescription};

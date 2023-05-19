@@ -11,14 +11,14 @@
 
 namespace Depth
 {
-    // create depth image, allocate depth image memory, and create depth image view.
+    // create depth image, allocate depth image memory, and create depth image view, populate image details with such.
     //
     // @param swapchainImageExtent swapchain image extent to use in depth component creation.
     // @param commandPool command pool to use in command buffer creation.
     // @param commandQueue queue to submit necessary commands on.
     // @param vulkanDevices Vulkan physical and logical device to use in depth component creation.
-    // @param depthImage populated depth image struct.
-    void createDepthImage(VkExtent2D swapchainImageExtent, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::Image& depthImage);
+    // @param depthImageDetails populated depth image details.
+    void populateDepthImageDetails(VkExtent2D swapchainImageExtent, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& depthImageDetails);
 
     // select a depth image format.
     //

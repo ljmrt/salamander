@@ -14,7 +14,7 @@
 #include <string>
 
 
-void Image::populateImageStruct(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::Image& imageStruct, uint32_t *optionalImageMipmapLevels = nullptr)
+void Image::populateImageDetails(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails)
 {
     VkImageCreateInfo imageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -37,18 +37,14 @@ void Image::populateImageStruct(uint32_t width, uint32_t height, VkFormat format
 
     imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;  // only relevant for multisampling.
 
-    VkResult imageCreationResult = vkCreateImage(vulkanDevices.logicalDevice, &imageCreateInfo, nullptr, &image);
+    VkResult imageCreationResult = vkCreateImage(vulkanDevices.logicalDevice, &imageCreateInfo, nullptr, &imageDetails.image);
     if (imageCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create image.");
     }
 
-    if (optionalImageMipmapLevels != nullptr) {
-        *optionalImageMipmapLevels = imageCreateInfo.mipLevels;
-    }
-
 
     VkMemoryRequirements imageMemoryRequirements;
-    vkGetImageMemoryRequirements(vulkanDevices.logicalDevice, image, &imageMemoryRequirements);
+    vkGetImageMemoryRequirements(vulkanDevices.logicalDevice, imageDetails.image, &imageMemoryRequirements);
 
     VkMemoryAllocateInfo memoryAllocateInfo{};
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -58,27 +54,35 @@ void Image::populateImageStruct(uint32_t width, uint32_t height, VkFormat format
     Buffer::locateMemoryType(vulkanDevices.physicalDevice, imageMemoryRequirements.memoryTypeBits, memoryProperties, selectedMemoryTypeIndex);
     memoryAllocateInfo.memoryTypeIndex = selectedMemoryTypeIndex;
 
-    VkResult memoryAllocationResult = vkAllocateMemory(vulkanDevices.logicalDevice, &memoryAllocateInfo, nullptr, &imageMemory);
+    VkResult memoryAllocationResult = vkAllocateMemory(vulkanDevices.logicalDevice, &memoryAllocateInfo, nullptr, &imageDetails.imageMemory);
     if (memoryAllocationResult != VK_SUCCESS) {
         throwDebugException("Failed to allocate image memory.");
     }
 
-    vkBindImageMemory(vulkanDevices.logicalDevice, image, imageMemory, 0);
+    vkBindImageMemory(vulkanDevices.logicalDevice, imageDetails.image, imageDetails.imageMemory, 0);
+
+
+    // image itself and image memory are populated in the struct previously in this function.
+    imageDetails.imageLayout = imageCreateInfo.initialLayout;
+    imageDetails.imageWidth = width;
+    imageDetails.imageHeight = height;
+    imageDetails.imageFormat = format;
+    imageDetails.imageMipmapLevels = imageCreateInfo.mipLevels;
 }
 
-void Image::populateImageStruct(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::Texture& textureStruct)
+void Image::populateTextureDetails(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::TextureDetails& textureDetails)
 {
     VkCommandBuffer disposableCommandBuffer;
     CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanDevices.logicalDevice, disposableCommandBuffer);
     
     
-    stbi_uc *textureImagePixels = stbi_load(textureImageFilePath.c_str(), &textureStruct.textureImage.imageWidth, &textureStruct.textureImage.imageHeight, &textureStruct.textureImage.imageChannels, STBI_rgb_alpha);
-    textureStruct.textureImage.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+    stbi_uc *textureImagePixels = stbi_load(textureImageFilePath.c_str(), &textureDetails.textureImage.imageWidth, &textureDetails.textureImage.imageHeight, &textureDetails.textureImage.imageChannels, STBI_rgb_alpha);
+    textureDetails.textureImage.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
     if (!textureImagePixels) {  // if image not loaded.
         throwDebugException("Failed to load texture image.");
     }
 
-    VkDeviceSize textureImageSize = textureStruct.textureImage.imageWidth * textureStruct.textureImage.imageHeight * 4;  // 4 bytes per pixel.
+    VkDeviceSize textureImageSize = textureDetails.textureImage.imageWidth * textureDetails.textureImage.imageHeight * 4;  // 4 bytes per pixel.
     
 
     // similar process to Buffer::createDataBufferComponents, but with an buffer and an image rather than a buffer and a buffer.
@@ -95,15 +99,13 @@ void Image::populateImageStruct(std::string textureImageFilePath, VkCommandPool 
     stbi_image_free(textureImagePixels);
 
 
-    // TODO: populateTextureImageStruct, parent function over populateImageStruct.
-    Image::populateImageStruct(textureStruct.textureImage.imageWidth, textureStruct.textureImage.imageHeight, textureStruct.textureImage.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureStruct.textureImage, textureStruct.textureImage.imageMipmapLevels);
+    Image::populateImageDetails(textureDetails.textureImage.imageWidth, textureDetails.textureImage.imageHeight, textureDetails.textureImage.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureDetails.textureImage);
 
-    // could optimize single-submit commands functions with setup and flush command buffer functions.
-    Image::transitionImageLayout(textureStruct.textureImage.image, textureStruct.textureImage.imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
-    Image::copyBufferToImage(stagingBuffer, textureStruct.textureImage.image, textureStruct.textureImage.imageWidth, textureStruct.textureImage.imageHeight, disposableCommandBuffer);
+    Image::transitionImageLayout(textureDetails.textureImage.image, textureDetails.textureImage.imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
+    Image::copyBufferToImage(stagingBuffer, textureDetails.textureImage.image, textureDetails.textureImage.imageWidth, textureDetails.textureImage.imageHeight, disposableCommandBuffer);
     
-    Image::transitionImageLayout(textureStruct.textureImage.image, textureStruct.textureImage.imageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, disposableCommandBuffer);
-    textureStruct.textureImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    Image::transitionImageLayout(textureDetails.textureImage.image, textureDetails.textureImage.imageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, disposableCommandBuffer);
+    textureDetails.textureImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
@@ -112,12 +114,12 @@ void Image::populateImageStruct(std::string textureImageFilePath, VkCommandPool 
     vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
 
 
-    Image::createImageView(textureStruct.textureImage.image, VK_FORMAT_R8B8G8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, textureStruct.textureImage.imageView, textureStruct.textureImage.imageViewLayerCount);
+    Image::createImageView(textureDetails.textureImage.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, textureDetails.textureImage.imageView, &textureDetails.textureImage.imageViewLayerCount);
 
-    Image::createTextureSampler(vulkanDevices, textureStruct.textureSampler);
+    Image::createTextureSampler(vulkanDevices, textureDetails.textureSampler);
 }
 
-void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView, uint32_t *optionalImageViewLayerCount = nullptr)
+void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView, uint32_t *optionalImageViewLayerCount)  // optionalImageViewLayerCount = nullptr.
 {
     VkImageViewCreateInfo imageViewCreateInfo{};
     imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;

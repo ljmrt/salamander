@@ -4,6 +4,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <core/Shader/Image.h>
 #include <core/Config/Config.h>
 
 #include <string>
@@ -25,9 +26,7 @@ namespace DisplayManager
         std::vector<VkImageView> swapchainImageViews;
         std::vector<VkFramebuffer> swapchainFramebuffers;
 
-        VkImage depthImage;
-        VkDeviceMemory depthImageMemory;
-        VkImageView depthImageView;
+        Image::ImageDetails depthImageDetails;
     };
     
     struct DisplayDetails {

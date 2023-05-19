@@ -1,5 +1,5 @@
-#ifndef VERTEXHANDLER_H
-#define VERTEXHANDLER_H
+#ifndef MODELHANDLER_H
+#define MODELHANDLER_H
 
 
 #define GLFW_INCLUDE_VULKAN
@@ -7,11 +7,14 @@
 
 #include <glm/glm.hpp>
 
+#include <core/VulkanInstance/DeviceHandler.h>
+
 #include <vector>
 #include <array>
+#include <string>
 
 
-namespace VertexHandler
+namespace ModelHandler
 {
     struct Vertex {
         glm::vec3 position;
@@ -19,6 +22,38 @@ namespace VertexHandler
         glm::vec2 textureCoordinates;
     };
 
+    struct Model
+    {
+        std::vector<ModelHandler::Vertex> meshVertices;
+        std::vector<uint32_t> meshIndices;
+
+        // vertex and index buffer personally created for the model.
+        VkBuffer vertexBuffer;
+        VkDeviceMemory vertexBufferMemory;
+        // TODO: what do we do if the model doesn't support/have indices?
+        VkBuffer indexBuffer;
+        VkDeviceMemory indexBufferMemory;
+        
+
+        // load a glTF model from an absolute path.
+        //
+        // @param modelPath the absolute path of the model.
+        void loadModelFromPath(std::string modelPath);
+
+        // create vertex and index buffers for this model.
+        //
+        // @param commandPool command pool to allocate necessary command buffers on.
+        // @param commandQueue queue to submit necessary commands on.
+        // @param vulkanDevices Vulkan logical and physical device to use in model buffers creation.
+        void createModelBuffers(VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
+
+        // cleanup the model.
+        //
+        // @param vulkanLogicalDevice Vulkan logical device to use in model cleanup.
+        void cleanupModel(VkDevice vulkanLogicalDevice);
+    };
+
+    // TODO: remove.
     const std::vector<Vertex> vertices = {  // represents the vertex buffer's data.
         // position(vec3), color(vec3), texture coordinates(vec2).
         {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
@@ -32,14 +67,13 @@ namespace VertexHandler
         {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
     };
 
-    const std::vector<uint16_t> indices = {  // represents the index buffer.
+    const std::vector<uint32_t> indices = {  // represents the index buffer.
         0, 1, 2, 2, 3, 0,
         4, 5, 6, 6, 7, 4
     };
 
     extern std::array<VkVertexInputAttributeDescription, 3> preservedAttributeDescriptions;  // preserved attribute descriptions(pointer reasons).
     extern VkVertexInputBindingDescription preservedBindingDescription;  // preserved binding description(pointer reasons).
-
 
     // populate a vertex input's create info.
     //
@@ -53,4 +87,4 @@ namespace VertexHandler
 }
 
 
-#endif  // VERTEXHANDLER_H
+#endif  // MODELHANDLER_H

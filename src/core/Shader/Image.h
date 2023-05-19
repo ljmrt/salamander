@@ -12,7 +12,7 @@
 
 namespace Image
 {
-    struct Image {
+    struct ImageDetails {
         VkImage image;
         VkDeviceMemory imageMemory;
         VkImageView imageView;
@@ -27,8 +27,8 @@ namespace Image
         uint32_t imageMipmapLevels;
         uint32_t imageViewLayerCount;
     };
-    struct Texture {
-        Image::Image textureImage;  // guarenteed to be completely populated after Image::createTexture.
+    struct TextureDetails {
+        Image::ImageDetails textureImage;  // guarenteed to be completely populated after Image::createTexture.
         
         VkSampler textureSampler;
     };
@@ -42,9 +42,9 @@ namespace Image
     // @param usage the image's Vulkan usage.
     // @param memoryProperties the memory properties that the image memory must abide to.
     // @param vulkanDevices Vulkan physical and logical device.
-    // @param image populated image struct.
+    // @param image populated image details.
     // @param optionalImageMipmapLevels optional stored image mipmap levels.
-    void populateImageStruct(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::Image& imageStruct, uint32_t *optionalImageMipmapLevels = nullptr);
+    void populateImageDetails(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails);
 
     // populate an texture struct.
     //
@@ -52,8 +52,8 @@ namespace Image
     // @param commandPool command pool to use in texture image creation.
     // @param commandQueue queue to submit creation and similar commands on.
     // @param vulkanDevices Vulkan physical and logical device.
-    // @param texture populated texture struct.
-    void populateTextureStruct(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::Texture& textureStruct);
+    // @param texture populated texture details.
+    void populateTextureDetails(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::TextureDetails& textureDetails);
 
     // create an Vulkan image view.
     //
