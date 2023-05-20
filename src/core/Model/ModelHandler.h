@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #include <core/Shader/Image.h>
 #include <core/VulkanInstance/DeviceHandler.h>
@@ -27,8 +28,10 @@ namespace ModelHandler
     {
         std::string absoluteModelDirectory;  // the absolute directory of the model.
         
-        std::vector<ModelHandler::Vertex> meshVertices;
+        std::vector<ModelHandler::Vertex> meshVertices;  // vertice compenets are normalized to a 0..1 range.
         std::vector<uint32_t> meshIndices;
+
+        glm::quat meshQuaternion = glm::identity<glm::quat>();  // the stored quaternion to rotate the mesh using.
 
         // TODO: support for URI-encoded textures.
         std::string absoluteTextureImagePath;  // the absolute path of the texture image.
@@ -60,28 +63,21 @@ namespace ModelHandler
         void cleanupModel(VkDevice vulkanLogicalDevice);
     };
 
-    // TODO: remove.
-    const std::vector<Vertex> vertices = {  // represents the vertex buffer's data.
-        // position(vec3), color(vec3), texture coordinates(vec2).
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-    };
-
-    const std::vector<uint32_t> indices = {  // represents the index buffer.
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4
-    };
 
     extern std::array<VkVertexInputAttributeDescription, 3> preservedAttributeDescriptions;  // preserved attribute descriptions(pointer reasons).
     extern VkVertexInputBindingDescription preservedBindingDescription;  // preserved binding description(pointer reasons).
 
+    // TODO: move this into utils or a math namespace.
+    // normalize value to targetMinimumValue..targetMaximumValue through the equation shown here(https://stats.stackexchange.com/questions/281162/scale-a-number-between-a-range).
+    //
+    // @param initialValue the initial value.
+    // @param initialRangeMinimumValue the lowest(minimum) value in the initial range.
+    // @param initialRangeMaximumValue the highest(maximum) value in the initial range.
+    // @param targetRangeMinimumValue the lowest(minimum) value in the target range.
+    // @param targetRangeMaximumValue the highest(maximum) value in the target range.
+    // @return normalized value.
+    float normalizeValueToRanges(float initialValue, float initialRangeMinimumValue, float initialRangeMaximumValue, float targetRangeMinimumValue, float targetRangeMaximumValue);
+    
     // populate a vertex input's create info.
     //
     // @param vertexInputCreateInfo stored filled vertex input create info.

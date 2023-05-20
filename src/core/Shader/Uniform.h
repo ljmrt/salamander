@@ -31,10 +31,11 @@ namespace Uniform
 
     // update the passed frame's vertex shader uniform buffer.
     //
+    // @param meshQuaternion a quaternion to rotate the mesh.
     // @param currentImage current image/frame.
     // @param swapchainImageExtent Vulkan swapchain image extent.
     // @param mappedUniformBuffersMemory mapped uniform buffers memory.
-    void updateFrameUniformBuffer(size_t currentImage, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedUniformBuffersMemory);
+    void updateFrameUniformBuffer(glm::quat meshQuaternion, size_t currentImage, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedUniformBuffersMemory);
 }
 
 
