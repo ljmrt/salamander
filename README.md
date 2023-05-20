@@ -16,7 +16,7 @@
 
 ## Notice
 
-This is the "release" branch! Fully released features and builds will be here. However, this may not be as cutting-edge as the "development" branch, but anything notable and stable will be released here.
+This is the "development" branch! Most builds here will run, but may not be fully finished. Stable releases can be found on the "release" branch, but may not be as bleeding-edge as this.
 
 ## Features
 
@@ -40,7 +40,7 @@ The environment variable %SALAMANDER_ROOT% has to point to Salamander's root dir
 
 ### Dependencies
 
-GLFW and GLM are included in the project's source code. Vulkan tools, layers, and loader will need to be installed by your package manager. CMake and similar build tools may need to be installed if not already.
+[GLFW](https://github.com/glfw/glfw), [GLM](https://github.com/g-truc/glm), [stb_image.h](https://github.com/nothings/stb/blob/master/stb_image.h), and [tinygltf](https://github.com/syoyo/tinygltf) are all included in the project's source code. Vulkan tools, layers, and loader will need to be installed by your package manager. CMake and similar build tools may need to be installed if not already.
 
 ### Compiling builds
 
@@ -54,33 +54,37 @@ Compiled debug or release binaries can be found in the "bin" directory.
 
 ```diff
 .
-├── assets                    # Misc. outside project files.
+├── assets                    # Misc. and outside-project files.
 │   ├── branding              # Project branding(logos, etc.).
-│   ├── models                # (.glTF) Default models and model storage directory.
-│   └── textures              # Model and misc. textures.
-├── bin                       # (Not included by repository, created by script) Output binary files.
-├── build                     # Build debug or release mode script(.sh), CMake output file directory.
-├── include                   # Project configuration or read-from files.
-│   ├── config                # Configuration files.
-│   └── shaders               # .vert and .frag shaders.
+│   ├── models                # (glTF) Default models and model storage directory.
+│   └── textures              # Misc. textures.
+├── bin                       # (Not included by the repository, created by script) Output binary files.
+├── build                     # Compile debug or release mode scripts(.sh), CMake output directory.
+├── include                   # Seperated project-related files.
+│   ├── config                # Project configuration.
+│   └── shaders               # Shaders used internally.
 ├── libs                      # Third-party libraries/dependencies.
 │   ├── glfw                  # Used for windowing and input support.
-│   └── glm                   # Used for mathematics and useful graphics functions.
-└── src                       # C++ implementation files.
-    ├── core                  # Fundamental engine code(rendering, logging, configuration, etc.).
-    │   ├── Application       # Highest-level application, manages renderer and Vulkan instance.
+│   ├── glm                   # Used for mathematics and useful graphics functions.
+│   ├── stb                   # Used for texture image loading.
+│   └── tinygltf              # Used for glTF model loading.
+└── src                       # C++ implementation and header files.
+    ├── core                  # Fundamental project code.
+    │   ├── Application       # Highest-level application manager.
+    │   ├── Buffer            # Vulkan buffer-related functions and code.
     │   ├── Callbacks         # Windowing, input, rendering, etc. callbacks.
-    │   ├── Config            # .scfg configuration system.
-    │   ├── Defaults          # Global/default variables(window width, window height, etc.).
-    │   ├── DisplayManager    # Display-related functions and handlers.
-    │   ├── Logging           # Core error logging and handling systems(currently only enabled in debug builds).
-    │   ├── Queue             # Queue and queue family code.
-    │   ├── Renderer          # The core renderer/the graphics pipeline container.
-    │   ├── Shader            # Shader structs and handlers.
-    │   ├── VulkanExtensions  # Functions/features not included-by-default in Vulkan(loaded in here).
-    │   └── VulkanInstance    # Core Vulkan processes/Vulkan instancing code.
-    ├── extensions            # Features built on top of the core(GUI, image loading, etc.).
-    └── utils                 # Utility functions(file loading, etc.).
+    │   ├── Command           # Vulkan command handling.
+    │   ├── Config            # (.scfg) Configuration system.
+    │   ├── Defaults          # Global/"default" variables.
+    │   ├── DisplayManager    # Display-related functions and code.
+    │   ├── Logging           # Core error logging and handling systems.
+    │   ├── Model             # Model loading and processing system.
+    │   ├── Queue             # Queue and queue family related functions and code.
+    │   ├── Renderer          # The core renderer.
+    │   ├── Shader            # Shader-related functions and code.
+    │   ├── VulkanExtensions  # Functions/features not included-by-default in Vulkan.
+    │   └── VulkanInstance    # Vulkan setup and related functions and code.
+    └── utils                 # Utility functions.
 ```
 
 ## References
@@ -91,8 +95,8 @@ Compiled debug or release binaries can be found in the "bin" directory.
 
 ## Included assets
 
-WIP
+* [Avocado](https://github.com/KhronosGroup/glTF-Sample-Models/tree/4ca06672ce15d6a27bfb5cf14459bc52fd9044d1/2.0/Avocado)
 
 ## License
 
-Distributed under the MIT License. See ['LICENSE'](https://github.com/ljmrt/salamander/blob/master/LICENSE) for more info.
+Distributed under the Gnu General Public License. See ['LICENSE'](https://github.com/ljmrt/salamander/blob/master/LICENSE) for more info.
