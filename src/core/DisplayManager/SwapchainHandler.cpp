@@ -152,7 +152,7 @@ void SwapchainHandler::createSwapchainImageViews(std::vector<VkImage> swapchainI
 {
     createdSwapchainImageViews.resize(swapchainImages.size());
     for (size_t i = 0; i < swapchainImages.size(); i += 1) {
-        Image::createImageView(swapchainImages[i], swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, vulkanLogicalDevice, createdSwapchainImageViews[i]);
+        Image::createImageView(swapchainImages[i], swapchainImageFormat, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanLogicalDevice, createdSwapchainImageViews[i]);
     }
 }
 

@@ -118,10 +118,10 @@ void ModelHandler::Model::cleanupModel(VkDevice vulkanLogicalDevice)
     vkFreeMemory(vulkanLogicalDevice, indexBufferMemory, nullptr);
 
     vkDestroySampler(vulkanLogicalDevice, textureDetails.textureSampler, nullptr);
-    vkDestroyImageView(vulkanLogicalDevice, textureDetails.textureImage.imageView, nullptr);
+    vkDestroyImageView(vulkanLogicalDevice, textureDetails.textureImageDetails.imageView, nullptr);
     
-    vkDestroyImage(vulkanLogicalDevice, textureDetails.textureImage.image, nullptr);
-    vkFreeMemory(vulkanLogicalDevice, textureDetails.textureImage.imageMemory, nullptr);
+    vkDestroyImage(vulkanLogicalDevice, textureDetails.textureImageDetails.image, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, textureDetails.textureImageDetails.imageMemory, nullptr);
 }
 
 float ModelHandler::normalizeValueToRanges(float initialValue, float initialRangeMinimumValue, float initialRangeMaximumValue, float targetRangeMinimumValue, float targetRangeMaximumValue)

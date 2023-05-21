@@ -14,7 +14,7 @@
 #include <string>
 
 
-void Image::populateImageDetails(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails)
+void Image::populateImageDetails(uint32_t width, uint32_t height, uint32_t mipmapLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails)
 {
     VkImageCreateInfo imageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -25,7 +25,7 @@ void Image::populateImageDetails(uint32_t width, uint32_t height, VkFormat forma
     imageCreateInfo.extent.height = height;
     imageCreateInfo.extent.depth = 1;
 
-    imageCreateInfo.mipLevels = 1;
+    imageCreateInfo.mipLevels = mipmapLevels;
     imageCreateInfo.arrayLayers = 1;
 
     imageCreateInfo.format = format;
@@ -67,7 +67,6 @@ void Image::populateImageDetails(uint32_t width, uint32_t height, VkFormat forma
     imageDetails.imageWidth = width;
     imageDetails.imageHeight = height;
     imageDetails.imageFormat = format;
-    imageDetails.imageMipmapLevels = imageCreateInfo.mipLevels;
 }
 
 void Image::populateTextureDetails(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::TextureDetails& textureDetails)
@@ -76,13 +75,14 @@ void Image::populateTextureDetails(std::string textureImageFilePath, VkCommandPo
     CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanDevices.logicalDevice, disposableCommandBuffer);
     
     
-    stbi_uc *textureImagePixels = stbi_load(textureImageFilePath.c_str(), &textureDetails.textureImage.imageWidth, &textureDetails.textureImage.imageHeight, &textureDetails.textureImage.imageChannels, STBI_rgb_alpha);
-    textureDetails.textureImage.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+    stbi_uc *textureImagePixels = stbi_load(textureImageFilePath.c_str(), &textureDetails.textureImageDetails.imageWidth, &textureDetails.textureImageDetails.imageHeight, &textureDetails.textureImageDetails.imageChannels, STBI_rgb_alpha);
+    textureDetails.textureImageDetails.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
     if (!textureImagePixels) {  // if image not loaded.
         throwDebugException("Failed to load texture image.");
     }
 
-    VkDeviceSize textureImageSize = textureDetails.textureImage.imageWidth * textureDetails.textureImage.imageHeight * 4;  // 4 bytes per pixel.
+    VkDeviceSize textureImageSize = textureDetails.textureImageDetails.imageWidth * textureDetails.textureImageDetails.imageHeight * 4;  // 4 bytes per pixel.
+    textureDetails.textureImageDetails.mipmapLevels = (static_cast<uint32_t>(std::floor(std::log2(std::max(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight)))) + 1);  // get the correct amount of mipmap levels.
     
 
     // similar process to Buffer::createDataBufferComponents, but with an buffer and an image rather than a buffer and a buffer.
@@ -99,13 +99,10 @@ void Image::populateTextureDetails(std::string textureImageFilePath, VkCommandPo
     stbi_image_free(textureImagePixels);
 
 
-    Image::populateImageDetails(textureDetails.textureImage.imageWidth, textureDetails.textureImage.imageHeight, textureDetails.textureImage.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureDetails.textureImage);
+    Image::populateImageDetails(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureDetails.textureImageDetails);
 
-    Image::transitionImageLayout(textureDetails.textureImage.image, textureDetails.textureImage.imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
-    Image::copyBufferToImage(stagingBuffer, textureDetails.textureImage.image, textureDetails.textureImage.imageWidth, textureDetails.textureImage.imageHeight, disposableCommandBuffer);
-    
-    Image::transitionImageLayout(textureDetails.textureImage.image, textureDetails.textureImage.imageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, disposableCommandBuffer);
-    textureDetails.textureImage.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    Image::transitionImageLayout(textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageFormat, textureDetails.textureImageDetails.mipmapLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
+    Image::copyBufferToImage(stagingBuffer, textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, disposableCommandBuffer);
 
     
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
@@ -114,12 +111,112 @@ void Image::populateTextureDetails(std::string textureImageFilePath, VkCommandPo
     vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
 
 
-    Image::createImageView(textureDetails.textureImage.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, textureDetails.textureImage.imageView, &textureDetails.textureImage.imageViewLayerCount);
+    Image::createImageView(textureDetails.textureImageDetails.image, VK_FORMAT_R8G8B8A8_SRGB, textureDetails.textureImageDetails.mipmapLevels, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, textureDetails.textureImageDetails.imageView, &textureDetails.textureImageDetails.imageViewLayerCount);
 
-    Image::createTextureSampler(vulkanDevices, textureDetails.textureSampler);
+    Image::createTextureSampler(vulkanDevices, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureSampler);
+
+    Image::generateMipmapLevels(textureDetails.textureImageDetails, commandPool, commandQueue, vulkanDevices);
+    textureDetails.textureImageDetails.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
-void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView, uint32_t *optionalImageViewLayerCount)  // optionalImageViewLayerCount = nullptr.
+void Image::generateMipmapLevels(Image::ImageDetails& imageDetails, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
+{
+    // check image format linear blitting support.
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(vulkanDevices.physicalDevice, imageDetails.imageFormat, &formatProperties);
+
+    if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) == false) {
+        throwDebugException("Mipmap image format does not support linear blitting.");
+    }
+    
+    
+    VkCommandBuffer disposableCommandBuffer;
+    CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanDevices.logicalDevice, disposableCommandBuffer);
+
+
+    VkImageMemoryBarrier imageMemoryBarrier{};
+    imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    
+    imageMemoryBarrier.image = imageDetails.image;
+    
+    imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+    imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
+    imageMemoryBarrier.subresourceRange.layerCount = 1;
+    imageMemoryBarrier.subresourceRange.levelCount = 1;
+
+    int32_t mipmapImageWidth = imageDetails.imageWidth;
+    int32_t mipmapImageHeight = imageDetails.imageHeight;
+    for (size_t i = 1; i < imageDetails.mipmapLevels; i += 1) {
+        imageMemoryBarrier.subresourceRange.baseMipLevel = i - 1;  // set the "source" of the mipmap level to the previous(blitted) mipmap level.
+
+        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+        vkCmdPipelineBarrier(disposableCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+
+        VkImageBlit imageBlit{};
+
+        // [0] and [1] as two mipmap levels are blitted at once.
+        imageBlit.srcOffsets[0] = {0, 0, 0};
+        imageBlit.dstOffsets[0] = {0, 0, 0};
+        imageBlit.srcOffsets[1] = {mipmapImageWidth, mipmapImageHeight, 1};
+        imageBlit.dstOffsets[1] = {(mipmapImageWidth > 1 ? mipmapImageWidth / 2 : 1), (mipmapImageHeight > 1 ? mipmapImageHeight / 2 : 1), 1};  // the second mipmap level is half the first, check if it is possible to keep dividing.
+
+        imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+        imageBlit.srcSubresource.mipLevel = i - 1;
+        imageBlit.dstSubresource.mipLevel = i;
+
+        imageBlit.srcSubresource.baseArrayLayer = 0;
+        imageBlit.dstSubresource.baseArrayLayer = 0;
+        imageBlit.srcSubresource.layerCount = 1;
+        imageBlit.dstSubresource.layerCount = 1;
+
+        vkCmdBlitImage(disposableCommandBuffer, imageDetails.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, imageDetails.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);  // must be submitted to a queue with graphics capability.
+
+
+        imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(disposableCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+        
+
+        if (mipmapImageWidth > 1) {
+            mipmapImageWidth /= 2;
+        }
+        if (mipmapImageHeight > 1) {
+            mipmapImageHeight /= 2;
+        }
+    }
+
+
+    // transition the last image's layout.
+    imageMemoryBarrier.subresourceRange.baseMipLevel = imageDetails.mipmapLevels - 1;
+        
+    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    vkCmdPipelineBarrier(disposableCommandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+
+    CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
+}
+
+void Image::createImageView(VkImage baseImage, VkFormat baseFormat, uint32_t mipmapLevels, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView, uint32_t *optionalImageViewLayerCount)  // optionalImageViewLayerCount = nullptr.
 {
     VkImageViewCreateInfo imageViewCreateInfo{};
     imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -130,7 +227,7 @@ void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspec
 
     imageViewCreateInfo.subresourceRange.aspectMask = imageAspectFlags;
     imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-    imageViewCreateInfo.subresourceRange.levelCount = 1;
+    imageViewCreateInfo.subresourceRange.levelCount = mipmapLevels;
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     imageViewCreateInfo.subresourceRange.layerCount = 1;
 
@@ -144,7 +241,7 @@ void Image::createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspec
     }
 }
 
-void Image::createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, VkSampler& textureSampler)
+void Image::createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, uint32_t mipmapLevels, VkSampler& textureSampler)
 {
     VkSamplerCreateInfo samplerCreateInfo{};
     samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -172,7 +269,7 @@ void Image::createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, VkS
     samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
     samplerCreateInfo.mipLodBias = 0.0f;
     samplerCreateInfo.minLod = 0.0f;
-    samplerCreateInfo.maxLod = 0.0f;
+    samplerCreateInfo.maxLod = static_cast<float>(mipmapLevels);
 
     VkResult textureSamplerCreationResult = vkCreateSampler(vulkanDevices.logicalDevice, &samplerCreateInfo, nullptr, &textureSampler);
     if (textureSamplerCreationResult != VK_SUCCESS) {
@@ -199,7 +296,7 @@ void Image::selectSupportedImageFormat(const std::vector<VkFormat> candidateImag
     throwDebugException("Failed to select a supported image format.");  // no supported image format was selected.
 }
 
-void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandBuffer commandBuffer)
+void Image::transitionImageLayout(VkImage image, VkFormat format, uint32_t mipmapLevels, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandBuffer commandBuffer)
 {
     VkImageMemoryBarrier imageMemoryBarrier{};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -224,7 +321,7 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout 
     }
     
     imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
-    imageMemoryBarrier.subresourceRange.levelCount = 1;
+    imageMemoryBarrier.subresourceRange.levelCount = mipmapLevels;
     imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
     imageMemoryBarrier.subresourceRange.layerCount = 1;
 
