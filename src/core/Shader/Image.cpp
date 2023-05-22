@@ -14,7 +14,7 @@
 #include <string>
 
 
-void Image::populateImageDetails(uint32_t width, uint32_t height, uint32_t mipmapLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails)
+void Image::populateImageDetails(uint32_t width, uint32_t height, uint32_t mipmapLevels, VkSampleCountFlagBits msaaSampleCount, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails)
 {
     VkImageCreateInfo imageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -35,7 +35,7 @@ void Image::populateImageDetails(uint32_t width, uint32_t height, uint32_t mipma
     imageCreateInfo.usage = usage;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;  // only relevant for multisampling.
+    imageCreateInfo.samples = msaaSampleCount;
 
     VkResult imageCreationResult = vkCreateImage(vulkanDevices.logicalDevice, &imageCreateInfo, nullptr, &imageDetails.image);
     if (imageCreationResult != VK_SUCCESS) {
@@ -99,7 +99,7 @@ void Image::populateTextureDetails(std::string textureImageFilePath, VkCommandPo
     stbi_image_free(textureImagePixels);
 
 
-    Image::populateImageDetails(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureDetails.textureImageDetails);
+    Image::populateImageDetails(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, textureDetails.textureImageDetails.mipmapLevels, VK_SAMPLE_COUNT_1_BIT, textureDetails.textureImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureDetails.textureImageDetails);
 
     Image::transitionImageLayout(textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageFormat, textureDetails.textureImageDetails.mipmapLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
     Image::copyBufferToImage(stagingBuffer, textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, disposableCommandBuffer);

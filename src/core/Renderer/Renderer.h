@@ -41,35 +41,41 @@ private:
 
     size_t m_currentFrame = 0;  // the current "frame" in context of the "in flight" frames.
 
-    ModelHandler::Model avocadoModel;  // the testing avocado model.
+    ModelHandler::Model m_mainModel;  // the main loaded model.
     
 
     // populate a color attachment description and reference.
     //
     // @param swapchainImageFormat the image format of the swapchain, used in populating the color attachment components.
+    // @param msaaSampleCount the amount of msaa samples.
     // @param colorAttachmentDescription populated color attachment description.
     // @param colorAttachmentReference populated color attachment reference.
-    void populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference);
+    // @param colorAttachmentResolveDescription populated color attachment resolve description.
+    // @param colorAttachmentResolveReference populated color attachment resolve reference.
+    void populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference, VkAttachmentDescription& colorAttachmentResolveDescription, VkAttachmentReference& colorAttachmentResolveReference);
 
     // populate a depth attachment description and reference.
     //
+    // @param msaaSampleCount the amount of msaa samples.
     // @param vulkanPhysicalDevice Vulkan physical device to use in depth attachment population.
     // @param depthAttachmentDescription populated depth attachment description.
     // @param depthAttachmentReference populated depth attachment reference.
-    void populateDepthAttachmentComponents(VkPhysicalDevice vulkanPhysicalDevice, VkAttachmentDescription& depthAttachmentDescription, VkAttachmentReference& depthAttachmentReference);
+    void populateDepthAttachmentComponents(VkSampleCountFlagBits msaaSampleCount, VkPhysicalDevice vulkanPhysicalDevice, VkAttachmentDescription& depthAttachmentDescription, VkAttachmentReference& depthAttachmentReference);
     
     // populate a subpass's description.
     //
     // @param colorAttachmentReference color attachment reference to use in subpass description.
+    // @param colorAttachmentResolveReference color attachment resolve reference to use in subpass description.
     // @param depthAttachmentReference depth attachment reference to use in subpass description.
     // @param subpassDescription populated subpass description.
-    void populateSubpassDescription(VkAttachmentReference& colorAttachmentReference, VkAttachmentReference& depthAttachmentReference, VkSubpassDescription& subpassDescription);
+    void populateSubpassDescription(VkAttachmentReference& colorAttachmentReference, VkAttachmentReference& colorAttachmentResolveReference, VkAttachmentReference& depthAttachmentReference, VkSubpassDescription& subpassDescription);
     
     // create member render pass.
     //
     // @param swapchainImageFormat the swapchain image format to use in member render pass creation.
+    // @param msaaSampleCount the amount of msaa samples.
     // @param vulkanPhysicalDevice Vulkan physical device to use in member render pass creation.
-    void createMemberRenderPass(VkFormat swapchainImageFormat, VkPhysicalDevice vulkanPhysicalDevice);
+    void createMemberRenderPass(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkPhysicalDevice vulkanPhysicalDevice);
 
     // populate a viewport's create info.
     //
@@ -81,10 +87,17 @@ private:
     // @param rasterizationCreateInfo populated rasterization create info.
     void populateRasterizationCreateInfo(VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo);
 
+    // fetch the maximum usable sample count for a physical device.
+    //
+    // @param vulkanPhysicalDevice Vulkan physical device to use in maximum usable sample count fetch.
+    // @param maximumUsableSampleCount the (fetched) maximum usable sample count.
+    void fetchMaximumUsableSampleCount(VkPhysicalDevice vulkanPhysicalDevice, VkSampleCountFlagBits& maximumUsableSampleCount);
+
     // populate a multisampling's create info.
     //
+    // @param msaaSampleCount the amount of msaa samples.
     // @param multisamplingCreateInfo populated multisampling create info.
-    void populateMultisamplingCreateInfo(VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo);
+    void populateMultisamplingCreateInfo(VkSampleCountFlagBits msaaSampleCount, VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo);
 
     // populate a depth stencil's create info.
     //
@@ -107,7 +120,9 @@ private:
     void createMemberPipelineLayout();
     
     // create member Vulkan graphics pipeline.
-    void createMemberGraphicsPipeline();
+    //
+    // @param msaaSampleCount the amount of msaa samples.
+    void createMemberGraphicsPipeline(VkSampleCountFlagBits msaaSampleCount);
 
     // create member synchronization objects(semaphores, fences).
     void createMemberSynchronizationObjects();

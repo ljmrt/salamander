@@ -39,13 +39,14 @@ namespace Image
     // @param height the image's height.
     // @param format the image's format.
     // @param mipmapLevels the amount of mipmap levels.
+    // @param msaaSampleCount the amount of msaa samples.
     // @param tiling the image's tiling mode.
     // @param usage the image's Vulkan usage.
     // @param memoryProperties the memory properties that the image memory must abide to.
     // @param vulkanDevices Vulkan physical and logical device.
     // @param image populated image details.
     // @param optionalImageMipmapLevels optional stored image mipmap levels.
-    void populateImageDetails(uint32_t width, uint32_t height, uint32_t mipmapLevels, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails);
+    void populateImageDetails(uint32_t width, uint32_t height, uint32_t mipmapLevels, VkSampleCountFlagBits msaaSampleCount, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails);
 
     // populate an texture struct.
     //

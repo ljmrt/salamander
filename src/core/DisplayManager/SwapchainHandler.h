@@ -76,12 +76,13 @@ namespace SwapchainHandler
     // create the framebuffers necessary for all swapchain image views.
     //
     // @param swapchainImageViews swapchain image views to use in framebuffer creation.
+    // @param colorImageView the color image view to use in framebuffer creation.
     // @param depthImageView the depth image view to use in framebuffer creation.
     // @param renderPass render pass to use in framebuffer creation.
     // @param swapchainExtent swapchain image extent to use in framebuffer creation.
     // @param vulkanLogicalDevice this Vulkan instance's logical device.
     // @param createdSwapchainFramebuffers stored created swapchain framebuffers.
-    void createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers);
+    void createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkImageView colorImageView, VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers);
 
     // recreate the swapchain after some form of incompatibility.
     //

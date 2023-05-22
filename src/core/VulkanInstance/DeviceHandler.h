@@ -31,7 +31,8 @@ namespace DeviceHandler
     // @param windowSurface Vulkan window surface to use in selection.
     // @param queueFamilyIndices result indices of requested queue families.
     // @param selectedPhysicalDevice selected physical device.
-    void selectPhysicalDevice(VkInstance vkInstance, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& queueFamilyIndices, VkPhysicalDevice& selectedPhysicalDevice);
+    // @param msaaSampleCount fetched msaa sample count.
+    void selectPhysicalDevice(VkInstance vkInstance, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& queueFamilyIndices, VkPhysicalDevice& selectedPhysicalDevice, VkSampleCountFlagBits& msaaSampleCount);
 
     // check if a VkPhysicalDevice is suitable for the application.
     //
