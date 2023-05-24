@@ -54,6 +54,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Buffer/Buffer.cpp
     ${PROJECT_SOURCE_DIR}/core/Model/ModelHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/DisplayManager.cpp
+    ${PROJECT_SOURCE_DIR}/core/DisplayManager/Camera.cpp
     ${PROJECT_SOURCE_DIR}/core/DisplayManager/SwapchainHandler.cpp
     ${PROJECT_SOURCE_DIR}/core/Command/CommandManager.cpp
     ${PROJECT_SOURCE_DIR}/core/VulkanExtensions/VulkanExtensions.cpp

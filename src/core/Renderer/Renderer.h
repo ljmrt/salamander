@@ -7,6 +7,7 @@
 
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/Shader/Shader.h>
+#include <core/DisplayManager/Camera.h>
 #include <core/Model/ModelHandler.h>
 
 #include <vector>
@@ -41,6 +42,7 @@ private:
 
     size_t m_currentFrame = 0;  // the current "frame" in context of the "in flight" frames.
 
+    Camera::ArcballCamera m_mainCamera;  // the scene's main camera.
     ModelHandler::Model m_mainModel;  // the main loaded model.
     
 

@@ -57,7 +57,25 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Callbacks::debugCallback(VkDebugUtilsMessageSever
     return VK_FALSE;
 }
 
-void Callbacks::framebufferResizeCallback(GLFWwindow *window, int width, int height)
+void Callbacks::glfwFramebufferResizeCallback(GLFWwindow *window, int width, int height)
 {
     Defaults::callbacksVariables.FRAMEBUFFER_RESIZED = true;
+}
+
+void Callbacks::glfwMouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+        if (action == GLFW_PRESS) {
+            Defaults::callbacksVariables.MAIN_CAMERA->arcballEnabled = true;
+
+            float NDCX;
+            float NDCY;
+            Camera::glfwGetCursorNDCPosition(window, Defaults::callbacksVariables.MAIN_CAMERA->swapchainImageExtent, NDCX, NDCY);
+            Defaults::callbacksVariables.MAIN_CAMERA->initialPoint = Camera::NDCPointOnSphere(NDCX, NDCY);
+        } else {
+            Defaults::callbacksVariables.MAIN_CAMERA->arcballEnabled = false;
+
+            Defaults::callbacksVariables.MAIN_CAMERA->baseQuaternion = Defaults::callbacksVariables.MAIN_CAMERA->volatileQuaternion;
+        }
+    }
 }
