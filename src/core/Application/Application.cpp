@@ -11,7 +11,8 @@ void Application::initialize()
     DisplayManager::initializeGLFW();
     DisplayManager::createWindow(Defaults::windowDefaults.MAIN_WINDOW_WIDTH, Defaults::windowDefaults.MAIN_WINDOW_HEIGHT, Defaults::windowDefaults.MAIN_WINDOW_NAME, m_displayDetails.glfwWindow);
 
-    glfwSetFramebufferSizeCallback(m_displayDetails.glfwWindow, Callbacks::framebufferResizeCallback);
+    glfwSetFramebufferSizeCallback(m_displayDetails.glfwWindow, Callbacks::glfwFramebufferResizeCallback);
+    glfwSetMouseButtonCallback(m_displayDetails.glfwWindow, Callbacks::glfwMouseButtonCallback);
 
     m_instance = VulkanInstance(Defaults::windowDefaults.MAIN_WINDOW_NAME, m_displayDetails);
     m_renderer.setVulkanLogicalDevice(&m_instance.m_devices.logicalDevice);

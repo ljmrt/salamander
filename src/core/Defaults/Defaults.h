@@ -1,6 +1,7 @@
 #ifndef DEFAULTS_H
 #define DEFAULTS_H
 
+#include <core/DisplayManager/Camera.h>
 #include <core/Config/Config.h>
 
 
@@ -32,7 +33,8 @@ namespace Defaults
 
     // callbacks variables.
     struct callbacksConfig {
-        bool FRAMEBUFFER_RESIZED;  // dynamically set from callback: if the framebuffer has been resized(some platforms or drivers may not trigger swapchain recreation properly).        
+        bool FRAMEBUFFER_RESIZED;  // dynamically set from callback: if the framebuffer has been resized(some platforms or drivers may not trigger swapchain recreation properly).
+        Camera::ArcballCamera *MAIN_CAMERA;
     };
     extern callbacksConfig callbacksVariables;  // dynamically set variables to input and output from callbacks.
 

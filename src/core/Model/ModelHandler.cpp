@@ -62,11 +62,17 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         std::vector<ModelHandler::Vertex> primitiveVertices(positionAttributeAccessor.count);  // the amount of vertices is equivalent to the amount of positions in a primitive.
         for (size_t vertexIndex = 0; vertexIndex < positionAttributeAccessor.count; vertexIndex += 1) {
             const uint32_t VERTEX_INDEX_POSITION_OFFSET = (vertexIndex * POSITION_STRIDE);
-            primitiveVertices[vertexIndex].position.x = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 0];
-            primitiveVertices[vertexIndex].position.y = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 1];
-            primitiveVertices[vertexIndex].position.z = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 2];
+            const float rawXPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 0];
+            const float rawYPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 1];
+            const float rawZPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 2];
 
-            primitiveVertices[vertexIndex].color = {1.0f, 1.0f, 0.0f};
+            // uses the X position minimum and maximum coordinates to get a general scaling factor, as individual factors would cause models to be squished into a cube.
+            const float generalMinimumPositionCoordinate = positionAttributeAccessor.minValues[0];
+            const float generalMaximumPositionCoordinate = positionAttributeAccessor.maxValues[0];
+            primitiveVertices[vertexIndex].position.x = ModelHandler::normalizeValueToRanges(rawXPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
+            primitiveVertices[vertexIndex].position.y = ModelHandler::normalizeValueToRanges(rawYPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
+            primitiveVertices[vertexIndex].position.z = ModelHandler::normalizeValueToRanges(rawZPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
+            
 
             const uint32_t VERTEX_INDEX_UV_COORDINATES_OFFSET = (vertexIndex * UV_COORDINATES_STRIDE);
             primitiveVertices[vertexIndex].UVCoordinates.x = UVCoordinateAttributes[VERTEX_INDEX_UV_COORDINATES_OFFSET + 0];
@@ -112,10 +118,16 @@ void ModelHandler::Model::cleanupModel(VkDevice vulkanLogicalDevice)
     vkFreeMemory(vulkanLogicalDevice, indexBufferMemory, nullptr);
 
     vkDestroySampler(vulkanLogicalDevice, textureDetails.textureSampler, nullptr);
-    vkDestroyImageView(vulkanLogicalDevice, textureDetails.textureImage.imageView, nullptr);
+    vkDestroyImageView(vulkanLogicalDevice, textureDetails.textureImageDetails.imageView, nullptr);
     
-    vkDestroyImage(vulkanLogicalDevice, textureDetails.textureImage.image, nullptr);
-    vkFreeMemory(vulkanLogicalDevice, textureDetails.textureImage.imageMemory, nullptr);
+    vkDestroyImage(vulkanLogicalDevice, textureDetails.textureImageDetails.image, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, textureDetails.textureImageDetails.imageMemory, nullptr);
+}
+
+float ModelHandler::normalizeValueToRanges(float initialValue, float initialRangeMinimumValue, float initialRangeMaximumValue, float targetRangeMinimumValue, float targetRangeMaximumValue)
+{
+    float zeroToOneNormalizedValue = ((initialValue - initialRangeMinimumValue) / (initialRangeMaximumValue - initialRangeMinimumValue));
+    return (zeroToOneNormalizedValue * ((targetRangeMaximumValue - targetRangeMinimumValue) + targetRangeMinimumValue));
 }
 
 void ModelHandler::populateVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)

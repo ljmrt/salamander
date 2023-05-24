@@ -22,10 +22,10 @@
 #include <vector>
 
 
-void Renderer::populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference)
+void Renderer::populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference, VkAttachmentDescription& colorAttachmentResolveDescription, VkAttachmentReference& colorAttachmentResolveReference)
 {
     colorAttachmentDescription.format = swapchainImageFormat;
-    colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachmentDescription.samples = msaaSampleCount;
     
     colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;  // clears framebuffer to black.
     colorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -33,19 +33,35 @@ void Renderer::populateColorAttachmentComponents(VkFormat swapchainImageFormat, 
     colorAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     
     colorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    colorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     
     colorAttachmentReference.attachment = 0;
     colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+
+    colorAttachmentResolveDescription.format = swapchainImageFormat;
+    colorAttachmentResolveDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+
+    colorAttachmentResolveDescription.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachmentResolveDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachmentResolveDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachmentResolveDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+    colorAttachmentResolveDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachmentResolveDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+
+    colorAttachmentResolveReference.attachment = 2;
+    colorAttachmentResolveReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 }
 
-void Renderer::populateDepthAttachmentComponents(VkPhysicalDevice vulkanPhysicalDevice, VkAttachmentDescription& depthAttachmentDescription, VkAttachmentReference& depthAttachmentReference)
+void Renderer::populateDepthAttachmentComponents(VkSampleCountFlagBits msaaSampleCount, VkPhysicalDevice vulkanPhysicalDevice, VkAttachmentDescription& depthAttachmentDescription, VkAttachmentReference& depthAttachmentReference)
 {
     VkFormat depthAttachmentDescriptionFormat;
     Depth::selectDepthImageFormat(vulkanPhysicalDevice, depthAttachmentDescriptionFormat);
     depthAttachmentDescription.format = depthAttachmentDescriptionFormat;
-    depthAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachmentDescription.samples = msaaSampleCount;
 
     depthAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -60,30 +76,34 @@ void Renderer::populateDepthAttachmentComponents(VkPhysicalDevice vulkanPhysical
     depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 }
 
-void Renderer::populateSubpassDescription(VkAttachmentReference& colorAttachmentReference, VkAttachmentReference& depthAttachmentReference, VkSubpassDescription& subpassDescription)
+void Renderer::populateSubpassDescription(VkAttachmentReference& colorAttachmentReference, VkAttachmentReference& colorAttachmentResolveReference, VkAttachmentReference& depthAttachmentReference, VkSubpassDescription& subpassDescription)
 {
     subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     
     subpassDescription.colorAttachmentCount = 1;
     subpassDescription.pColorAttachments = &colorAttachmentReference;
+    subpassDescription.pResolveAttachments = &colorAttachmentResolveReference;
 
     subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
 }
 
-void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat, VkPhysicalDevice vulkanPhysicalDevice)
+void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkPhysicalDevice vulkanPhysicalDevice)
 {
     VkAttachmentDescription colorAttachmentDescription{};
     VkAttachmentReference colorAttachmentReference{};
-    populateColorAttachmentComponents(swapchainImageFormat, colorAttachmentDescription, colorAttachmentReference);
+    // color attachment resolve "resolves" the general color attachment for presentation.
+    VkAttachmentDescription colorAttachmentResolveDescription{};
+    VkAttachmentReference colorAttachmentResolveReference{};
+    populateColorAttachmentComponents(swapchainImageFormat, msaaSampleCount, colorAttachmentDescription, colorAttachmentReference, colorAttachmentResolveDescription, colorAttachmentResolveReference);
 
 
     VkAttachmentDescription depthAttachmentDescription{};
     VkAttachmentReference depthAttachmentReference{};
-    populateDepthAttachmentComponents(vulkanPhysicalDevice, depthAttachmentDescription, depthAttachmentReference);
+    populateDepthAttachmentComponents(msaaSampleCount, vulkanPhysicalDevice, depthAttachmentDescription, depthAttachmentReference);
     
     
     VkSubpassDescription subpassDescription{};
-    populateSubpassDescription(colorAttachmentReference, depthAttachmentReference, subpassDescription);
+    populateSubpassDescription(colorAttachmentReference, colorAttachmentResolveReference, depthAttachmentReference, subpassDescription);
 
     
     VkSubpassDependency subpassDependency{};
@@ -100,7 +120,7 @@ void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat, VkPhysicalD
 
 
 
-    std::array<VkAttachmentDescription, 2> attachmentDescriptions = {colorAttachmentDescription, depthAttachmentDescription};
+    std::array<VkAttachmentDescription, 3> attachmentDescriptions = {colorAttachmentDescription, depthAttachmentDescription, colorAttachmentResolveDescription};
     
     VkRenderPassCreateInfo renderPassCreateInfo{};
     renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -152,13 +172,48 @@ void Renderer::populateRasterizationCreateInfo(VkPipelineRasterizationStateCreat
     rasterizationCreateInfo.depthBiasSlopeFactor = 0.0f;
 }
 
-void Renderer::populateMultisamplingCreateInfo(VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo)
+void Renderer::fetchMaximumUsableSampleCount(VkPhysicalDevice vulkanPhysicalDevice, VkSampleCountFlagBits& maximumUsableSampleCount)
+{
+    VkPhysicalDeviceProperties physicalDeviceProperties;
+    vkGetPhysicalDeviceProperties(vulkanPhysicalDevice, &physicalDeviceProperties);
+
+    VkSampleCountFlags sampleCountFlags = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+
+    // is there no more efficient way to do this?
+    if (sampleCountFlags & VK_SAMPLE_COUNT_64_BIT) {
+        maximumUsableSampleCount = VK_SAMPLE_COUNT_64_BIT;
+        return;
+    }
+    if (sampleCountFlags & VK_SAMPLE_COUNT_32_BIT) {
+        maximumUsableSampleCount = VK_SAMPLE_COUNT_32_BIT;
+        return;
+    }
+    if (sampleCountFlags & VK_SAMPLE_COUNT_16_BIT) {
+        maximumUsableSampleCount = VK_SAMPLE_COUNT_16_BIT;
+        return;
+    }
+    if (sampleCountFlags & VK_SAMPLE_COUNT_8_BIT) {
+        maximumUsableSampleCount = VK_SAMPLE_COUNT_8_BIT;
+        return;
+    }
+    if (sampleCountFlags & VK_SAMPLE_COUNT_4_BIT) {
+        maximumUsableSampleCount = VK_SAMPLE_COUNT_4_BIT;
+        return;
+    }
+    if (sampleCountFlags & VK_SAMPLE_COUNT_2_BIT) {
+        maximumUsableSampleCount = VK_SAMPLE_COUNT_2_BIT;
+        return;
+    }
+    maximumUsableSampleCount = VK_SAMPLE_COUNT_1_BIT;
+}
+
+void Renderer::populateMultisamplingCreateInfo(VkSampleCountFlagBits msaaSampleCount, VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo)
 {
     multisamplingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     
-    multisamplingCreateInfo.sampleShadingEnable = VK_FALSE;
-    multisamplingCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    multisamplingCreateInfo.minSampleShading = 1.0f;
+    multisamplingCreateInfo.sampleShadingEnable = VK_TRUE;
+    multisamplingCreateInfo.rasterizationSamples = msaaSampleCount;
+    multisamplingCreateInfo.minSampleShading = 0.2f;
     multisamplingCreateInfo.pSampleMask = nullptr;
     
     multisamplingCreateInfo.alphaToCoverageEnable = VK_FALSE;
@@ -242,7 +297,7 @@ void Renderer::createMemberPipelineLayout()
     }
 }
 
-void Renderer::createMemberGraphicsPipeline()
+void Renderer::createMemberGraphicsPipeline(VkSampleCountFlagBits msaaSampleCount)
 {
     std::string vertexBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/vertex.spv";
     std::string fragmentBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/fragment.spv";
@@ -271,7 +326,7 @@ void Renderer::createMemberGraphicsPipeline()
 
     // multisampling is currently disabled.
     VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
-    populateMultisamplingCreateInfo(multisamplingCreateInfo);
+    populateMultisamplingCreateInfo(msaaSampleCount, multisamplingCreateInfo);
 
 
     VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
@@ -365,6 +420,7 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
 
     if (imageAcquisitionResult == VK_ERROR_OUT_OF_DATE_KHR) {
         SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices{vulkanPhysicalDevice, *m_vulkanLogicalDevice}, m_renderPass, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, displayDetails);
+        m_mainCamera.swapchainImageExtent = displayDetails.vulkanDisplayDetails.swapchainImageExtent;
         return;
     } else if (imageAcquisitionResult != VK_SUCCESS && imageAcquisitionResult != VK_SUBOPTIMAL_KHR) {
         throwDebugException("Failed to acquire swapchain image.");
@@ -375,10 +431,10 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
 
 
     vkResetCommandBuffer(m_graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, avocadoModel.vertexBuffer, avocadoModel.indexBuffer, m_pipelineLayout, m_descriptorSets, m_currentFrame, static_cast<uint32_t>(avocadoModel.meshIndices.size()));
+    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, m_mainModel.vertexBuffer, m_mainModel.indexBuffer, m_pipelineLayout, m_descriptorSets, m_currentFrame, static_cast<uint32_t>(m_mainModel.meshIndices.size()));
 
     
-    Uniform::updateFrameUniformBuffer(m_currentFrame, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_mappedUniformBuffersMemory);
+    Uniform::updateFrameUniformBuffer(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_mappedUniformBuffersMemory);
 
     
     VkSubmitInfo submitInfo{};
@@ -434,30 +490,42 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     DeviceHandler::VulkanDevices temporaryVulkanDevices{};
     temporaryVulkanDevices.physicalDevice = vulkanPhysicalDevice;
     temporaryVulkanDevices.logicalDevice = *m_vulkanLogicalDevice;
+
+
+    Defaults::callbacksVariables.MAIN_CAMERA = &m_mainCamera;
+    m_mainCamera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+    m_mainCamera.eye = glm::vec3(0.0f, 0.0f, -3.0f);
+    m_mainCamera.center = glm::vec3(0.0f, 0.0f, 0.0f);
+    m_mainCamera.swapchainImageExtent = displayDetails.vulkanDisplayDetails.swapchainImageExtent;
+
+    fetchMaximumUsableSampleCount(vulkanPhysicalDevice, displayDetails.vulkanDisplayDetails.msaaSampleCount);
     
-    
-    createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat, vulkanPhysicalDevice);
+    createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat, displayDetails.vulkanDisplayDetails.msaaSampleCount, vulkanPhysicalDevice);
 
     ResourceDescriptor::createDescriptorSetLayout(*m_vulkanLogicalDevice, m_descriptorSetLayout);
         
-    createMemberGraphicsPipeline();
+    createMemberGraphicsPipeline(displayDetails.vulkanDisplayDetails.msaaSampleCount);
 
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
 
-    Depth::populateDepthImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, displayDetails.vulkanDisplayDetails.depthImageDetails);
-
-    SwapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.depthImageDetails.imageView, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
+    // populate the color image details.
+    Image::populateImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent.width, displayDetails.vulkanDisplayDetails.swapchainImageExtent.height, 1, displayDetails.vulkanDisplayDetails.msaaSampleCount, displayDetails.vulkanDisplayDetails.swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, temporaryVulkanDevices, displayDetails.vulkanDisplayDetails.colorImageDetails);
+    Image::createImageView(displayDetails.vulkanDisplayDetails.colorImageDetails.image, displayDetails.vulkanDisplayDetails.colorImageDetails.imageFormat, 1, VK_IMAGE_ASPECT_COLOR_BIT, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.colorImageDetails.imageView);
     
-    avocadoModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Avocado/Avocado.gltf"));
+    Depth::populateDepthImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent, displayDetails.vulkanDisplayDetails.msaaSampleCount, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, displayDetails.vulkanDisplayDetails.depthImageDetails);
+
+    SwapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.colorImageDetails.imageView, displayDetails.vulkanDisplayDetails.depthImageDetails.imageView, m_renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);  // in render function due to timing of swapchain framebuffer creation.
+
+    m_mainModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Avocado/Avocado.gltf"));
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
-    avocadoModel.createModelBuffers(m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
-    Image::populateTextureDetails(avocadoModel.absoluteTextureImagePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, avocadoModel.textureDetails);
+    m_mainModel.createModelBuffers(m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
+    Image::populateTextureDetails(m_mainModel.absoluteTextureImagePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_mainModel.textureDetails);
 
     Uniform::createUniformBuffers(temporaryVulkanDevices, m_uniformBuffers, m_uniformBuffersMemory, m_mappedUniformBuffersMemory);
     
     ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_descriptorSetLayout, m_descriptorPool, *m_vulkanLogicalDevice, m_descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, avocadoModel.textureDetails.textureImage.imageView, avocadoModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_descriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_descriptorSets);
 
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 
@@ -475,7 +543,7 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
 
 void Renderer::cleanupRenderer()
 {
-    avocadoModel.cleanupModel(*m_vulkanLogicalDevice);
+    m_mainModel.cleanupModel(*m_vulkanLogicalDevice);
     
     for (size_t i = 0; i < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; i += 1) {
         vkDestroySemaphore(*m_vulkanLogicalDevice, m_imageAvailibleSemaphores[i], nullptr);
@@ -485,7 +553,7 @@ void Renderer::cleanupRenderer()
         vkDestroyBuffer(*m_vulkanLogicalDevice, m_uniformBuffers[i], nullptr);
         vkFreeMemory(*m_vulkanLogicalDevice, m_uniformBuffersMemory[i], nullptr);
     }
-    
+
     vkDestroyCommandPool(*m_vulkanLogicalDevice, m_graphicsCommandPool, nullptr);  // child command buffers automatically freed.
 
     vkDestroyDescriptorPool(*m_vulkanLogicalDevice, m_descriptorPool, nullptr);

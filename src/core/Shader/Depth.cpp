@@ -8,22 +8,23 @@
 
 #include <core/Shader/Depth.h>
 #include <core/Shader/Image.h>
+#include <core/Renderer/Renderer.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Command/CommandManager.h>
 #include <core/Logging/ErrorLogger.h>
 
 
-void Depth::populateDepthImageDetails(VkExtent2D swapchainImageExtent, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& depthImageDetails)
+void Depth::populateDepthImageDetails(VkExtent2D swapchainImageExtent, VkSampleCountFlagBits msaaSampleCount, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& depthImageDetails)
 {
     Depth::selectDepthImageFormat(vulkanDevices.physicalDevice, depthImageDetails.imageFormat);
-    Image::populateImageDetails(swapchainImageExtent.width, swapchainImageExtent.height, depthImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, depthImageDetails);
-    Image::createImageView(depthImageDetails.image, depthImageDetails.imageFormat, VK_IMAGE_ASPECT_DEPTH_BIT, vulkanDevices.logicalDevice, depthImageDetails.imageView);
+    Image::populateImageDetails(swapchainImageExtent.width, swapchainImageExtent.height, 1, msaaSampleCount, depthImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, depthImageDetails);
+    Image::createImageView(depthImageDetails.image, depthImageDetails.imageFormat, 1, VK_IMAGE_ASPECT_DEPTH_BIT, vulkanDevices.logicalDevice, depthImageDetails.imageView);
 
     
     VkCommandBuffer disposableCommandBuffer;
     CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanDevices.logicalDevice, disposableCommandBuffer);
     
-    Image::transitionImageLayout(depthImageDetails.image, depthImageDetails.imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, disposableCommandBuffer);
+    Image::transitionImageLayout(depthImageDetails.image, depthImageDetails.imageFormat, 1, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, disposableCommandBuffer);
     depthImageDetails.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);

@@ -24,11 +24,11 @@ namespace Image
         int imageChannels;
         VkFormat imageFormat;
 
-        uint32_t imageMipmapLevels;
+        uint32_t mipmapLevels;
         uint32_t imageViewLayerCount;
     };
     struct TextureDetails {
-        Image::ImageDetails textureImage;  // guarenteed to be completely populated after Image::createTexture.
+        Image::ImageDetails textureImageDetails;  // guarenteed to be completely populated after Image::populateTextureDetails.
         
         VkSampler textureSampler;
     };
@@ -38,13 +38,15 @@ namespace Image
     // @param width the image's width.
     // @param height the image's height.
     // @param format the image's format.
+    // @param mipmapLevels the amount of mipmap levels.
+    // @param msaaSampleCount the amount of msaa samples.
     // @param tiling the image's tiling mode.
     // @param usage the image's Vulkan usage.
     // @param memoryProperties the memory properties that the image memory must abide to.
     // @param vulkanDevices Vulkan physical and logical device.
     // @param image populated image details.
     // @param optionalImageMipmapLevels optional stored image mipmap levels.
-    void populateImageDetails(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails);
+    void populateImageDetails(uint32_t width, uint32_t height, uint32_t mipmapLevels, VkSampleCountFlagBits msaaSampleCount, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails);
 
     // populate an texture struct.
     //
@@ -55,21 +57,32 @@ namespace Image
     // @param texture populated texture details.
     void populateTextureDetails(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::TextureDetails& textureDetails);
 
+    // TODO: store/read from stored mipmaps file.
+    // generate mipmap levels for image details.
+    //
+    // @param imageDetails image details to generate and store mipmap levels in.
+    // @param commandPool command pool to allocate a command buffer from.
+    // @param commandQueue queue to use in the submission of necessary commands.
+    // @param vulkanDevices Vulkan logical and physical device to use in mipmap levels generation.
+    void generateMipmapLevels(Image::ImageDetails& imageDetails, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
+
     // create an Vulkan image view.
     //
     // @param baseImage image to base the image view off of.
     // @param baseFormat the base image's format.
+    // @param mipmapLevels the amount of mipmap levels.
     // @param imageAspectFlags image aspect flags to use in image view creation.
     // @param vulkanLogicalDevice Vulkan logical device to use in image view creation.
     // @param imageView created image view.
     // @param optionalImageViewLayerCount an optional storage of the image view's layer count.
-    void createImageView(VkImage baseImage, VkFormat baseFormat, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView, uint32_t *optionalImageViewLayerCount = nullptr);
+    void createImageView(VkImage baseImage, VkFormat baseFormat, uint32_t mipmapLevels, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView, uint32_t *optionalImageViewLayerCount = nullptr);
 
     // create an texture sampler.
     //
     // @param vulkanDevices Vulkan physical and logical device.
+    // @param mipmapLevels the amount of mipmap levels in the texture image.
     // @param textureSampler created texture sampler.
-    void createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, VkSampler& textureSampler);
+    void createTextureSampler(DeviceHandler::VulkanDevices vulkanDevices, uint32_t mipmapLevels, VkSampler& textureSampler);
 
     // select a supported image format out of the candidate formats conformant to image format flags.
     //
@@ -83,10 +96,12 @@ namespace Image
     // transition a Vulkan image's layout from one to another.
     //
     // @param image the image to transition the image layout of.
+    // @param format the image's format.
+    // @param mipmapLevels the amount of mipmap levels in the image.
     // @param initialImageLayout the image's initial or starting image layout.
     // @param targetImageLayout the image's target or result image layout.
     // @param commandBuffer command buffer to use in transition operations.
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandBuffer commandBuffer);
+    void transitionImageLayout(VkImage image, VkFormat format, uint32_t mipmapLevels, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandBuffer commandBuffer);
 
     // copy a buffer with pixel data to an Vulkan image.
     //

@@ -19,14 +19,22 @@ namespace Callbacks
     // @return indication of causing Vulkan call abortion(always VK_FALSE for our case).
     VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void *pUserData);
 
-    // framebuffer resize callback function.
+    // GLFW framebuffer resize callback function.
     //
     // parameters are conforming to the callback and are not optionally removable.
     //
     // @param window GLFW window that was resized.
     // @param width framebuffer width.
     // @param height framebuffer height.
-    void framebufferResizeCallback(GLFWwindow *window, int width, int height);
+    void glfwFramebufferResizeCallback(GLFWwindow *window, int width, int height);
+
+    // GLFW mouse button callback.
+    //
+    // @param window GLFW window that the mouse button action occurred in.
+    // @param button the mouse button that was pressed.
+    // @param action the action of the mouse(press, depress).
+    // @param ?
+    void glfwMouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 };
 
 

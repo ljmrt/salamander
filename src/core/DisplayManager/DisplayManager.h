@@ -26,6 +26,8 @@ namespace DisplayManager
         std::vector<VkImageView> swapchainImageViews;
         std::vector<VkFramebuffer> swapchainFramebuffers;
 
+        VkSampleCountFlagBits msaaSampleCount = VK_SAMPLE_COUNT_1_BIT;  // overwritten by functions.
+        Image::ImageDetails colorImageDetails;  // the multisampling offscreen image details.
         Image::ImageDetails depthImageDetails;
     };
     

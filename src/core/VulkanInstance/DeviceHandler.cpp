@@ -4,6 +4,7 @@
 #include <core/VulkanInstance/DeviceHandler.h>
 #include <core/VulkanInstance/VulkanInstance.h>
 #include <core/VulkanInstance/SupportUtils.h>
+#include <core/Renderer/Renderer.h>
 #include <core/DisplayManager/SwapchainHandler.h>
 #include <core/Queue/Queue.h>
 #include <core/Logging/ErrorLogger.h>
@@ -12,7 +13,7 @@
 #include <set>
 
 
-void DeviceHandler::selectPhysicalDevice(VkInstance vkInstance, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& queueFamilyIndices, VkPhysicalDevice& selectedPhysicalDevice)
+void DeviceHandler::selectPhysicalDevice(VkInstance vkInstance, VkSurfaceKHR windowSurface, Queue::QueueFamilyIndices& queueFamilyIndices, VkPhysicalDevice& selectedPhysicalDevice, VkSampleCountFlagBits& msaaSampleCount)
 {
     uint32_t physicalDeviceCount = 0;
     vkEnumeratePhysicalDevices(vkInstance, &physicalDeviceCount, nullptr);
@@ -77,6 +78,8 @@ void DeviceHandler::createLogicalDevice(VkPhysicalDevice physicalDevice, Queue::
     Queue::populateQueueCreateInfos(queueFamilyIndices, queueCreateInfos);
     
     VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
+    deviceFeatures.sampleRateShading = VK_TRUE;
 
     VkDeviceCreateInfo logicalCreateInfo{};
     logicalCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

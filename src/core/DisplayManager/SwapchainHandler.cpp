@@ -3,6 +3,7 @@
 
 #include <core/DisplayManager/SwapchainHandler.h>
 #include <core/DisplayManager/DisplayManager.h>
+#include <core/Renderer/Renderer.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Shader/Image.h>
 #include <core/Shader/Depth.h>
@@ -152,15 +153,15 @@ void SwapchainHandler::createSwapchainImageViews(std::vector<VkImage> swapchainI
 {
     createdSwapchainImageViews.resize(swapchainImages.size());
     for (size_t i = 0; i < swapchainImages.size(); i += 1) {
-        Image::createImageView(swapchainImages[i], swapchainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, vulkanLogicalDevice, createdSwapchainImageViews[i]);
+        Image::createImageView(swapchainImages[i], swapchainImageFormat, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanLogicalDevice, createdSwapchainImageViews[i]);
     }
 }
 
-void SwapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers)
+void SwapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkImageView colorImageView, VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers)
 {
     createdSwapchainFramebuffers.resize(swapchainImageViews.size());
     for (size_t i = 0; i < swapchainImageViews.size(); i += 1) {
-        std::array<VkImageView, 2> framebufferAttachments = {swapchainImageViews[i], depthImageView};
+        std::array<VkImageView, 3> framebufferAttachments = {colorImageView, depthImageView, swapchainImageViews[i]};
 
         VkFramebufferCreateInfo framebufferCreateInfo{};
         framebufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -204,9 +205,13 @@ void SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevi
     createSwapchainComponentsWrapper(vulkanDevices, displayDetails);
     createSwapchainImageViews(displayDetails.vulkanDisplayDetails.swapchainImages, displayDetails.vulkanDisplayDetails.swapchainImageFormat, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainImageViews);
 
-    Depth::populateDepthImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent, commandPool, commandQueue, vulkanDevices, displayDetails.vulkanDisplayDetails.depthImageDetails);
+    // populate the color image details.
+    Image::populateImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent.width, displayDetails.vulkanDisplayDetails.swapchainImageExtent.height, 1, displayDetails.vulkanDisplayDetails.msaaSampleCount, displayDetails.vulkanDisplayDetails.swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, displayDetails.vulkanDisplayDetails.colorImageDetails);
+    Image::createImageView(displayDetails.vulkanDisplayDetails.colorImageDetails.image, displayDetails.vulkanDisplayDetails.colorImageDetails.imageFormat, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.colorImageDetails.imageView);
     
-    createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.depthImageDetails.imageView, renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);
+    Depth::populateDepthImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent, displayDetails.vulkanDisplayDetails.msaaSampleCount, commandPool, commandQueue, vulkanDevices, displayDetails.vulkanDisplayDetails.depthImageDetails);
+    
+    createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.colorImageDetails.imageView, displayDetails.vulkanDisplayDetails.depthImageDetails.imageView, renderPass, displayDetails.vulkanDisplayDetails.swapchainImageExtent, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);
 }
 
 void SwapchainHandler::cleanupSwapchain(DisplayManager::VulkanDisplayDetails vulkanDisplayDetails, VkDevice vulkanLogicalDevice)
@@ -214,6 +219,10 @@ void SwapchainHandler::cleanupSwapchain(DisplayManager::VulkanDisplayDetails vul
     vkDestroyImageView(vulkanLogicalDevice, vulkanDisplayDetails.depthImageDetails.imageView, nullptr);
     vkDestroyImage(vulkanLogicalDevice, vulkanDisplayDetails.depthImageDetails.image, nullptr);
     vkFreeMemory(vulkanLogicalDevice, vulkanDisplayDetails.depthImageDetails.imageMemory, nullptr);
+
+    vkDestroyImageView(vulkanLogicalDevice, vulkanDisplayDetails.colorImageDetails.imageView, nullptr);
+    vkDestroyImage(vulkanLogicalDevice, vulkanDisplayDetails.colorImageDetails.image, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, vulkanDisplayDetails.colorImageDetails.imageMemory, nullptr);
     
     for (VkFramebuffer swapchainFramebuffer : vulkanDisplayDetails.swapchainFramebuffers) {
         vkDestroyFramebuffer(vulkanLogicalDevice, swapchainFramebuffer, nullptr);

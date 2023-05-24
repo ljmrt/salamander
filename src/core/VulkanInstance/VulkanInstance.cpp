@@ -28,7 +28,7 @@ VulkanInstance::VulkanInstance(std::string instanceApplicationName, DisplayManag
     DisplayManager::createWindowSurface(m_vkInstance, displayDetails.glfwWindow, displayDetails.vulkanDisplayDetails.windowSurface);
 
     m_devices.physicalDevice = VK_NULL_HANDLE;
-    DeviceHandler::selectPhysicalDevice(m_vkInstance, displayDetails.vulkanDisplayDetails.windowSurface, m_familyIndices, m_devices.physicalDevice);
+    DeviceHandler::selectPhysicalDevice(m_vkInstance, displayDetails.vulkanDisplayDetails.windowSurface, m_familyIndices, m_devices.physicalDevice, displayDetails.vulkanDisplayDetails.msaaSampleCount);
     
     DeviceHandler::createLogicalDevice(m_devices.physicalDevice, m_familyIndices, m_devices.logicalDevice);
     vkGetDeviceQueue(m_devices.logicalDevice, m_familyIndices.graphicsFamily.value(), 0, &displayDetails.vulkanDisplayDetails.graphicsQueue);
