@@ -1,7 +1,10 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+
 #include <core/DisplayManager/DisplayManager.h>
+#include <core/Defaults/Defaults.h>
 #include <core/Logging/ErrorLogger.h>
 
 #include <string>
@@ -33,6 +36,9 @@ void DisplayManager::processWindowInput(GLFWwindow *glfwWindow)
 {
     if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_X)) {  // close window on X press.
         glfwSetWindowShouldClose(glfwWindow, true);
+    }
+    if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_R)) {  // reset model orientation on R press.
+        Defaults::callbacksVariables.MAIN_CAMERA->baseQuaternion = glm::identity<glm::quat>();
     }
 }
 
