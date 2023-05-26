@@ -29,13 +29,13 @@ void ResourceDescriptor::fetchAttributeDescriptions(std::array<VkVertexInputAttr
     positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
 
 
-    VkVertexInputAttributeDescription colorAttributeDescription{};
+    VkVertexInputAttributeDescription normalAttributeDescription{};
 
-    colorAttributeDescription.binding = 0;
-    colorAttributeDescription.location = 1;
+    normalAttributeDescription.binding = 0;
+    normalAttributeDescription.location = 1;
     
-    colorAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    colorAttributeDescription.offset = offsetof(ModelHandler::Vertex, color);
+    normalAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+    normalAttributeDescription.offset = offsetof(ModelHandler::Vertex, normal);
 
     
     VkVertexInputAttributeDescription UVCoordinatesAttributeDescription{};
@@ -47,7 +47,7 @@ void ResourceDescriptor::fetchAttributeDescriptions(std::array<VkVertexInputAttr
     UVCoordinatesAttributeDescription.offset = offsetof(ModelHandler::Vertex, UVCoordinates);
 
 
-    attributeDescriptions = {positionAttributeDescription, colorAttributeDescription, UVCoordinatesAttributeDescription};
+    attributeDescriptions = {positionAttributeDescription, normalAttributeDescription, UVCoordinatesAttributeDescription};
 }
 
 void ResourceDescriptor::createDescriptorSetLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout)
@@ -61,7 +61,7 @@ void ResourceDescriptor::createDescriptorSetLayout(VkDevice vulkanLogicalDevice,
 
     uniformBufferLayoutBinding.pImmutableSamplers = nullptr;
 
-    uniformBufferLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uniformBufferLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
 
     VkDescriptorSetLayoutBinding combinedSamplerLayoutBinding{};

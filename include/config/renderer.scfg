@@ -1,3 +1,4 @@
 # The application's renderer configuration file.
 
 MAX_FRAMES_IN_FLIGHT : 2  # The max amount of frames "in flight"(processing concurrently on the CPU) allowed.
+MAIN_CAMERA_ZOOM_AMOUNT : 0.5  # The amount to zoom in the main camera each mouse scroll callback.

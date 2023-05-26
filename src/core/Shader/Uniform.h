@@ -16,9 +16,14 @@
 namespace Uniform
 {
     struct UniformBufferObject {  // identical to the vertex shader's struct.
-        alignas(16) glm::mat4 modelMatrix;
-        alignas(16) glm::mat4 viewMatrix;
-        alignas(16) glm::mat4 projectionMatrix;
+        glm::mat4 pvMatrix;
+        glm::mat4 modelMatrix;
+        glm::mat3 normalMatrix;
+
+        // all (*)color vec4's are structered as [R, G, B, light intensity].
+        glm::vec4 ambientLightColor;
+        glm::vec3 pointLightPosition;
+        glm::vec4 pointLightColor;
     };
 
 

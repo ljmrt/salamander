@@ -52,13 +52,24 @@ void Uniform::updateFrameUniformBuffer(Camera::ArcballCamera& mainCamera, glm::q
         mainCamera.volatileQuaternion = dragQuaternion * mainCamera.baseQuaternion;
         rotationQuaternion = mainCamera.volatileQuaternion;
     }
-    
-    uniformBufferObject.viewMatrix = glm::lookAt(mainCamera.eye, mainCamera.center, mainCamera.up);  // look at the geometry head-on 3 units backwards from it's center.
-    uniformBufferObject.viewMatrix *= glm::mat4_cast(rotationQuaternion);
-    
-    uniformBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), swapchainImageExtent.width / (float)(swapchainImageExtent.height), 0.1f, 10.0f);  // 45-degree vertical field-of-view.
-    uniformBufferObject.projectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
 
+    glm::mat4 viewMatrix;
+    viewMatrix = glm::lookAt(mainCamera.eye, mainCamera.center, mainCamera.up);  // look at the geometry head-on 3 units backwards from it's center.
+    viewMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -mainCamera.zoomAmount));
+    viewMatrix *= glm::mat4_cast(rotationQuaternion);
+
+    glm::mat4 projectionMatrix;
+    projectionMatrix = glm::perspective(glm::radians(45.0f), swapchainImageExtent.width / (float)(swapchainImageExtent.height), 0.1f, 10.0f);  // 45-degree vertical field-of-view.
+    projectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
+
+    uniformBufferObject.pvMatrix = projectionMatrix * viewMatrix;
+    uniformBufferObject.normalMatrix = glm::mat3(glm::transpose(glm::inverse(uniformBufferObject.modelMatrix)));
+
+
+    uniformBufferObject.ambientLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
+    uniformBufferObject.pointLightPosition = glm::vec3(0.0f, 0.0f, -1.0f);  // this is in world space.
+    uniformBufferObject.pointLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    
 
     memcpy(mappedUniformBuffersMemory[currentImage], &uniformBufferObject, sizeof(uniformBufferObject));
 }

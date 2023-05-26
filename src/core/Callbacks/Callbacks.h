@@ -35,6 +35,13 @@ namespace Callbacks
     // @param action the action of the mouse(press, depress).
     // @param ?
     void glfwMouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
+
+    // GLFW mouse scroll callback.
+    //
+    // @param window GLFW window that the mouse scroll action occurred in.
+    // @param xoffset ?
+    // @param yoffset 1: scrolling upwards -1: scrolling downwards.
+    void glfwMouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 };
 
 

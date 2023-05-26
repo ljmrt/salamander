@@ -49,6 +49,16 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         const float *positionAttributes = reinterpret_cast<const float *>(&positionAttributeBuffer.data[positionAttributeBufferView.byteOffset + positionAttributeAccessor.byteOffset]);  // get the position attribute data from the buffer starting at the actual data offset to the end of the buffer(position attributes are only up to positionAttributeAccessor.count multiplied by the entire data type stride).
         const uint32_t POSITION_STRIDE = 3;  // positions are vec3 components.
 
+        const tinygltf::Accessor& normalAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["NORMAL"]];
+        const tinygltf::BufferView& normalAttributeBufferView = loadedModel.bufferViews[normalAttributeAccessor.bufferView];
+        const tinygltf::Buffer& normalAttributeBuffer = loadedModel.buffers[normalAttributeBufferView.buffer];
+        
+        if ((normalAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && normalAttributeAccessor.type == TINYGLTF_TYPE_VEC3) == false) {
+            throwDebugException("Model vertices normal data is in an incorrect component type or type.");
+        }
+        const float *normalAttributes = reinterpret_cast<const float *>(&normalAttributeBuffer.data[normalAttributeBufferView.byteOffset + normalAttributeAccessor.byteOffset]);
+        const uint32_t NORMAL_STRIDE = 3;  // normals are vec3 components.
+
         const tinygltf::Accessor& UVCoordinateAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["TEXCOORD_0"]];
         const tinygltf::BufferView& UVCoordinateAttributeBufferView = loadedModel.bufferViews[UVCoordinateAttributeAccessor.bufferView];
         const tinygltf::Buffer& UVCoordinateAttributeBuffer = loadedModel.buffers[UVCoordinateAttributeBufferView.buffer];
@@ -72,6 +82,12 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
             primitiveVertices[vertexIndex].position.x = ModelHandler::normalizeValueToRanges(rawXPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
             primitiveVertices[vertexIndex].position.y = ModelHandler::normalizeValueToRanges(rawYPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
             primitiveVertices[vertexIndex].position.z = ModelHandler::normalizeValueToRanges(rawZPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
+
+
+            const uint32_t VERTEX_INDEX_NORMAL_OFFSET = (vertexIndex * NORMAL_STRIDE);
+            primitiveVertices[vertexIndex].normal.x = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 1];
+            primitiveVertices[vertexIndex].normal.y = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 1];
+            primitiveVertices[vertexIndex].normal.z = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 2];
             
 
             const uint32_t VERTEX_INDEX_UV_COORDINATES_OFFSET = (vertexIndex * UV_COORDINATES_STRIDE);
@@ -100,6 +116,27 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         const tinygltf::Texture baseColorTexture = loadedModel.textures[baseColorTextureInfo.index];
         const tinygltf::Image baseColorTextureImage = loadedModel.images[baseColorTexture.source];
         absoluteTextureImagePath = (absoluteModelDirectory + "/" + baseColorTextureImage.uri);
+    }
+}
+
+void ModelHandler::Model::normalizeNormalValues()
+{
+    // taken from the minimum and maximum normal X coordinates
+    float generalMinimumNormalValue = 100000;
+    float generalMaximumNormalValue = 0;
+    for (ModelHandler::Vertex meshVertex : meshVertices) {
+        if (meshVertex.normal.x < generalMinimumNormalValue) {
+            generalMinimumNormalValue = meshVertex.normal.x;
+        }
+        if (meshVertex.normal.x > generalMaximumNormalValue) {
+            generalMaximumNormalValue = meshVertex.normal.x;
+        }
+    }
+
+    for (ModelHandler::Vertex meshVertex : meshVertices) {
+        meshVertex.normal.x = ModelHandler::normalizeValueToRanges(meshVertex.normal.x, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
+        meshVertex.normal.y = ModelHandler::normalizeValueToRanges(meshVertex.normal.y, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
+        meshVertex.normal.z = ModelHandler::normalizeValueToRanges(meshVertex.normal.z, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
     }
 }
 

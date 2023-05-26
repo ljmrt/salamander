@@ -16,6 +16,8 @@ namespace Camera
         glm::vec3 eye;  // where the camera is positioned.
         glm::vec3 center;  // what position the camera is looking at.
 
+        float zoomAmount;  // the amount to zoom at a time(consistently 0, unless a scroll callback occurs).
+
         bool arcballEnabled = false;
         glm::vec3 initialPoint;  // the initial clicked-on point on the sphere.
         glm::quat baseQuaternion = glm::identity<glm::quat>();  // the stored non-volatile quaternion of the sphere/object before arcball.

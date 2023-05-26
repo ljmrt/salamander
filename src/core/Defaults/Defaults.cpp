@@ -34,7 +34,8 @@ void Defaults::initializeDefaults()
     // initialize renderer defaults.
     m_rendererDatabase = ConfigDB(Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/include/config/renderer.scfg");
 
-    rendererDefaults.MAX_FRAMES_IN_FLIGHT = static_cast<size_t>(std::stoul(m_rendererDatabase.lookupKey("MAX_FRAMES_IN_FLIGHT")));
+    rendererDefaults.MAX_FRAMES_IN_FLIGHT = std::stoul(m_rendererDatabase.lookupKey("MAX_FRAMES_IN_FLIGHT"));
+    rendererDefaults.MAIN_CAMERA_ZOOM_AMOUNT = std::stof(m_rendererDatabase.lookupKey("MAIN_CAMERA_ZOOM_AMOUNT"));
     
     
     // initialize logging defaults.

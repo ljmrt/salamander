@@ -30,13 +30,9 @@ Some features or parts of the engine may not be fully implemented and bugs will 
 
 WIP
 
-## Project setup and building
+## Project building and setup
 
 Note: Currently only supported on Linux.
-
-### Setup
-
-The environment variable %SALAMANDER_ROOT% has to point to Salamander's root directory("." relative to this file) for proper functionality. This can be set manually, or you can run "setupenv.sh" to automatically set up the environment variable(appends export to your ".bashrc"). In addition, see the "config" directory to view project configuration.
 
 ### Dependencies
 
@@ -49,6 +45,18 @@ To compile debug or release builds, you must be in the "build" directory and run
 ### Compiled binaries
 
 Compiled debug or release binaries can be found in the "bin" directory.
+
+### Setup
+
+The environment variable %SALAMANDER_ROOT% has to point to Salamander's root directory("." relative to this file) for proper functionality. This can be set manually, or you can run "setupenv.sh" to automatically set up the environment variable(appends export to your ".bashrc"). In addition, see the "config" directory to view project configuration.
+
+### Controls
+
+* Right mouse button: Arcball camera control.
+* Mouse scroll: camera zoom.
+* "R" keypress: reset camera orientation.
+
+###
 
 ## Project structure
 

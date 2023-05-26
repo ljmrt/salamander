@@ -25,7 +25,8 @@ namespace Defaults
 
     // renderer configuration.
     struct rendererConfig {
-        size_t MAX_FRAMES_IN_FLIGHT;  // the max amount of frames that can be "in flight" or concurrently worked on by the CPU.
+        uint32_t MAX_FRAMES_IN_FLIGHT;  // the max amount of frames that can be "in flight" or concurrently worked on by the CPU.
+        float MAIN_CAMERA_ZOOM_AMOUNT;  // the amount that the main camera zooms in during one scroll callback.
     };
     extern rendererConfig rendererDefaults;  // default/read renderer configuration.
 

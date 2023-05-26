@@ -79,3 +79,8 @@ void Callbacks::glfwMouseButtonCallback(GLFWwindow *window, int button, int acti
         }
     }
 }
+
+void Callbacks::glfwMouseScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+{
+    Defaults::callbacksVariables.MAIN_CAMERA->zoomAmount += (Defaults::rendererDefaults.MAIN_CAMERA_ZOOM_AMOUNT * yoffset);
+}

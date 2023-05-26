@@ -34,10 +34,10 @@ void DisplayManager::createWindowSurface(VkInstance vkInstance, GLFWwindow *glfw
 
 void DisplayManager::processWindowInput(GLFWwindow *glfwWindow)
 {
-    if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_X)) {  // close window on X press.
+    if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_ESCAPE)) {  // close window on "espace" key press.
         glfwSetWindowShouldClose(glfwWindow, true);
     }
-    if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_R)) {  // reset model orientation on R press.
+    if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_R)) {  // reset model orientation on "R" key press.
         Defaults::callbacksVariables.MAIN_CAMERA->baseQuaternion = glm::identity<glm::quat>();
     }
 }

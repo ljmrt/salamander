@@ -20,7 +20,7 @@ namespace ModelHandler
 {
     struct Vertex {
         glm::vec3 position;
-        glm::vec3 color;
+        glm::vec3 normal;
         glm::vec2 UVCoordinates;
     };
 
@@ -49,6 +49,9 @@ namespace ModelHandler
         //
         // @param absoluteModelPath the absolute path of the model.
         void loadModelFromAbsolutePath(std::string absoluteModelPath);
+
+        // normalize the mesh vertice normal values.
+        void normalizeNormalValues();
 
         // create vertex and index buffers for this model.
         //

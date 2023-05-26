@@ -13,6 +13,7 @@ void Application::initialize()
 
     glfwSetFramebufferSizeCallback(m_displayDetails.glfwWindow, Callbacks::glfwFramebufferResizeCallback);
     glfwSetMouseButtonCallback(m_displayDetails.glfwWindow, Callbacks::glfwMouseButtonCallback);
+    glfwSetScrollCallback(m_displayDetails.glfwWindow, Callbacks::glfwMouseScrollCallback);
 
     m_instance = VulkanInstance(Defaults::windowDefaults.MAIN_WINDOW_NAME, m_displayDetails);
     m_renderer.setVulkanLogicalDevice(&m_instance.m_devices.logicalDevice);
