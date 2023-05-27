@@ -1,11 +1,11 @@
 #version 450
-#extension GL_EXT_debug_printf : enable
 
 layout(binding = 0) uniform UniformBufferObject {
     mat4 pvMatrix;
     mat4 modelMatrix;
     mat3 normalMatrix;
 
+    vec3 viewingPosition;
     vec4 ambientLightColor;
     vec3 pointLightPosition;
     vec4 pointLightColor;
@@ -27,12 +27,16 @@ void main()
     float attenuation = (1.0 / dot(pointLightRayDirection, pointLightRayDirection));
     pointLightRayDirection = normalize(pointLightRayDirection);
     
-    vec3 diffuseLightColor = (uniformBufferObject.pointLightColor.xyz * uniformBufferObject.pointLightColor.w * attenuation);
+    vec3 unpackedPointLightColor = (uniformBufferObject.pointLightColor.xyz * uniformBufferObject.pointLightColor.w * attenuation);
     float diffuseLightValue = max(dot(normalize(fragmentNormalWorldSpace), pointLightRayDirection), 0.0);  // we want to avoid negative values.
-    vec3 diffuseLighting = (diffuseLightColor * diffuseLightValue);
+    vec3 diffuseLighting = (unpackedPointLightColor * diffuseLightValue);
+
+    vec3 viewingDirection = normalize(uniformBufferObject.viewingPosition - fragmentPositionWorldSpace);
+    vec3 reflectionDirection = reflect(pointLightRayDirection, fragmentNormalWorldSpace);
+    float specularComponent = pow(max(dot(viewingDirection, reflectionDirection), 0.0), 32);
+    vec3 specularLighting = 0.5 * specularComponent * unpackedPointLightColor;
     
-    vec4 completeLighting = vec4((diffuseLighting + ambientLighting), 1.0);
-    debugPrintfEXT("Fragment shader printf");
+    vec4 completeLighting = vec4((ambientLighting + diffuseLighting + specularLighting), 1.0);
     
 
     outputColor = (completeLighting * texture(textureSampler, fragmentUVCoordinates));

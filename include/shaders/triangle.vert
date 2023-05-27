@@ -5,6 +5,7 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 modelMatrix;
     mat3 normalMatrix;
 
+    vec3 viewingPosition;
     vec4 ambientLightColor;
     vec3 pointLightPosition;
     vec4 pointLightColor;

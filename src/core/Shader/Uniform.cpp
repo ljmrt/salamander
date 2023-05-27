@@ -65,7 +65,7 @@ void Uniform::updateFrameUniformBuffer(Camera::ArcballCamera& mainCamera, glm::q
     uniformBufferObject.pvMatrix = projectionMatrix * viewMatrix;
     uniformBufferObject.normalMatrix = glm::mat3(glm::transpose(glm::inverse(uniformBufferObject.modelMatrix)));
 
-
+    uniformBufferObject.viewingPosition = mainCamera.eye;
     uniformBufferObject.ambientLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
     uniformBufferObject.pointLightPosition = glm::vec3(0.0f, 0.0f, -1.0f);  // this is in world space.
     uniformBufferObject.pointLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);

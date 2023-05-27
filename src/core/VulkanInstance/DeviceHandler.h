@@ -20,8 +20,7 @@ namespace DeviceHandler
     namespace
     {
         const std::vector<const char *> requiredDeviceExtensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-            VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
     }
 

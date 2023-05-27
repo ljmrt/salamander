@@ -20,10 +20,11 @@ namespace Uniform
         glm::mat4 modelMatrix;
         glm::mat3 normalMatrix;
 
+        alignas(16) glm::vec3 viewingPosition;
         // all (*)color vec4's are structered as [R, G, B, light intensity].
-        glm::vec4 ambientLightColor;
+        alignas(16) glm::vec4 ambientLightColor;
         glm::vec3 pointLightPosition;
-        glm::vec4 pointLightColor;
+        alignas(16) glm::vec4 pointLightColor;
     };
 
 
