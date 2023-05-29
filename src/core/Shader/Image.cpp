@@ -12,9 +12,11 @@
 #include <core/Logging/ErrorLogger.h>
 
 #include <string>
+#include <vector>
+#include <iostream>
 
 
-void Image::populateImageDetails(uint32_t width, uint32_t height, uint32_t mipmapLevels, VkSampleCountFlagBits msaaSampleCount, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails)
+void Image::populateImageDetails(uint32_t width, uint32_t height, uint32_t mipmapLevels, uint32_t layerCount, VkSampleCountFlagBits msaaSampleCount, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails)
 {
     VkImageCreateInfo imageCreateInfo{};
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -26,7 +28,7 @@ void Image::populateImageDetails(uint32_t width, uint32_t height, uint32_t mipma
     imageCreateInfo.extent.depth = 1;
 
     imageCreateInfo.mipLevels = mipmapLevels;
-    imageCreateInfo.arrayLayers = 1;
+    imageCreateInfo.arrayLayers = layerCount;
 
     imageCreateInfo.format = format;
     imageCreateInfo.tiling = tiling;
@@ -36,6 +38,8 @@ void Image::populateImageDetails(uint32_t width, uint32_t height, uint32_t mipma
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     imageCreateInfo.samples = msaaSampleCount;
+
+    imageCreateInfo.flags = (layerCount == 6 ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0);
 
     VkResult imageCreationResult = vkCreateImage(vulkanDevices.logicalDevice, &imageCreateInfo, nullptr, &imageDetails.image);
     if (imageCreationResult != VK_SUCCESS) {
@@ -69,40 +73,57 @@ void Image::populateImageDetails(uint32_t width, uint32_t height, uint32_t mipma
     imageDetails.imageFormat = format;
 }
 
-void Image::populateTextureDetails(std::string textureImageFilePath, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::TextureDetails& textureDetails)
+void Image::populateTextureDetails(std::string textureImageFilePath, bool isCubemap, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::TextureDetails& textureDetails)
 {
     VkCommandBuffer disposableCommandBuffer;
     CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanDevices.logicalDevice, disposableCommandBuffer);
-    
-    
-    stbi_uc *textureImagePixels = stbi_load(textureImageFilePath.c_str(), &textureDetails.textureImageDetails.imageWidth, &textureDetails.textureImageDetails.imageHeight, &textureDetails.textureImageDetails.imageChannels, STBI_rgb_alpha);
-    textureDetails.textureImageDetails.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
-    if (!textureImagePixels) {  // if image not loaded.
-        throwDebugException("Failed to load texture image.");
-    }
 
-    VkDeviceSize textureImageSize = textureDetails.textureImageDetails.imageWidth * textureDetails.textureImageDetails.imageHeight * 4;  // 4 bytes per pixel.
-    textureDetails.textureImageDetails.mipmapLevels = (static_cast<uint32_t>(std::floor(std::log2(std::max(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight)))) + 1);  // get the correct amount of mipmap levels.
+
+    textureDetails.textureImageDetails.imageLayerCount = (isCubemap ? 6 : 1);
+    
+
+    std::vector<stbi_uc *> textureImagesPixels;
+    textureImagesPixels.resize(textureDetails.textureImageDetails.imageLayerCount);
+    for (size_t i = 0; i < textureDetails.textureImageDetails.imageLayerCount; i += 1) {
+        // const char *textureImageResolvedFilePath = (isCubemap ? (textureImageFilePath + std::to_string(i)) : textureImageFilePath).c_str();
+        const char *textureImageResolvedFilePath = (textureImageFilePath).c_str();
+        textureImagesPixels[i] = stbi_load(textureImageResolvedFilePath, &textureDetails.textureImageDetails.imageWidth, &textureDetails.textureImageDetails.imageHeight, &textureDetails.textureImageDetails.imageChannels, STBI_rgb_alpha);
+
+        if (!textureImagesPixels[i]) {  // if image not loaded.
+            throwDebugException("Failed to load texture image.");
+        }
+    }
+    
+    textureDetails.textureImageDetails.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+
+    VkDeviceSize textureImageSize = (textureDetails.textureImageDetails.imageWidth * textureDetails.textureImageDetails.imageHeight * 4);
+    textureDetails.textureImageDetails.mipmapLevels = (isCubemap ? 1 : (static_cast<uint32_t>(std::floor(std::log2(std::max(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight)))) + 1));  // get the correct amount of mipmap levels.
     
 
     // similar process to Buffer::createDataBufferComponents, but with an buffer and an image rather than a buffer and a buffer.
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    Buffer::createBufferComponents(textureImageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vulkanDevices, stagingBuffer, stagingBufferMemory);
+    Buffer::createBufferComponents((textureImageSize * textureDetails.textureImageDetails.imageLayerCount), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vulkanDevices, stagingBuffer, stagingBufferMemory);
 
     // copy texture image pixel data into the staging buffer's memory.
     void *mappedStagingBufferMemory;
     vkMapMemory(vulkanDevices.logicalDevice, stagingBufferMemory, 0, textureImageSize, 0, &mappedStagingBufferMemory);
-    memcpy(mappedStagingBufferMemory, textureImagePixels, textureImageSize);
+
+    for (size_t i = 0; i < textureDetails.textureImageDetails.imageLayerCount; i += 1) {
+        memcpy((static_cast<char *>(mappedStagingBufferMemory) + (textureImageSize * i)), textureImagesPixels[i], textureImageSize);
+    }    
+    
     vkUnmapMemory(vulkanDevices.logicalDevice, stagingBufferMemory);
 
-    stbi_image_free(textureImagePixels);
+    for (stbi_uc *textureImagePixels : textureImagesPixels) {
+        stbi_image_free(textureImagePixels);
+    }
 
 
-    Image::populateImageDetails(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, textureDetails.textureImageDetails.mipmapLevels, VK_SAMPLE_COUNT_1_BIT, textureDetails.textureImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureDetails.textureImageDetails);
+    Image::populateImageDetails(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureImageDetails.imageLayerCount, VK_SAMPLE_COUNT_1_BIT, textureDetails.textureImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureDetails.textureImageDetails);
 
-    Image::transitionImageLayout(textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageFormat, textureDetails.textureImageDetails.mipmapLevels, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
-    Image::copyBufferToImage(stagingBuffer, textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, disposableCommandBuffer);
+    Image::transitionImageLayout(textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageFormat, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureImageDetails.imageLayerCount, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
+    Image::copyBufferToImage(stagingBuffer, textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, textureDetails.textureImageDetails.imageLayerCount, disposableCommandBuffer);
 
     
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
@@ -111,7 +132,7 @@ void Image::populateTextureDetails(std::string textureImageFilePath, VkCommandPo
     vkFreeMemory(vulkanDevices.logicalDevice, stagingBufferMemory, nullptr);
 
 
-    Image::createImageView(textureDetails.textureImageDetails.image, VK_FORMAT_R8G8B8A8_SRGB, textureDetails.textureImageDetails.mipmapLevels, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, textureDetails.textureImageDetails.imageView, &textureDetails.textureImageDetails.imageViewLayerCount);
+    Image::createImageView(textureDetails.textureImageDetails.image, VK_FORMAT_R8G8B8A8_SRGB, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureImageDetails.imageLayerCount, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, textureDetails.textureImageDetails.imageView);
 
     Image::createTextureSampler(vulkanDevices, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureSampler);
 
@@ -216,28 +237,24 @@ void Image::generateMipmapLevels(Image::ImageDetails& imageDetails, VkCommandPoo
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
 }
 
-void Image::createImageView(VkImage baseImage, VkFormat baseFormat, uint32_t mipmapLevels, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView, uint32_t *optionalImageViewLayerCount)  // optionalImageViewLayerCount = nullptr.
+void Image::createImageView(VkImage baseImage, VkFormat baseFormat, uint32_t mipmapLevels, uint32_t layerCount, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView)
 {
     VkImageViewCreateInfo imageViewCreateInfo{};
     imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 
     imageViewCreateInfo.image = baseImage;
-    imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.viewType = (layerCount == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D);
     imageViewCreateInfo.format = baseFormat;
 
     imageViewCreateInfo.subresourceRange.aspectMask = imageAspectFlags;
     imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
     imageViewCreateInfo.subresourceRange.levelCount = mipmapLevels;
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    imageViewCreateInfo.subresourceRange.layerCount = 1;
+    imageViewCreateInfo.subresourceRange.layerCount = layerCount;
 
     VkResult imageViewCreationResult = vkCreateImageView(vulkanLogicalDevice, &imageViewCreateInfo, nullptr, &imageView);
     if (imageViewCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create image view.");
-    }
-
-    if (optionalImageViewLayerCount != nullptr) {
-        *optionalImageViewLayerCount = imageViewCreateInfo.subresourceRange.layerCount;
     }
 }
 
@@ -296,7 +313,7 @@ void Image::selectSupportedImageFormat(const std::vector<VkFormat> candidateImag
     throwDebugException("Failed to select a supported image format.");  // no supported image format was selected.
 }
 
-void Image::transitionImageLayout(VkImage image, VkFormat format, uint32_t mipmapLevels, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandBuffer commandBuffer)
+void Image::transitionImageLayout(VkImage image, VkFormat format, uint32_t mipmapLevels, uint32_t layerCount, VkImageLayout initialImageLayout, VkImageLayout targetImageLayout, VkCommandBuffer commandBuffer)
 {
     VkImageMemoryBarrier imageMemoryBarrier{};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -323,7 +340,7 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, uint32_t mipma
     imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
     imageMemoryBarrier.subresourceRange.levelCount = mipmapLevels;
     imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
-    imageMemoryBarrier.subresourceRange.layerCount = 1;
+    imageMemoryBarrier.subresourceRange.layerCount = layerCount;
 
     VkPipelineStageFlags sourceStage;
     VkPipelineStageFlags destinationStage;
@@ -353,7 +370,7 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, uint32_t mipma
     vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 }
 
-void Image::copyBufferToImage(VkBuffer sourceBuffer, VkImage destinationImage, uint32_t imageWidth, uint32_t imageHeight, VkCommandBuffer commandBuffer)
+void Image::copyBufferToImage(VkBuffer sourceBuffer, VkImage destinationImage, uint32_t imageWidth, uint32_t imageHeight, uint32_t imageLayerCount, VkCommandBuffer commandBuffer)
 {
     VkBufferImageCopy bufferImageCopy{};
 
@@ -366,7 +383,7 @@ void Image::copyBufferToImage(VkBuffer sourceBuffer, VkImage destinationImage, u
     bufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     bufferImageCopy.imageSubresource.mipLevel = 0;
     bufferImageCopy.imageSubresource.baseArrayLayer = 0;
-    bufferImageCopy.imageSubresource.layerCount = 1;
+    bufferImageCopy.imageSubresource.layerCount = imageLayerCount;
 
     bufferImageCopy.imageOffset = {0, 0, 0};
     bufferImageCopy.imageExtent = {imageWidth, imageHeight, 1};

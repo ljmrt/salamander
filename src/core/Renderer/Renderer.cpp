@@ -278,7 +278,7 @@ void Renderer::populateDynamicStatesCreateInfo(std::vector<VkDynamicState>& dyna
     dynamicStatesCreateInfo.pDynamicStates = dynamicStates.data();    
 }
 
-void Renderer::createMemberPipelineLayout()
+void Renderer::createMemberScenePipelineLayout()
 {
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -286,26 +286,26 @@ void Renderer::createMemberPipelineLayout()
     pipelineLayoutCreateInfo.flags = 0;
     
     pipelineLayoutCreateInfo.setLayoutCount = 1;
-    pipelineLayoutCreateInfo.pSetLayouts = &m_descriptorSetLayout;
+    pipelineLayoutCreateInfo.pSetLayouts = &m_sceneDescriptorSetLayout;
     
     pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
     pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-    size_t pipelineLayoutCreationResult = vkCreatePipelineLayout(*m_vulkanLogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_pipelineLayout);
+    size_t pipelineLayoutCreationResult = vkCreatePipelineLayout(*m_vulkanLogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_scenePipelineLayout);
     if (pipelineLayoutCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create pipeline layout.");
     }
 }
 
-void Renderer::createMemberGraphicsPipeline(VkSampleCountFlagBits msaaSampleCount)
+void Renderer::createMemberSceneGraphicsPipeline(VkSampleCountFlagBits msaaSampleCount)
 {
-    std::string vertexBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/vertex.spv";
-    std::string fragmentBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/fragment.spv";
+    std::string vertexBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneVertex.spv";
+    std::string fragmentBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneFragment.spv";
 
-    Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, m_pipelineShaders.vertexShader);
-    Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, m_pipelineShaders.fragmentShader);
+    Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, m_scenePipelineShaders.vertexShader);
+    Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, m_scenePipelineShaders.fragmentShader);
     
-    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_pipelineShaders.vertexShader.shaderStageCreateInfo, m_pipelineShaders.fragmentShader.shaderStageCreateInfo};
+    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_scenePipelineShaders.vertexShader.shaderStageCreateInfo, m_scenePipelineShaders.fragmentShader.shaderStageCreateInfo};
     
 
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
@@ -345,39 +345,39 @@ void Renderer::createMemberGraphicsPipeline(VkSampleCountFlagBits msaaSampleCoun
     populateDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
 
 
-    createMemberPipelineLayout();
+    createMemberScenePipelineLayout();
 
 
-    VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
-    pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    VkGraphicsPipelineCreateInfo scenePipelineCreateInfo{};
+    scenePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     
-    pipelineCreateInfo.stageCount = 2;
-    pipelineCreateInfo.pStages = shaderStageCreateInfos;
+    scenePipelineCreateInfo.stageCount = 2;
+    scenePipelineCreateInfo.pStages = shaderStageCreateInfos;
     
-    pipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
-    pipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
-    pipelineCreateInfo.pViewportState = &viewportCreateInfo;
-    pipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
-    pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
-    pipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
-    pipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
-    pipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
+    scenePipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
+    scenePipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
+    scenePipelineCreateInfo.pViewportState = &viewportCreateInfo;
+    scenePipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
+    scenePipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
+    scenePipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
+    scenePipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
+    scenePipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
 
-    pipelineCreateInfo.layout = m_pipelineLayout;
-    pipelineCreateInfo.renderPass = m_renderPass;
-    pipelineCreateInfo.subpass = 0;
+    scenePipelineCreateInfo.layout = m_scenePipelineLayout;
+    scenePipelineCreateInfo.renderPass = m_renderPass;
+    scenePipelineCreateInfo.subpass = 0;
 
-    pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-    pipelineCreateInfo.basePipelineIndex = -1;
+    scenePipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+    scenePipelineCreateInfo.basePipelineIndex = -1;
 
-    size_t pipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &m_graphicsPipeline);
-    if (pipelineCreationResult != VK_SUCCESS) {
+    size_t scenePipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &scenePipelineCreateInfo, nullptr, &m_sceneGraphicsPipeline);
+    if (scenePipelineCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create graphics pipeline.");
     }
 
 
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_pipelineShaders.fragmentShader.shaderModule, nullptr);
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_pipelineShaders.vertexShader.shaderModule, nullptr);
+    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_scenePipelineShaders.fragmentShader.shaderModule, nullptr);
+    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_scenePipelineShaders.vertexShader.shaderModule, nullptr);
 }
 
 void Renderer::createMemberSynchronizationObjects()
@@ -431,7 +431,7 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
 
 
     vkResetCommandBuffer(m_graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_graphicsPipeline, m_mainModel.vertexBuffer, m_mainModel.indexBuffer, m_pipelineLayout, m_descriptorSets, m_currentFrame, static_cast<uint32_t>(m_mainModel.meshIndices.size()));
+    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_sceneGraphicsPipeline, m_mainModel.vertexBuffer, m_mainModel.indexBuffer, m_scenePipelineLayout, m_sceneDescriptorSets, m_currentFrame, static_cast<uint32_t>(m_mainModel.meshIndices.size()));
 
     
     Uniform::updateFrameUniformBuffer(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_mappedUniformBuffersMemory);
@@ -502,15 +502,15 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     
     createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat, displayDetails.vulkanDisplayDetails.msaaSampleCount, vulkanPhysicalDevice);
 
-    ResourceDescriptor::createDescriptorSetLayout(*m_vulkanLogicalDevice, m_descriptorSetLayout);
+    ResourceDescriptor::createDescriptorSetLayout(*m_vulkanLogicalDevice, m_sceneDescriptorSetLayout);
         
-    createMemberGraphicsPipeline(displayDetails.vulkanDisplayDetails.msaaSampleCount);
+    createMemberSceneGraphicsPipeline(displayDetails.vulkanDisplayDetails.msaaSampleCount);
 
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
 
     // populate the color image details.
-    Image::populateImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent.width, displayDetails.vulkanDisplayDetails.swapchainImageExtent.height, 1, displayDetails.vulkanDisplayDetails.msaaSampleCount, displayDetails.vulkanDisplayDetails.swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, temporaryVulkanDevices, displayDetails.vulkanDisplayDetails.colorImageDetails);
-    Image::createImageView(displayDetails.vulkanDisplayDetails.colorImageDetails.image, displayDetails.vulkanDisplayDetails.colorImageDetails.imageFormat, 1, VK_IMAGE_ASPECT_COLOR_BIT, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.colorImageDetails.imageView);
+    Image::populateImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent.width, displayDetails.vulkanDisplayDetails.swapchainImageExtent.height, 1, 1, displayDetails.vulkanDisplayDetails.msaaSampleCount, displayDetails.vulkanDisplayDetails.swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, temporaryVulkanDevices, displayDetails.vulkanDisplayDetails.colorImageDetails);
+    Image::createImageView(displayDetails.vulkanDisplayDetails.colorImageDetails.image, displayDetails.vulkanDisplayDetails.colorImageDetails.imageFormat, 1, 1, VK_IMAGE_ASPECT_COLOR_BIT, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.colorImageDetails.imageView);
     
     Depth::populateDepthImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent, displayDetails.vulkanDisplayDetails.msaaSampleCount, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, displayDetails.vulkanDisplayDetails.depthImageDetails);
 
@@ -520,13 +520,13 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     // m_mainModel.normalizeNormalValues();
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
     m_mainModel.createModelBuffers(m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
-    Image::populateTextureDetails(m_mainModel.absoluteTextureImagePath, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_mainModel.textureDetails);
+    Image::populateTextureDetails(m_mainModel.absoluteTextureImagePath, false, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_mainModel.textureDetails);
 
     Uniform::createUniformBuffers(temporaryVulkanDevices, m_uniformBuffers, m_uniformBuffersMemory, m_mappedUniformBuffersMemory);
     
-    ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_descriptorPool);
-    ResourceDescriptor::createDescriptorSets(m_descriptorSetLayout, m_descriptorPool, *m_vulkanLogicalDevice, m_descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_descriptorSets);
+    ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_sceneDescriptorPool);
+    ResourceDescriptor::createDescriptorSets(m_sceneDescriptorSetLayout, m_sceneDescriptorPool, *m_vulkanLogicalDevice, m_sceneDescriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_sceneDescriptorSets);
 
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 
@@ -557,11 +557,11 @@ void Renderer::cleanupRenderer()
 
     vkDestroyCommandPool(*m_vulkanLogicalDevice, m_graphicsCommandPool, nullptr);  // child command buffers automatically freed.
 
-    vkDestroyDescriptorPool(*m_vulkanLogicalDevice, m_descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(*m_vulkanLogicalDevice, m_descriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(*m_vulkanLogicalDevice, m_sceneDescriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(*m_vulkanLogicalDevice, m_sceneDescriptorSetLayout, nullptr);
     
-    vkDestroyPipeline(*m_vulkanLogicalDevice, m_graphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(*m_vulkanLogicalDevice, m_pipelineLayout, nullptr);
+    vkDestroyPipeline(*m_vulkanLogicalDevice, m_sceneGraphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(*m_vulkanLogicalDevice, m_scenePipelineLayout, nullptr);
     vkDestroyRenderPass(*m_vulkanLogicalDevice, m_renderPass, nullptr);
 }
 

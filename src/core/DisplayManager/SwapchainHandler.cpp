@@ -153,7 +153,7 @@ void SwapchainHandler::createSwapchainImageViews(std::vector<VkImage> swapchainI
 {
     createdSwapchainImageViews.resize(swapchainImages.size());
     for (size_t i = 0; i < swapchainImages.size(); i += 1) {
-        Image::createImageView(swapchainImages[i], swapchainImageFormat, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanLogicalDevice, createdSwapchainImageViews[i]);
+        Image::createImageView(swapchainImages[i], swapchainImageFormat, 1, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanLogicalDevice, createdSwapchainImageViews[i]);
     }
 }
 
@@ -206,8 +206,8 @@ void SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevi
     createSwapchainImageViews(displayDetails.vulkanDisplayDetails.swapchainImages, displayDetails.vulkanDisplayDetails.swapchainImageFormat, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.swapchainImageViews);
 
     // populate the color image details.
-    Image::populateImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent.width, displayDetails.vulkanDisplayDetails.swapchainImageExtent.height, 1, displayDetails.vulkanDisplayDetails.msaaSampleCount, displayDetails.vulkanDisplayDetails.swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, displayDetails.vulkanDisplayDetails.colorImageDetails);
-    Image::createImageView(displayDetails.vulkanDisplayDetails.colorImageDetails.image, displayDetails.vulkanDisplayDetails.colorImageDetails.imageFormat, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.colorImageDetails.imageView);
+    Image::populateImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent.width, displayDetails.vulkanDisplayDetails.swapchainImageExtent.height, 1, 1, displayDetails.vulkanDisplayDetails.msaaSampleCount, displayDetails.vulkanDisplayDetails.swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, displayDetails.vulkanDisplayDetails.colorImageDetails);
+    Image::createImageView(displayDetails.vulkanDisplayDetails.colorImageDetails.image, displayDetails.vulkanDisplayDetails.colorImageDetails.imageFormat, 1, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, displayDetails.vulkanDisplayDetails.colorImageDetails.imageView);
     
     Depth::populateDepthImageDetails(displayDetails.vulkanDisplayDetails.swapchainImageExtent, displayDetails.vulkanDisplayDetails.msaaSampleCount, commandPool, commandQueue, vulkanDevices, displayDetails.vulkanDisplayDetails.depthImageDetails);
     

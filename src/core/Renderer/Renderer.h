@@ -19,14 +19,14 @@ private:
     VkDevice *m_vulkanLogicalDevice;  // pointer to this application's Vulkan instance.
     
     VkRenderPass m_renderPass;  // this graphics pipeline's render pass.
-    Shader::PipelineShaders m_pipelineShaders;  // graphics pipeline shader stages.
+    Shader::PipelineShaders m_scenePipelineShaders;  // scene graphics pipeline shader stages.
     
-    VkDescriptorSetLayout m_descriptorSetLayout;  // this pipeline layout's descriptor set layout.
-    VkDescriptorPool m_descriptorPool;  // the descriptor pool to use in descriptor set creation.
-    std::vector<VkDescriptorSet> m_descriptorSets;  // uniform buffer descriptor sets.
+    VkDescriptorSetLayout m_sceneDescriptorSetLayout;  // this scene graphics pipeline layout's descriptor set layout.
+    VkDescriptorPool m_sceneDescriptorPool;  // the scene descriptor pool to use in scene descriptor set creation.
+    std::vector<VkDescriptorSet> m_sceneDescriptorSets;  // uniform buffer scene descriptor sets.
     
-    VkPipelineLayout m_pipelineLayout;  // this graphics pipeline's pipeline layout.
-    VkPipeline m_graphicsPipeline;  // graphics pipeline
+    VkPipelineLayout m_scenePipelineLayout;  // this scene graphics pipeline's pipeline layout.
+    VkPipeline m_sceneGraphicsPipeline;  // the scene graphics pipeline
 
     // TODO: move these to vulkan display details.
     VkCommandPool m_graphicsCommandPool;  // a command pool used for graphics command buffers.
@@ -118,13 +118,13 @@ private:
     // @param dynamicStatesCreateInfo populated dynamic states create info.
     void populateDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicStates, VkPipelineDynamicStateCreateInfo& dynamicStatesCreateInfo);
 
-    // create a pipeline layout.
-    void createMemberPipelineLayout();
+    // create a pipeline layout used for the scene.
+    void createMemberScenePipelineLayout();
     
-    // create member Vulkan graphics pipeline.
+    // create member Vulkan scene graphics pipeline.
     //
     // @param msaaSampleCount the amount of msaa samples.
-    void createMemberGraphicsPipeline(VkSampleCountFlagBits msaaSampleCount);
+    void createMemberSceneGraphicsPipeline(VkSampleCountFlagBits msaaSampleCount);
 
     // create member synchronization objects(semaphores, fences).
     void createMemberSynchronizationObjects();
