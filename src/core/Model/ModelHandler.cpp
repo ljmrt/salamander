@@ -140,10 +140,11 @@ void ModelHandler::Model::normalizeNormalValues()
     }
 }
 
-void ModelHandler::Model::createModelBuffers(VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
+void ModelHandler::Model::populateShaderBufferComponents(VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
 {
-    Buffer::createDataBufferComponents(meshVertices.data(), (sizeof(meshVertices[0]) * meshVertices.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, vertexBuffer, vertexBufferMemory);
-    Buffer::createDataBufferComponents(meshIndices.data(), (sizeof(meshIndices[0]) * meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, indexBuffer, indexBufferMemory);
+    Buffer::createDataBufferComponents(meshVertices.data(), (sizeof(meshVertices[0]) * meshVertices.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, shaderBufferComponents.vertexBuffer, shaderBufferComponents.vertexBufferMemory);
+    Buffer::createDataBufferComponents(meshIndices.data(), (sizeof(meshIndices[0]) * meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, shaderBufferComponents.indexBuffer, shaderBufferComponents.indexBufferMemory);
+    shaderBufferComponents.indiceCount = static_cast<uint32_t>(meshIndices.size());
 }
 
 void ModelHandler::Model::cleanupModel(VkDevice vulkanLogicalDevice)
@@ -181,10 +182,10 @@ void ModelHandler::populateVertexInputCreateInfo(VkPipelineVertexInputStateCreat
     vertexInputCreateInfo.pVertexAttributeDescriptions = preservedAttributeDescriptions.data();
 }
 
-void ModelHandler::populateInputAssemblyCreateInfo(VkPipelineInputAssemblyStateCreateInfo& inputAssemblyCreateInfo)
+void ModelHandler::populateInputAssemblyCreateInfo(VkPrimitiveTopology topology, VkBool32 primitiveRestartEnable, VkPipelineInputAssemblyStateCreateInfo& inputAssemblyCreateInfo)
 {
     inputAssemblyCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     
-    inputAssemblyCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;  // form triangle primitives without vertex reuse.
-    inputAssemblyCreateInfo.primitiveRestartEnable = VK_FALSE;  // disable the possibility of vertex reuse.
+    inputAssemblyCreateInfo.topology = topology;  // form triangle primitives without vertex reuse.
+    inputAssemblyCreateInfo.primitiveRestartEnable = primitiveRestartEnable;  // disable the possibility of vertex reuse.
 }

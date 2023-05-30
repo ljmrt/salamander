@@ -50,30 +50,25 @@ void ResourceDescriptor::fetchAttributeDescriptions(std::array<VkVertexInputAttr
     attributeDescriptions = {positionAttributeDescription, normalAttributeDescription, UVCoordinatesAttributeDescription};
 }
 
+void ResourceDescriptor::populateDescriptorSetLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkDescriptorSetLayoutBinding& descriptorSetLayoutBinding)
+{
+    descriptorSetLayoutBinding.binding = binding;
+
+    descriptorSetLayoutBinding.descriptorCount = 1;
+    descriptorSetLayoutBinding.descriptorType = descriptorType;
+
+    descriptorSetLayoutBinding.pImmutableSamplers = nullptr;
+
+    descriptorSetLayoutBinding.stageFlags = stageFlags;
+}
+
 void ResourceDescriptor::createDescriptorSetLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout)
 {
     VkDescriptorSetLayoutBinding uniformBufferLayoutBinding{};
-    
-    uniformBufferLayoutBinding.binding = 0;
-
-    uniformBufferLayoutBinding.descriptorCount = 1;
-    uniformBufferLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-
-    uniformBufferLayoutBinding.pImmutableSamplers = nullptr;
-
-    uniformBufferLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), uniformBufferLayoutBinding);
 
     VkDescriptorSetLayoutBinding combinedSamplerLayoutBinding{};
-
-    combinedSamplerLayoutBinding.binding = 1;
-
-    combinedSamplerLayoutBinding.descriptorCount = 1;
-    combinedSamplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    
-    combinedSamplerLayoutBinding.pImmutableSamplers = nullptr;
-    
-    combinedSamplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, combinedSamplerLayoutBinding);
     
 
     std::array<VkDescriptorSetLayoutBinding, 2> descriptorSetLayoutBindings = {uniformBufferLayoutBinding, combinedSamplerLayoutBinding};
@@ -90,21 +85,22 @@ void ResourceDescriptor::createDescriptorSetLayout(VkDevice vulkanLogicalDevice,
     }
 }
 
+void ResourceDescriptor::populateDescriptorPoolSize(VkDescriptorType type, uint32_t descriptorCount, VkDescriptorPoolSize& descriptorPoolSize)
+{
+    descriptorPoolSize.type = type;
+    descriptorPoolSize.descriptorCount = descriptorCount;
+}
+
 void ResourceDescriptor::createDescriptorPool(VkDevice vulkanLogicalDevice, VkDescriptorPool& descriptorPool)
 {
     VkDescriptorPoolSize uniformBufferPoolSize{};
-    uniformBufferPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    
-    uniformBufferPoolSize.descriptorCount = static_cast<uint32_t>(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+    ResourceDescriptor::populateDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
 
-    
     VkDescriptorPoolSize combinedSamplerPoolSize{};
-    combinedSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-
-    combinedSamplerPoolSize.descriptorCount = static_cast<uint32_t>(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-
-
+    ResourceDescriptor::populateDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+    
     std::array<VkDescriptorPoolSize, 2> descriptorPoolSizes = {uniformBufferPoolSize, combinedSamplerPoolSize};
+    
     
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

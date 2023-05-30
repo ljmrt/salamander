@@ -22,6 +22,15 @@
 #include <vector>
 
 
+void Renderer::PipelineComponents::cleanupPipelineComponents(VkDevice vulkanLogicalDevice)
+{
+    vkDestroyDescriptorPool(vulkanLogicalDevice, descriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(vulkanLogicalDevice, descriptorSetLayout, nullptr);
+    
+    vkDestroyPipeline(vulkanLogicalDevice, pipeline, nullptr);
+    vkDestroyPipelineLayout(vulkanLogicalDevice, pipelineLayout, nullptr);
+}
+
 void Renderer::populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference, VkAttachmentDescription& colorAttachmentResolveDescription, VkAttachmentReference& colorAttachmentResolveReference)
 {
     colorAttachmentDescription.format = swapchainImageFormat;
@@ -141,20 +150,20 @@ void Renderer::createMemberRenderPass(VkFormat swapchainImageFormat, VkSampleCou
     }
 }
 
-void Renderer::populateViewportCreateInfo(VkPipelineViewportStateCreateInfo& viewportCreateInfo)
+void Renderer::populateViewportCreateInfo(uint32_t viewportCount, uint32_t scissorCount, VkPipelineViewportStateCreateInfo& viewportCreateInfo)
 {
     viewportCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 
     // dynamic viewport and scissor setting.
-    viewportCreateInfo.viewportCount = 1;
-    viewportCreateInfo.scissorCount = 1;
+    viewportCreateInfo.viewportCount = viewportCount;
+    viewportCreateInfo.scissorCount = scissorCount;
 }
 
-void Renderer::populateRasterizationCreateInfo(VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo)
+void Renderer::populateRasterizationCreateInfo(VkCullModeFlags cullMode, VkFrontFace frontFace, VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo)
 {
     rasterizationCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     
-    rasterizationCreateInfo.depthClampEnable = VK_FALSE;  // discard rather than clamp fragments beyond the near and far planes. 
+    rasterizationCreateInfo.depthClampEnable = VK_FALSE;  // default to discarding rather than clamping fragments beyond the near and far planes. 
     rasterizationCreateInfo.rasterizerDiscardEnable = VK_FALSE;  // pass through the rasterization stage.
     
     // TODO: wireframe mode(fragments for only the edges of polygons): polygon mode VK_POLYGON_MODE_LINE
@@ -163,8 +172,8 @@ void Renderer::populateRasterizationCreateInfo(VkPipelineRasterizationStateCreat
     
     rasterizationCreateInfo.lineWidth = 1.0f;
     
-    rasterizationCreateInfo.cullMode = VK_CULL_MODE_NONE;
-    rasterizationCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;  // vertex order for faces to be considered front-facing, counter-clockwise due to the GLM y-axis flip.
+    rasterizationCreateInfo.cullMode = cullMode;
+    rasterizationCreateInfo.frontFace = frontFace;
     
     rasterizationCreateInfo.depthBiasEnable = VK_FALSE;
     rasterizationCreateInfo.depthBiasConstantFactor = 0.0f;
@@ -207,27 +216,27 @@ void Renderer::fetchMaximumUsableSampleCount(VkPhysicalDevice vulkanPhysicalDevi
     maximumUsableSampleCount = VK_SAMPLE_COUNT_1_BIT;
 }
 
-void Renderer::populateMultisamplingCreateInfo(VkSampleCountFlagBits msaaSampleCount, VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo)
+void Renderer::populateMultisamplingCreateInfo(VkSampleCountFlagBits rasterizationSamples, float minSampleShading, VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo)
 {
     multisamplingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     
     multisamplingCreateInfo.sampleShadingEnable = VK_TRUE;
-    multisamplingCreateInfo.rasterizationSamples = msaaSampleCount;
-    multisamplingCreateInfo.minSampleShading = 0.2f;
+    multisamplingCreateInfo.rasterizationSamples = rasterizationSamples;
+    multisamplingCreateInfo.minSampleShading = minSampleShading;
     multisamplingCreateInfo.pSampleMask = nullptr;
     
     multisamplingCreateInfo.alphaToCoverageEnable = VK_FALSE;
     multisamplingCreateInfo.alphaToOneEnable = VK_FALSE;
 }
 
-void Renderer::populateDepthStencilCreateInfo(VkPipelineDepthStencilStateCreateInfo& depthStencilCreateInfo)
+void Renderer::populateDepthStencilCreateInfo(VkBool32 depthTestEnable, VkBool32 depthWriteEnable, VkCompareOp depthCompareOp, VkPipelineDepthStencilStateCreateInfo& depthStencilCreateInfo)
 {
     depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 
     depthStencilCreateInfo.depthTestEnable = VK_TRUE;
     depthStencilCreateInfo.depthWriteEnable = VK_TRUE;
 
-    depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;  // lower depth means closer object.
+    depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
     
     depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;
     depthStencilCreateInfo.minDepthBounds = 0.0f;
@@ -238,11 +247,11 @@ void Renderer::populateDepthStencilCreateInfo(VkPipelineDepthStencilStateCreateI
     depthStencilCreateInfo.back = {};
 }
 
-void Renderer::populateColorBlendComponents(VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo)
+void Renderer::populateColorBlendComponents(VkColorComponentFlags colorWriteMask, VkBool32 blendEnable, VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo)
 {
     // "local" pipeline-specific color blending(hence the name attachment).
-    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.colorWriteMask = colorWriteMask;
+    colorBlendAttachment.blendEnable = blendEnable;
     
     colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
     colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -278,7 +287,7 @@ void Renderer::populateDynamicStatesCreateInfo(std::vector<VkDynamicState>& dyna
     dynamicStatesCreateInfo.pDynamicStates = dynamicStates.data();    
 }
 
-void Renderer::createMemberScenePipelineLayout()
+void Renderer::createMemberPipelineLayout(VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& memberPipelineLayout)
 {
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -286,12 +295,12 @@ void Renderer::createMemberScenePipelineLayout()
     pipelineLayoutCreateInfo.flags = 0;
     
     pipelineLayoutCreateInfo.setLayoutCount = 1;
-    pipelineLayoutCreateInfo.pSetLayouts = &m_sceneDescriptorSetLayout;
+    pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
     
     pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
     pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-    size_t pipelineLayoutCreationResult = vkCreatePipelineLayout(*m_vulkanLogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_scenePipelineLayout);
+    VkResult pipelineLayoutCreationResult = vkCreatePipelineLayout(*m_vulkanLogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_scenePipelineComponents.pipelineLayout);
     if (pipelineLayoutCreationResult != VK_SUCCESS) {
         throwDebugException("Failed to create pipeline layout.");
     }
@@ -313,29 +322,28 @@ void Renderer::createMemberSceneGraphicsPipeline(VkSampleCountFlagBits msaaSampl
 
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
-    ModelHandler::populateInputAssemblyCreateInfo(inputAssemblyCreateInfo);
+    ModelHandler::populateInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, inputAssemblyCreateInfo);
 
 
     VkPipelineViewportStateCreateInfo viewportCreateInfo{};
-    populateViewportCreateInfo(viewportCreateInfo);
+    populateViewportCreateInfo(1, 1, viewportCreateInfo);
 
     
     VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
-    populateRasterizationCreateInfo(rasterizationCreateInfo);
+    populateRasterizationCreateInfo(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
 
 
-    // multisampling is currently disabled.
     VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
-    populateMultisamplingCreateInfo(msaaSampleCount, multisamplingCreateInfo);
+    populateMultisamplingCreateInfo(msaaSampleCount, 0.2f, multisamplingCreateInfo);
 
 
     VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
-    populateDepthStencilCreateInfo(depthStencilCreateInfo);
+    populateDepthStencilCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, depthStencilCreateInfo);
 
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
     VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
-    populateColorBlendComponents(colorBlendAttachment, colorBlendCreateInfo);
+    populateColorBlendComponents(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE, colorBlendAttachment, colorBlendCreateInfo);
 
     std::vector<VkDynamicState> dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT,
@@ -345,7 +353,7 @@ void Renderer::createMemberSceneGraphicsPipeline(VkSampleCountFlagBits msaaSampl
     populateDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
 
 
-    createMemberScenePipelineLayout();
+    createMemberPipelineLayout(m_scenePipelineComponents.descriptorSetLayout, m_scenePipelineComponents.pipelineLayout);
 
 
     VkGraphicsPipelineCreateInfo scenePipelineCreateInfo{};
@@ -363,21 +371,90 @@ void Renderer::createMemberSceneGraphicsPipeline(VkSampleCountFlagBits msaaSampl
     scenePipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
     scenePipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
 
-    scenePipelineCreateInfo.layout = m_scenePipelineLayout;
+    scenePipelineCreateInfo.layout = m_scenePipelineComponents.pipelineLayout;
     scenePipelineCreateInfo.renderPass = m_renderPass;
     scenePipelineCreateInfo.subpass = 0;
 
     scenePipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
     scenePipelineCreateInfo.basePipelineIndex = -1;
 
-    size_t scenePipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &scenePipelineCreateInfo, nullptr, &m_sceneGraphicsPipeline);
+    size_t scenePipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &scenePipelineCreateInfo, nullptr, &m_scenePipelineComponents.pipeline);
     if (scenePipelineCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create graphics pipeline.");
+        throwDebugException("Failed to create scene graphics pipeline.");
     }
 
 
     vkDestroyShaderModule(*m_vulkanLogicalDevice, m_scenePipelineShaders.fragmentShader.shaderModule, nullptr);
     vkDestroyShaderModule(*m_vulkanLogicalDevice, m_scenePipelineShaders.vertexShader.shaderModule, nullptr);
+}
+
+void Renderer::createMemberCubemapGraphicsPipeline()
+{
+    VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
+    ModelHandler::populateVertexInputCreateInfo(vertexInputCreateInfo);
+
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
+    ModelHandler::populateInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, inputAssemblyCreateInfo);
+
+
+    VkPipelineViewportStateCreateInfo viewportCreateInfo{};
+    populateViewportCreateInfo(1, 1, viewportCreateInfo);
+
+    
+    VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
+    populateRasterizationCreateInfo(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
+
+
+    VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
+    populateMultisamplingCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0, multisamplingCreateInfo);
+
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
+    populateDepthStencilCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL, depthStencilCreateInfo);
+
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+    VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
+    populateColorBlendComponents(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE, colorBlendAttachment, colorBlendCreateInfo);
+
+    std::vector<VkDynamicState> dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+    VkPipelineDynamicStateCreateInfo dynamicStatesCreateInfo{};
+    populateDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
+
+
+    createMemberPipelineLayout(m_cubemapDescriptorSetLayout, m_cubemapPipelineComponents.pipelineLayout);
+
+
+    VkGraphicsPipelineCreateInfo cubemapPipelineCreateInfo{};
+    cubemapPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    
+    cubemapPipelineCreateInfo.stageCount = 2;
+    cubemapPipelineCreateInfo.pStages = shaderStageCreateInfos;
+    
+    cubemapPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
+    cubemapPipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
+    cubemapPipelineCreateInfo.pViewportState = &viewportCreateInfo;
+    cubemapPipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
+    cubemapPipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
+    cubemapPipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
+    cubemapPipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
+    cubemapPipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
+
+    cubemapPipelineCreateInfo.layout = m_cubemapPipelineComponents.pipelineLayout;
+    cubemapPipelineCreateInfo.renderPass = m_renderPass;
+    cubemapPipelineCreateInfo.subpass = 0;
+
+    cubemapPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+    cubemapPipelineCreateInfo.basePipelineIndex = -1;
+
+    size_t cubemapPipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &cubemapPipelineCreateInfo, nullptr, &m_cubemapPipelineComponents.pipeline);
+    if (cubemapPipelineCreationResult != VK_SUCCESS) {
+        throwDebugException("Failed to create cubemap graphics pipeline.");
+    }
 }
 
 void Renderer::createMemberSynchronizationObjects()
@@ -431,7 +508,7 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
 
 
     vkResetCommandBuffer(m_graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_sceneGraphicsPipeline, m_mainModel.vertexBuffer, m_mainModel.indexBuffer, m_scenePipelineLayout, m_sceneDescriptorSets, m_currentFrame, static_cast<uint32_t>(m_mainModel.meshIndices.size()));
+    CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], m_renderPass, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_scenePipelineComponents.pipeline, m_mainModel.vertexBuffer, m_mainModel.indexBuffer, m_scenePipelineComponents.pipelineLayout, m_scenePipelineComponents.descriptorSets, m_currentFrame, static_cast<uint32_t>(m_mainModel.meshIndices.size()));
 
     
     Uniform::updateFrameUniformBuffer(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_mappedUniformBuffersMemory);
@@ -502,9 +579,12 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     
     createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat, displayDetails.vulkanDisplayDetails.msaaSampleCount, vulkanPhysicalDevice);
 
-    ResourceDescriptor::createDescriptorSetLayout(*m_vulkanLogicalDevice, m_sceneDescriptorSetLayout);
-        
+    ResourceDescriptor::createDescriptorSetLayout(*m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSetLayout);
     createMemberSceneGraphicsPipeline(displayDetails.vulkanDisplayDetails.msaaSampleCount);
+
+    // conviently uses the same uniforms as the scene pipeline.
+    ResourceDescriptor::createDescriptorSetLayout(*m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSetLayout);
+    createMemberCubemapGraphicsPipeline();
 
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
 
@@ -519,14 +599,26 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     m_mainModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Avocado/Avocado.gltf"));
     // m_mainModel.normalizeNormalValues();
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
-    m_mainModel.createModelBuffers(m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
+    m_mainModel.populateShaderBufferComponents(m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
     Image::populateTextureDetails(m_mainModel.absoluteTextureImagePath, false, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_mainModel.textureDetails);
+
+    // TODO: special model handling for the glTF model specified for the cubemap.
+    m_cubemapModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/CubemapCube.gltf"));
+    m_cubemapModel.populateShaderBufferComponents(m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
+    Image::populateTextureDetails(m_cubemapModel.absoluteTextureImagePath, true, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapTextureDetails);
 
     Uniform::createUniformBuffers(temporaryVulkanDevices, m_uniformBuffers, m_uniformBuffersMemory, m_mappedUniformBuffersMemory);
     
-    ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_sceneDescriptorPool);
-    ResourceDescriptor::createDescriptorSets(m_sceneDescriptorSetLayout, m_sceneDescriptorPool, *m_vulkanLogicalDevice, m_sceneDescriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_sceneDescriptorSets);
+    ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorSets(m_scenePipelineComponents.descriptorSetLayout, m_scenePipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
+
+    // cubemap shaders conviently use the same uniforms.
+    // TODO: do these functions need to change from using the max frames in flight?
+    ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorSets(m_cubemapPipelineComponents.descriptorSetLayout, m_cubemapPipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
+    // TODO: custom uniform buffers for the cubemap.
+    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, m_cubemapTextureDetails.textureImageDetails.imageView, cubemapTextureDetails.textureSampler, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
 
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 
@@ -557,11 +649,9 @@ void Renderer::cleanupRenderer()
 
     vkDestroyCommandPool(*m_vulkanLogicalDevice, m_graphicsCommandPool, nullptr);  // child command buffers automatically freed.
 
-    vkDestroyDescriptorPool(*m_vulkanLogicalDevice, m_sceneDescriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(*m_vulkanLogicalDevice, m_sceneDescriptorSetLayout, nullptr);
+    m_scenePipelineComponents.cleanupPipelineComponents(*m_vulkanLogicalDevice);
+    m_cubemapPipelineComponents..cleanupPipelineComponents(*m_vulkanLogicalDevice);
     
-    vkDestroyPipeline(*m_vulkanLogicalDevice, m_sceneGraphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(*m_vulkanLogicalDevice, m_scenePipelineLayout, nullptr);
     vkDestroyRenderPass(*m_vulkanLogicalDevice, m_renderPass, nullptr);
 }
 

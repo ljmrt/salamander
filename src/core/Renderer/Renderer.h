@@ -16,17 +16,25 @@
 class Renderer
 {
 private:
+    struct PipelineComponents {
+        VkDescriptorSetLayout descriptorSetLayout;  // this pipeline layout's descriptor set layout.
+        VkDescriptorPool descriptorPool;  // the descriptor pool to use in scene descriptor set creation.
+        std::vector<VkDescriptorSet> descriptorSets;  // uniform buffer descriptor sets.
+    
+        VkPipelineLayout pipelineLayout;  // this pipeline's pipeline layout.
+        VkPipeline pipeline;  // the pipeline.
+
+
+        void cleanupPipelineComponents(VkDevice vulkanLogicalDevice);
+    };
+    
     VkDevice *m_vulkanLogicalDevice;  // pointer to this application's Vulkan instance.
     
     VkRenderPass m_renderPass;  // this graphics pipeline's render pass.
     Shader::PipelineShaders m_scenePipelineShaders;  // scene graphics pipeline shader stages.
-    
-    VkDescriptorSetLayout m_sceneDescriptorSetLayout;  // this scene graphics pipeline layout's descriptor set layout.
-    VkDescriptorPool m_sceneDescriptorPool;  // the scene descriptor pool to use in scene descriptor set creation.
-    std::vector<VkDescriptorSet> m_sceneDescriptorSets;  // uniform buffer scene descriptor sets.
-    
-    VkPipelineLayout m_scenePipelineLayout;  // this scene graphics pipeline's pipeline layout.
-    VkPipeline m_sceneGraphicsPipeline;  // the scene graphics pipeline
+
+    PipelineComponents m_scenePipelineComponents;  // the components used in the scene's graphics pipeline.
+    PipelineComponents m_cubemapPipelineComponents;  // the components used in the cubemap's graphics pipeline.
 
     // TODO: move these to vulkan display details.
     VkCommandPool m_graphicsCommandPool;  // a command pool used for graphics command buffers.
@@ -44,6 +52,9 @@ private:
 
     Camera::ArcballCamera m_mainCamera;  // the scene's main camera.
     ModelHandler::Model m_mainModel;  // the main loaded model.
+
+    ModelHandler::Model m_cubemapModel;  // the loaded model used for the cubemap.
+    Image::TextureDetails m_cubemapTextureDetails;  // the cubemap's texture details.
     
 
     // populate a color attachment description and reference.
@@ -81,13 +92,17 @@ private:
 
     // populate a viewport's create info.
     //
+    // @param viewportCount see VkPipelineViewportStateCreateInfo documentation.
+    // @param scissorCount see VkPipelineViewportStateCreateInfo documentation.
     // @param viewportCreateInfo populated viewport create info.
-    void populateViewportCreateInfo(VkPipelineViewportStateCreateInfo& viewportCreateInfo);
+    void populateViewportCreateInfo(uint32_t viewportCount, uint32_t scissorCount, VkPipelineViewportStateCreateInfo& viewportCreateInfo);
 
     // populate a rasterization's create info.
     //
+    // @param cullMode see VkPipelineRasterizationStateCreateInfo documentation.
+    // @param frontFace see VkPipelineRasterizationStateCreateInfo documentation.
     // @param rasterizationCreateInfo populated rasterization create info.
-    void populateRasterizationCreateInfo(VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo);
+    void populateRasterizationCreateInfo(VkCullModeFlags cullMode, VkFrontFace frontFace, VkPipelineRasterizationStateCreateInfo& rasterizationCreateInfo);
 
     // fetch the maximum usable sample count for a physical device.
     //
@@ -97,20 +112,26 @@ private:
 
     // populate a multisampling's create info.
     //
-    // @param msaaSampleCount the amount of msaa samples.
+    // @param rasterizationSamples see VkPipelineMultisampleStateCreateInfo documentation.
+    // @param minSampleShading see VkPipelineMultisampleStateCreateInfo documentation.
     // @param multisamplingCreateInfo populated multisampling create info.
-    void populateMultisamplingCreateInfo(VkSampleCountFlagBits msaaSampleCount, VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo);
+    void populateMultisamplingCreateInfo(VkSampleCountFlagBits rasterizationSamples, float minSampleShading, VkPipelineMultisampleStateCreateInfo& multisamplingCreateInfo);
 
     // populate a depth stencil's create info.
     //
+    // @param depthTestEnable see VkPipelineDepthStencilStateCreateInfo documentation.
+    // @param depthWriteEnable see VkPipelineDepthStencilStateCreateInfo documentation.
+    // @param depthCompareOp see VkPipelineDepthStencilStateCreateInfo documentation.
     // @param depthStencilCreateInfo populated depth stencil create info.
-    void populateDepthStencilCreateInfo(VkPipelineDepthStencilStateCreateInfo& depthStencilCreateInfo);
+    void populateDepthStencilCreateInfo(VkBool32 depthTestEnable, VkBool32 depthWriteEnable, VkCompareOp depthCompareOp, VkPipelineDepthStencilStateCreateInfo& depthStencilCreateInfo);
 
     // populate color blend components(color attachment and color blend's create info).
     //
+    // @param colorWriteMask see VkPipelineColorBlendAttachmentState documentation.
+    // @param blendEnable see VkPipelineColorBlendAttachmentState documentation.
     // @param colorblendAttachment populated color blend attachment.
     // @param colorBlendCreateInfo populated color blend create info.
-    void populateColorBlendComponents(VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo);
+    void populateColorBlendComponents(VkColorComponentFlags colorWriteMask, VkBool32 blendEnable, VkPipelineColorBlendAttachmentState& colorBlendAttachment, VkPipelineColorBlendStateCreateInfo& colorBlendCreateInfo);
 
     // populate a dynamic states's create info.
     //
@@ -118,13 +139,16 @@ private:
     // @param dynamicStatesCreateInfo populated dynamic states create info.
     void populateDynamicStatesCreateInfo(std::vector<VkDynamicState>& dynamicStates, VkPipelineDynamicStateCreateInfo& dynamicStatesCreateInfo);
 
-    // create a pipeline layout used for the scene.
-    void createMemberScenePipelineLayout();
+    // create a pipeline layout.
+    //
+    // @param descriptorSetLayout the descriptor set layout to use within the pipeline layout.
+    // @param memberPipelineLayout the created member pipeline layout.
+    void createMemberPipelineLayout(VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& memberPipelineLayout);
     
-    // create member Vulkan scene graphics pipeline.
+    // create member Vulkan scene pipeline.
     //
     // @param msaaSampleCount the amount of msaa samples.
-    void createMemberSceneGraphicsPipeline(VkSampleCountFlagBits msaaSampleCount);
+    void createMemberScenePipeline(VkSampleCountFlagBits msaaSampleCount);
 
     // create member synchronization objects(semaphores, fences).
     void createMemberSynchronizationObjects();

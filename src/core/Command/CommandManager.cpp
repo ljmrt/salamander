@@ -78,7 +78,7 @@ void CommandManager::submitSingleSubmitCommands(VkCommandBuffer recordedCommandB
     vkFreeCommandBuffers(vulkanLogicalDevice, parentCommandPool, 1, &recordedCommandBuffer);
 }
 
-void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, VkPipelineLayout pipelineLayout, std::vector<VkDescriptorSet>& descriptorSets, size_t currentFrame, uint32_t indicesSize)
+void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, Renderer::PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, Renderer::PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, size_t currentFrame)
 {
     VkCommandBufferBeginInfo commandBufferBeginInfo{};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -111,8 +111,6 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
 
     vkCmdBeginRenderPass(graphicsCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.
 
-    vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);  // we are using a graphics pipeline.
-
     // set our dynamic pipeline states.
     VkViewport dynamicViewport{};
     dynamicViewport.x = 0.0f;
@@ -128,17 +126,29 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     dynamicScissor.extent = swapchainImageExtent;
     vkCmdSetScissor(graphicsCommandBuffer, 0, 1, &dynamicScissor);
 
-    vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
     VkBuffer vertexBuffers[] = {vertexBuffer};
     VkDeviceSize offsets[] = {0};
+
+    // draw the cubemap.
+    // LEAVEOFF: package vertex buffer(s), index buffer(s), and indice count into a struct.
+    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, cubemapShaderBufferComponents.vertexBuffer, offsets);
+    vkCmdBindIndexBuffer(graphicsCommandBuffer, cubemapShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+    vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cubemapPipelineComponents.pipelineLayout, 0, 1, &cubemapPipelineComponents.descriptorSets[currentFrame], 0, nullptr);
+    vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cubemapPipelineComponents.pipeline);
+
+    vkCmdDrawIndexed(graphicsCommandBuffer, cubemapShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
+
+    // draw the scene.
+    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, sceneShaderBufferComponents.vertexBuffer, offsets);
+    vkCmdBindIndexBuffer(graphicsCommandBuffer, sceneShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+    vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, scenePipelineComponents.pipelineLayout, 0, 1, &scenePipelineComponents.descriptorSets[currentFrame], 0, nullptr);
+    vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, scenePipelineComponents.pipeline);
+
+    vkCmdDrawIndexed(graphicsCommandBuffer, sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
+
     
-    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(graphicsCommandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-
-    vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-
-    vkCmdDrawIndexed(graphicsCommandBuffer, indicesSize, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
-
     vkCmdEndRenderPass(graphicsCommandBuffer);
 
     uint32_t recordBufferCommandsResult = vkEndCommandBuffer(graphicsCommandBuffer);

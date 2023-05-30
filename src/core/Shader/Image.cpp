@@ -85,8 +85,8 @@ void Image::populateTextureDetails(std::string textureImageFilePath, bool isCube
     std::vector<stbi_uc *> textureImagesPixels;
     textureImagesPixels.resize(textureDetails.textureImageDetails.imageLayerCount);
     for (size_t i = 0; i < textureDetails.textureImageDetails.imageLayerCount; i += 1) {
-        // const char *textureImageResolvedFilePath = (isCubemap ? (textureImageFilePath + std::to_string(i)) : textureImageFilePath).c_str();
-        const char *textureImageResolvedFilePath = (textureImageFilePath).c_str();
+        const char *textureImageResolvedFilePath = (isCubemap ? (textureImageFilePath + std::to_string(static_cast<uint32_t>(i)) + ".png") : textureImageFilePath).c_str();
+        // const char *textureImageResolvedFilePath = (textureImageFilePath).c_str();
         textureImagesPixels[i] = stbi_load(textureImageResolvedFilePath, &textureDetails.textureImageDetails.imageWidth, &textureDetails.textureImageDetails.imageHeight, &textureDetails.textureImageDetails.imageChannels, STBI_rgb_alpha);
 
         if (!textureImagesPixels[i]) {  // if image not loaded.

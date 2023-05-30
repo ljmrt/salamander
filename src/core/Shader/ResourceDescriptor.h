@@ -20,12 +20,27 @@ namespace ResourceDescriptor
     //
     // @param attributeDescriptions stored fetched attribute descriptions.
     void fetchAttributeDescriptions(std::array<VkVertexInputAttributeDescription, 3>& attributeDescriptions);
+
+    // populate a descriptor set layout binding.
+    //
+    // @param binding see VkDescriptorSetLayoutBinding documentation.
+    // @param descriptorType see VkDescriptorSetLayoutBinding documentation.
+    // @param stageFlags see VkDescriptorSetLayoutBinding documentation.
+    // @param descriptorSetLayoutBinding populated descriptor set layout binding.
+    void populateDescriptorSetLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkDescriptorSetLayoutBinding& descriptorSetLayoutBinding)
     
     // create descriptor set layout.
     //
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor set layout creation.
     // @palam descriptorSetLayout created descriptor set layout.
     void createDescriptorSetLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout);
+
+    // populate a descriptor pool size.
+    //
+    // @param type see VkDescriptorPoolSize documentation.
+    // @param descriptorCount see VkDescriptorPoolSize documentation.
+    // @param descriptorPoolSize populated descriptor pool size.
+    void populateDescriptorPoolSize(VkDescriptorType type, uint32_t descriptorCount, VkDescriptorPoolSize& descriptorPoolSize);
 
     // create descriptor pool.
     //

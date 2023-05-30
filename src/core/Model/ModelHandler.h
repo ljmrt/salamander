@@ -24,6 +24,15 @@ namespace ModelHandler
         glm::vec2 UVCoordinates;
     };
 
+    struct ShaderBufferComponents {
+        VkBuffer vertexBuffer;
+        VkDeviceMemory vertexBufferMemory;
+        
+        VkBuffer indexBuffer;
+        VkDeviceMemory indexBufferMemory;
+        uint32_t indiceCount;
+    };
+
     struct Model
     {
         std::string absoluteModelDirectory;  // the absolute directory of the model.
@@ -37,13 +46,9 @@ namespace ModelHandler
         std::string absoluteTextureImagePath;  // the absolute path of the texture image.
         Image::TextureDetails textureDetails;
 
-        // vertex and index buffer personally created for the model.
-        VkBuffer vertexBuffer;
-        VkDeviceMemory vertexBufferMemory;
+        // shader buffer components personally created for the model.
         // TODO: what do we do if the model doesn't support/have indices?
-        VkBuffer indexBuffer;
-        VkDeviceMemory indexBufferMemory;
-        
+        ModelHandler::ShaderBufferComponents shaderBufferComponents;
 
         // load a glTF model from an absolute path.
         //
@@ -53,12 +58,12 @@ namespace ModelHandler
         // normalize the mesh vertice normal values.
         void normalizeNormalValues();
 
-        // create vertex and index buffers for this model.
+        // populate the shader buffer components for this model.
         //
         // @param commandPool command pool to allocate necessary command buffers on.
         // @param commandQueue queue to submit necessary commands on.
         // @param vulkanDevices Vulkan logical and physical device to use in model buffers creation.
-        void createModelBuffers(VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
+        void populateShaderBufferComponents(VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
 
         // cleanup the model.
         //
@@ -88,8 +93,10 @@ namespace ModelHandler
 
     // populate a input assembly's create info.
     //
+    // @param topology see VkPipelineInputAssemblyStateCreateInfo documentation.
+    // @param primitiveRestartEnable see VkPipelineInputAssemblyStateCreateInfo documentation.
     // @param inputAssemblyCreateInfo stored filled input assembly create info.
-    void populateInputAssemblyCreateInfo(VkPipelineInputAssemblyStateCreateInfo& inputAssemblyCreateInfo);
+    void populateInputAssemblyCreateInfo(VkPrimitiveTopology topology, VkBool32 primitiveRestartEnable, VkPipelineInputAssemblyStateCreateInfo& inputAssemblyCreateInfo);
 }
 
 
