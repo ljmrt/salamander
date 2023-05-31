@@ -16,7 +16,8 @@
 namespace Uniform
 {
     struct UniformBufferObject {  // identical to the vertex shader's struct.
-        glm::mat4 pvMatrix;
+        glm::mat4 projectionMatrix;
+        glm::mat4 viewMatrix;
         glm::mat4 modelMatrix;
         glm::mat3 normalMatrix;
 

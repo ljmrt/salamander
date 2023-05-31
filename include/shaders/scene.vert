@@ -1,7 +1,8 @@
 #version 450
 
 layout(binding = 0) uniform UniformBufferObject {
-    mat4 pvMatrix;
+    mat4 projectionMatrix;
+    mat4 viewMatrix;
     mat4 modelMatrix;
     mat3 normalMatrix;
 
@@ -22,7 +23,7 @@ layout(location = 2) out vec2 fragmentUVCoordinates;
 void main()
 {
     vec4 positionAttributeVec4 = vec4(positionAttribute, 1.0);
-    gl_Position = (uniformBufferObject.pvMatrix * uniformBufferObject.modelMatrix * positionAttributeVec4);
+    gl_Position = (uniformBufferObject.projectionMatrix * uniformBufferObject.viewMatrix * uniformBufferObject.modelMatrix * positionAttributeVec4);
     
     vec4 vertexWorldSpacePosition = (uniformBufferObject.modelMatrix * positionAttributeVec4);
     fragmentPositionWorldSpace = vertexWorldSpacePosition.xyz;

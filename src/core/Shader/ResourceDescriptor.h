@@ -27,7 +27,7 @@ namespace ResourceDescriptor
     // @param descriptorType see VkDescriptorSetLayoutBinding documentation.
     // @param stageFlags see VkDescriptorSetLayoutBinding documentation.
     // @param descriptorSetLayoutBinding populated descriptor set layout binding.
-    void populateDescriptorSetLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkDescriptorSetLayoutBinding& descriptorSetLayoutBinding)
+    void populateDescriptorSetLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkDescriptorSetLayoutBinding& descriptorSetLayoutBinding);
     
     // create descriptor set layout.
     //

@@ -13,26 +13,27 @@
 #include <vector>
 
 
+struct PipelineComponents {
+    VkDescriptorSetLayout descriptorSetLayout;  // this pipeline layout's descriptor set layout.
+    VkDescriptorPool descriptorPool;  // the descriptor pool to use in scene descriptor set creation.
+    std::vector<VkDescriptorSet> descriptorSets;  // uniform buffer descriptor sets.
+
+    VkRenderPass renderPass;  // the pipeline's render pass.
+    
+    VkPipelineLayout pipelineLayout;  // this pipeline's pipeline layout.
+    VkPipeline pipeline;  // the pipeline.
+
+    Shader::PipelineShaders pipelineShaders;  // pipeline shaders/shader stages.
+    
+    
+    void cleanupPipelineComponents(VkDevice vulkanLogicalDevice);
+};    
+
 class Renderer
 {
 private:
-    struct PipelineComponents {
-        VkDescriptorSetLayout descriptorSetLayout;  // this pipeline layout's descriptor set layout.
-        VkDescriptorPool descriptorPool;  // the descriptor pool to use in scene descriptor set creation.
-        std::vector<VkDescriptorSet> descriptorSets;  // uniform buffer descriptor sets.
-    
-        VkPipelineLayout pipelineLayout;  // this pipeline's pipeline layout.
-        VkPipeline pipeline;  // the pipeline.
-
-
-        void cleanupPipelineComponents(VkDevice vulkanLogicalDevice);
-    };
-    
     VkDevice *m_vulkanLogicalDevice;  // pointer to this application's Vulkan instance.
     
-    VkRenderPass m_renderPass;  // this graphics pipeline's render pass.
-    Shader::PipelineShaders m_scenePipelineShaders;  // scene graphics pipeline shader stages.
-
     PipelineComponents m_scenePipelineComponents;  // the components used in the scene's graphics pipeline.
     PipelineComponents m_cubemapPipelineComponents;  // the components used in the cubemap's graphics pipeline.
 
@@ -57,7 +58,7 @@ private:
     Image::TextureDetails m_cubemapTextureDetails;  // the cubemap's texture details.
     
 
-    // populate a color attachment description and reference.
+    // populate a color attachment description, reference, color attachment resolve description, reference for the scene render pass.
     //
     // @param swapchainImageFormat the image format of the swapchain, used in populating the color attachment components.
     // @param msaaSampleCount the amount of msaa samples.
@@ -65,7 +66,14 @@ private:
     // @param colorAttachmentReference populated color attachment reference.
     // @param colorAttachmentResolveDescription populated color attachment resolve description.
     // @param colorAttachmentResolveReference populated color attachment resolve reference.
-    void populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference, VkAttachmentDescription& colorAttachmentResolveDescription, VkAttachmentReference& colorAttachmentResolveReference);
+    void populateSceneColorAttachmentComponents(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference, VkAttachmentDescription& colorAttachmentResolveDescription, VkAttachmentReference& colorAttachmentResolveReference);
+
+    // populate a color attachment description and reference for the cubemap render pass.
+    //
+    // @param swapchainImageFormat the image format of the swapchain to use in color attachment component population.
+    // @param colorAttachmentDescription populated color attachment description.
+    // @param colorAttachmentReference populated color attachment reference.
+    void populateCubemapColorAttachmentComponents(VkFormat swapchainImageFormat, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference);
 
     // populate a depth attachment description and reference.
     //
@@ -78,17 +86,24 @@ private:
     // populate a subpass's description.
     //
     // @param colorAttachmentReference color attachment reference to use in subpass description.
+    // @param isCubemap if the subpass description belongs to the cubemap render pass.
     // @param colorAttachmentResolveReference color attachment resolve reference to use in subpass description.
     // @param depthAttachmentReference depth attachment reference to use in subpass description.
     // @param subpassDescription populated subpass description.
-    void populateSubpassDescription(VkAttachmentReference& colorAttachmentReference, VkAttachmentReference& colorAttachmentResolveReference, VkAttachmentReference& depthAttachmentReference, VkSubpassDescription& subpassDescription);
+    void populateSubpassDescription(VkAttachmentReference& colorAttachmentReference, bool isCubemap, VkAttachmentReference& colorAttachmentResolveReference, VkAttachmentReference& depthAttachmentReference, VkSubpassDescription& subpassDescription);
     
-    // create member render pass.
+    // create member render pass for the scene pipeline.
     //
-    // @param swapchainImageFormat the swapchain image format to use in member render pass creation.
+    // @param swapchainImageFormat the swapchain image format to use in member scene render pass creation.
     // @param msaaSampleCount the amount of msaa samples.
-    // @param vulkanPhysicalDevice Vulkan physical device to use in member render pass creation.
-    void createMemberRenderPass(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkPhysicalDevice vulkanPhysicalDevice);
+    // @param vulkanPhysicalDevice Vulkan physical device to use in member scene render pass creation.
+    void createMemberSceneRenderPass(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkPhysicalDevice vulkanPhysicalDevice);
+
+    // create member render pass for the cubemap pipeline.
+    //
+    // @param swapchainImageFormat the swapchain image format to use in member cubemap render pass creation.
+    // @param vulkanPhysicalDevice Vulkan physical device to use in member cubemap render pass creation.
+    void createMemberCubemapRenderPass(VkFormat swapchainImageFormat, VkPhysicalDevice vulkanPhysicalDevice);
 
     // populate a viewport's create info.
     //
@@ -149,6 +164,9 @@ private:
     //
     // @param msaaSampleCount the amount of msaa samples.
     void createMemberScenePipeline(VkSampleCountFlagBits msaaSampleCount);
+
+    // create member Vulkan cubemap pipeline.
+    void createMemberCubemapPipeline();
 
     // create member synchronization objects(semaphores, fences).
     void createMemberSynchronizationObjects();

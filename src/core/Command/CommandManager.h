@@ -5,6 +5,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <core/Renderer/Renderer.h>
+
 #include <vector>
 
 
@@ -43,17 +45,14 @@ namespace CommandManager
     // record necessary drawing commands in a graphics command buffer.
     //
     // @param graphicsCommandBuffer graphics command buffer to record in.
-    // @param renderPass render pass to use in commands.
     // @param swapchainImageFramebuffer the swapchain image's framebuffer to use in commands.
     // @param swapchainImageExtent the swapchain image's extent to use in commands.
-    // @param graphicsPipeline graphics pipeline to use in commands.
-    // @param vertexBuffer vertex buffer to use in commands.
-    // @param indexBuffer index buffer to use in commands.
-    // @param pipelineLayout pipeline layout to use in commands.
-    // @param descriptorSets descriptor sets to use in commands.
+    // @param scenePipelineComponents components of the scene graphics pipeline.
+    // @param sceneShaderBufferComponents vertex and index buffer used for the scene's main model.
+    // @param cubemapPipelineComponents components of the cubemap graphics pipeline.
+    // @param cubemapShaderBufferComponents vertex and index buffer used for the cubemap's model.
     // @param currentFrame the current renderer-drawing frame to use in commands.
-    // @param indicesSize the amount of indices in the index buffer.
-    void recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkRenderPass renderPass, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, VkPipeline graphicsPipeline, VkBuffer vertexBuffer, VkBuffer indexBuffer, VkPipelineLayout pipelineLayout, std::vector<VkDescriptorSet>& descriptorSets, size_t currentFrame, uint32_t indicesSize);
+    void recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, size_t currentFrame);
 }
 
 

@@ -3,6 +3,13 @@
 layout(binding = 0) uniform UniformBufferObject {
     mat4 projectionMatrix;
     mat4 viewMatrix;
+    mat4 modelMatrix;
+    mat3 normalMatrix;
+
+    vec3 viewingPosition;
+    vec4 ambientLightColor;
+    vec3 pointLightPosition;
+    vec4 pointLightColor;
 } uniformBufferObject;
 
 layout(location = 0) in vec3 positionAttribute;

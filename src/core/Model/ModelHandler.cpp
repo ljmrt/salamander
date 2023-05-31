@@ -113,9 +113,13 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
 
         const tinygltf::Material modelMaterial = loadedModel.materials[0];
         const tinygltf::TextureInfo baseColorTextureInfo = modelMaterial.pbrMetallicRoughness.baseColorTexture;
-        const tinygltf::Texture baseColorTexture = loadedModel.textures[baseColorTextureInfo.index];
-        const tinygltf::Image baseColorTextureImage = loadedModel.images[baseColorTexture.source];
-        absoluteTextureImagePath = (absoluteModelDirectory + "/" + baseColorTextureImage.uri);
+        if (baseColorTextureInfo.index != -1) {
+            const tinygltf::Texture baseColorTexture = loadedModel.textures[baseColorTextureInfo.index];
+            const tinygltf::Image baseColorTextureImage = loadedModel.images[baseColorTexture.source];
+            absoluteTextureImagePath = (absoluteModelDirectory + "/" + baseColorTextureImage.uri);
+        } else {
+            absoluteTextureImagePath = "NOT AVAILIBLE";
+        }
     }
 }
 
@@ -149,11 +153,11 @@ void ModelHandler::Model::populateShaderBufferComponents(VkCommandPool commandPo
 
 void ModelHandler::Model::cleanupModel(VkDevice vulkanLogicalDevice)
 {
-    vkDestroyBuffer(vulkanLogicalDevice, vertexBuffer, nullptr);
-    vkFreeMemory(vulkanLogicalDevice, vertexBufferMemory, nullptr);
+    vkDestroyBuffer(vulkanLogicalDevice, shaderBufferComponents.vertexBuffer, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, shaderBufferComponents.vertexBufferMemory, nullptr);
 
-    vkDestroyBuffer(vulkanLogicalDevice, indexBuffer, nullptr);
-    vkFreeMemory(vulkanLogicalDevice, indexBufferMemory, nullptr);
+    vkDestroyBuffer(vulkanLogicalDevice, shaderBufferComponents.indexBuffer, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, shaderBufferComponents.indexBufferMemory, nullptr);
 
     vkDestroySampler(vulkanLogicalDevice, textureDetails.textureSampler, nullptr);
     vkDestroyImageView(vulkanLogicalDevice, textureDetails.textureImageDetails.imageView, nullptr);

@@ -94,10 +94,10 @@ void ResourceDescriptor::populateDescriptorPoolSize(VkDescriptorType type, uint3
 void ResourceDescriptor::createDescriptorPool(VkDevice vulkanLogicalDevice, VkDescriptorPool& descriptorPool)
 {
     VkDescriptorPoolSize uniformBufferPoolSize{};
-    ResourceDescriptor::populateDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+    ResourceDescriptor::populateDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, uniformBufferPoolSize);
 
     VkDescriptorPoolSize combinedSamplerPoolSize{};
-    ResourceDescriptor::populateDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
+    ResourceDescriptor::populateDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, combinedSamplerPoolSize);
     
     std::array<VkDescriptorPoolSize, 2> descriptorPoolSizes = {uniformBufferPoolSize, combinedSamplerPoolSize};
     
