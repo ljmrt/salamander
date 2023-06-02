@@ -40,7 +40,7 @@ namespace ResourceDescriptor
     // @param descriptorSetLayoutBindings a container of descriptor set layout bindings.
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor set layout creation.
     // @palam descriptorSetLayout created descriptor set layout.
-    void createDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings, VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout);
+    void createDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding>& descriptorSetLayoutBindings, VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout);
 
     // populate a descriptor pool size.
     //

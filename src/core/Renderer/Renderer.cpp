@@ -375,9 +375,9 @@ void Renderer::createMemberPipelineLayout(VkDescriptorSetLayout& descriptorSetLa
     pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
     pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-    VkResult pipelineLayoutCreationResult = vkCreatePipelineLayout(*m_vulkanLogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_scenePipelineComponents.pipelineLayout);
+    VkResult pipelineLayoutCreationResult = vkCreatePipelineLayout(*m_vulkanLogicalDevice, &pipelineLayoutCreateInfo, nullptr, &memberPipelineLayout);
     if (pipelineLayoutCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create pipeline layout.");
+        throwDebugException("Failed to create member pipeline layout.");
     }
 }
 
@@ -513,7 +513,7 @@ void Renderer::createMemberCubemapPipeline()
     populateDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
 
 
-    createMemberPipelineLayout(m_cubemapPipelineComponents.descriptorSetLayout, m_cubemapPipelineComponents.pipelineLayout);
+    createMemberPipelineLayout(m_scenePipelineComponents.descriptorSetLayout, m_cubemapPipelineComponents.pipelineLayout);
 
 
     VkGraphicsPipelineCreateInfo cubemapPipelineCreateInfo{};
@@ -690,6 +690,7 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
 
     std::vector<VkDescriptorSetLayoutBinding> cubemapDescriptorSetLayoutBindings = {cubemapUniformBufferLayoutBinding, cubemapCombinedSamplerLayoutBinding};
     ResourceDescriptor::createDescriptorSetLayout(cubemapDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSetLayout);
+    
     createMemberCubemapPipeline();
 
     

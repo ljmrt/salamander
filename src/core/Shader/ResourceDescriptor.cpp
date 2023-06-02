@@ -77,7 +77,7 @@ void ResourceDescriptor::populateDescriptorSetLayoutBinding(uint32_t binding, Vk
     descriptorSetLayoutBinding.stageFlags = stageFlags;
 }
 
-void ResourceDescriptor::createDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings, VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout)
+void ResourceDescriptor::createDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding>& descriptorSetLayoutBindings, VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout)
 {
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
     descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
