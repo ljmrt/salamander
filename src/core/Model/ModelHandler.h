@@ -72,8 +72,12 @@ namespace ModelHandler
     };
 
 
-    extern std::array<VkVertexInputAttributeDescription, 3> preservedAttributeDescriptions;  // preserved attribute descriptions(pointer reasons).
-    extern VkVertexInputBindingDescription preservedBindingDescription;  // preserved binding description(pointer reasons).
+    // TODO: find a different method of preserving memory(allocate memory possibly).
+    extern std::vector<VkVertexInputAttributeDescription> preservedSceneAttributeDescriptions;  // preserved scene attribute descriptions(pointer reasons).
+    extern VkVertexInputBindingDescription preservedSceneBindingDescription;  // preserved scene binding description(pointer reasons).
+
+    extern std::vector<VkVertexInputAttributeDescription> preservedCubemapAttributeDescriptions;  // preserved cubemap attribute descriptions(pointer reasons).
+    extern VkVertexInputBindingDescription preservedCubemapBindingDescription;  // preserved cubemap binding description(pointer reasons).
 
     // TODO: move this into utils or a math namespace.
     // normalize value to targetMinimumValue..targetMaximumValue through the equation shown here(https://stats.stackexchange.com/questions/281162/scale-a-number-between-a-range).
@@ -88,8 +92,10 @@ namespace ModelHandler
     
     // populate a vertex input's create info.
     //
+    // @param attributeDescriptions container of attribute descriptions.
+    // @param bindingDescription pointer to the binding description to use in population.
     // @param vertexInputCreateInfo stored filled vertex input create info.
-    void populateVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo);
+    void populateVertexInputCreateInfo(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions, VkVertexInputBindingDescription *bindingDescription, VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo);
 
     // populate a input assembly's create info.
     //

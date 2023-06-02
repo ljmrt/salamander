@@ -21,6 +21,7 @@ namespace Shader
         Shader fragmentShader;
     };
     
+    
     // create a shader module using the supplied bytecode.
     //
     // @param shaderBytecode the shader's bytecode in a vector of chars.

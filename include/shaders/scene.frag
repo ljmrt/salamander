@@ -1,7 +1,8 @@
 #version 450
 
 layout(binding = 0) uniform UniformBufferObject {
-    mat4 pvMatrix;
+    mat4 projectionMatrix;
+    mat4 viewMatrix;
     mat4 modelMatrix;
     mat3 normalMatrix;
 

@@ -18,6 +18,10 @@ struct PipelineComponents {
     VkDescriptorPool descriptorPool;  // the descriptor pool to use in scene descriptor set creation.
     std::vector<VkDescriptorSet> descriptorSets;  // uniform buffer descriptor sets.
 
+    std::vector<VkBuffer> uniformBuffers;  // the uniform buffers specified for the pipeline.
+    std::vector<VkDeviceMemory> uniformBuffersMemory;  // the uniform buffers' memory.
+    std::vector<void *> mappedUniformBuffersMemory;  // the mapped memory of the uniform buffers.
+
     VkRenderPass renderPass;  // the pipeline's render pass.
     
     VkPipelineLayout pipelineLayout;  // this pipeline's pipeline layout.
@@ -41,15 +45,11 @@ private:
     VkCommandPool m_graphicsCommandPool;  // a command pool used for graphics command buffers.
     std::vector<VkCommandBuffer> m_graphicsCommandBuffers;  // child command buffers under the graphics command pool.
 
-    std::vector<VkBuffer> m_uniformBuffers;  // the shader uniform buffers.
-    std::vector<VkDeviceMemory> m_uniformBuffersMemory;  // the uniform buffers' memory.
-    std::vector<void *> m_mappedUniformBuffersMemory;  // the mapped memory of the uniform buffers.
-
     std::vector<VkSemaphore> m_imageAvailibleSemaphores;  // semaphore used to make the GPU wait to continue until the next availible image index in the swapchain has been fetched.
     std::vector<VkSemaphore> m_renderFinishedSemaphores;  // semaphore used to make the GPU wait to continue until the current frame has finished rendering.
     std::vector<VkFence> m_inFlightFences;  // fence used to synchronize the GPU and CPU before begining to draw another frame.]
 
-    size_t m_currentFrame = 0;  // the current "frame" in context of the "in flight" frames.
+    uint32_t m_currentFrame = 0;  // the current "frame" in context of the "in flight" frames.
 
     Camera::ArcballCamera m_mainCamera;  // the scene's main camera.
     ModelHandler::Model m_mainModel;  // the main loaded model.

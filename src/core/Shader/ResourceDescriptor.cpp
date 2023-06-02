@@ -10,14 +10,14 @@
 #include <vector>
 
 
-void ResourceDescriptor::populateBindingDescription(VkVertexInputBindingDescription& bindingDescription)
+void ResourceDescriptor::populateBindingDescription(uint32_t stride, VkVertexInputBindingDescription& bindingDescription)
 {
-    bindingDescription.binding = 0;  // binding index in the "array" of bindings.
-    bindingDescription.stride = sizeof(ModelHandler::Vertex);  // byte distance from one entry to another.
+    bindingDescription.binding = 0;  // binding index to fetch vertex attribute information on.
+    bindingDescription.stride = stride;
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 }
 
-void ResourceDescriptor::fetchAttributeDescriptions(std::array<VkVertexInputAttributeDescription, 3>& attributeDescriptions)
+void ResourceDescriptor::fetchSceneAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
 {
     // attribute formats use RGB for some reason.
     VkVertexInputAttributeDescription positionAttributeDescription{};
@@ -50,6 +50,21 @@ void ResourceDescriptor::fetchAttributeDescriptions(std::array<VkVertexInputAttr
     attributeDescriptions = {positionAttributeDescription, normalAttributeDescription, UVCoordinatesAttributeDescription};
 }
 
+void ResourceDescriptor::fetchCubemapAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
+{
+    // attribute formats use RGB for some reason.
+    VkVertexInputAttributeDescription positionAttributeDescription{};
+    
+    positionAttributeDescription.binding = 0;
+    positionAttributeDescription.location = 0;
+    
+    positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+    positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
+
+    
+    attributeDescriptions = {positionAttributeDescription};
+}
+
 void ResourceDescriptor::populateDescriptorSetLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkDescriptorSetLayoutBinding& descriptorSetLayoutBinding)
 {
     descriptorSetLayoutBinding.binding = binding;
@@ -62,17 +77,8 @@ void ResourceDescriptor::populateDescriptorSetLayoutBinding(uint32_t binding, Vk
     descriptorSetLayoutBinding.stageFlags = stageFlags;
 }
 
-void ResourceDescriptor::createDescriptorSetLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout)
+void ResourceDescriptor::createDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings, VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout)
 {
-    VkDescriptorSetLayoutBinding uniformBufferLayoutBinding{};
-    ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), uniformBufferLayoutBinding);
-
-    VkDescriptorSetLayoutBinding combinedSamplerLayoutBinding{};
-    ResourceDescriptor::populateDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, combinedSamplerLayoutBinding);
-    
-
-    std::array<VkDescriptorSetLayoutBinding, 2> descriptorSetLayoutBindings = {uniformBufferLayoutBinding, combinedSamplerLayoutBinding};
-    
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{};
     descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     
@@ -135,7 +141,7 @@ void ResourceDescriptor::createDescriptorSets(VkDescriptorSetLayout descriptorSe
     }
 }
 
-void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageView, VkSampler textureSampler, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets)
+void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageView, VkSampler combinedSampler, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets)
 {
     for (size_t i = 0; i < descriptorSets.size(); i += 1) {
         VkDescriptorBufferInfo descriptorBufferInfo{};
@@ -151,7 +157,7 @@ void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBu
         descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         descriptorImageInfo.imageView = textureImageView;
 
-        descriptorImageInfo.sampler = textureSampler;
+        descriptorImageInfo.sampler = combinedSampler;
 
 
         VkWriteDescriptorSet uniformBufferWriteDescriptorSet{};

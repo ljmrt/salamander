@@ -21,8 +21,11 @@
 #include <iostream>
 
 
-std::array<VkVertexInputAttributeDescription, 3> ModelHandler::preservedAttributeDescriptions;
-VkVertexInputBindingDescription ModelHandler::preservedBindingDescription;
+std::vector<VkVertexInputAttributeDescription> ModelHandler::preservedSceneAttributeDescriptions;
+VkVertexInputBindingDescription ModelHandler::preservedSceneBindingDescription;
+
+std::vector<VkVertexInputAttributeDescription> ModelHandler::preservedCubemapAttributeDescriptions;
+VkVertexInputBindingDescription ModelHandler::preservedCubemapBindingDescription;
 
 void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPath)
 {
@@ -172,18 +175,14 @@ float ModelHandler::normalizeValueToRanges(float initialValue, float initialRang
     return (zeroToOneNormalizedValue * ((targetRangeMaximumValue - targetRangeMinimumValue) + targetRangeMinimumValue));
 }
 
-void ModelHandler::populateVertexInputCreateInfo(VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)
+void ModelHandler::populateVertexInputCreateInfo(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions, VkVertexInputBindingDescription *bindingDescription, VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)
 {
     vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-    ResourceDescriptor::populateBindingDescription(preservedBindingDescription);
-
-    ResourceDescriptor::fetchAttributeDescriptions(preservedAttributeDescriptions);
     
     vertexInputCreateInfo.vertexBindingDescriptionCount = 1;
-    vertexInputCreateInfo.pVertexBindingDescriptions = &preservedBindingDescription;
-    vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(preservedAttributeDescriptions.size());
-    vertexInputCreateInfo.pVertexAttributeDescriptions = preservedAttributeDescriptions.data();
+    vertexInputCreateInfo.pVertexBindingDescriptions = bindingDescription;
+    vertexInputCreateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputCreateInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 }
 
 void ModelHandler::populateInputAssemblyCreateInfo(VkPrimitiveTopology topology, VkBool32 primitiveRestartEnable, VkPipelineInputAssemblyStateCreateInfo& inputAssemblyCreateInfo)

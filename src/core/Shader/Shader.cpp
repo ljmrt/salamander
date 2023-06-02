@@ -34,6 +34,10 @@ void Shader::completeShaderData(VkShaderStageFlagBits shaderStage, VkDevice vulk
     incompleteShader.shaderStageCreateInfo.stage = shaderStage;
     incompleteShader.shaderStageCreateInfo.module = incompleteShader.shaderModule;
     incompleteShader.shaderStageCreateInfo.pName = "main";  // shader entry point.
+    
+    incompleteShader.shaderStageCreateInfo.flags = 0;
+    incompleteShader.shaderStageCreateInfo.pNext = nullptr;
+    incompleteShader.shaderStageCreateInfo.pSpecializationInfo = nullptr;
 }
 
 void Shader::createShader(std::string bytecodeFilePath, VkShaderStageFlagBits shaderStage, VkDevice vulkanLogicalDevice, Shader& createdShader)

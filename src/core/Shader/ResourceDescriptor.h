@@ -13,13 +13,19 @@ namespace ResourceDescriptor
 {
     // populate the passed binding description.
     //
+    // @param stride see VkVertexInputBindingDescription documentation.
     // @param bindingDescription stored fetched binding description.
-    void populateBindingDescription(VkVertexInputBindingDescription& bindingDescription);
+    void populateBindingDescription(uint32_t stride, VkVertexInputBindingDescription& bindingDescription);
 
-    // fetch the attribute descriptions used for the vertices.
+    // fetch the attribute descriptions used for the scene vertex attributes.
     //
-    // @param attributeDescriptions stored fetched attribute descriptions.
-    void fetchAttributeDescriptions(std::array<VkVertexInputAttributeDescription, 3>& attributeDescriptions);
+    // @param attributeDescriptions fetched attribute descriptions.
+    void fetchSceneAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
+
+    // fetch the attribute descriptions used for the cubemap vertex attributes.
+    //
+    // @param attributeDescriptions fetched attribute descriptions.
+    void fetchCubemapAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
 
     // populate a descriptor set layout binding.
     //
@@ -31,9 +37,10 @@ namespace ResourceDescriptor
     
     // create descriptor set layout.
     //
+    // @param descriptorSetLayoutBindings a container of descriptor set layout bindings.
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor set layout creation.
     // @palam descriptorSetLayout created descriptor set layout.
-    void createDescriptorSetLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout);
+    void createDescriptorSetLayout(std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings, VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout);
 
     // populate a descriptor pool size.
     //
@@ -60,10 +67,10 @@ namespace ResourceDescriptor
     //
     // @param uniformBuffers uniform buffers to populate the descriptor sets with.
     // @param textureImageView the main texture's image view to use in descriptor sets population.
-    // @param textureSampler the main texture's sampler to use in descriptor sets population.
+    // @param combinedSampler the main texture's sampler to use in descriptor sets population.
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor sets population.
     // @param descriptorSets populated descriptor sets.
-    void populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageView, VkSampler textureSampler, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
+    void populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageView, VkSampler combinedSampler, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
 }
 
 

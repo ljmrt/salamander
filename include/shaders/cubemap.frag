@@ -1,6 +1,6 @@
 #version 450
 
-layout(binding = 0) uniform samplerCube cubemapTextureSampler;
+layout(binding = 1) uniform samplerCube cubemapTextureSampler;
 
 layout(location = 0) in vec3 fragmentCubemapUVCoordinates;
 

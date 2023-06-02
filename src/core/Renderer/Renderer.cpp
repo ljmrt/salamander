@@ -24,6 +24,11 @@
 
 void PipelineComponents::cleanupPipelineComponents(VkDevice vulkanLogicalDevice)
 {
+    for (size_t i = 0; i < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; i += 1) {  // uniform buffers are the size of MAX_FRAME_IN_FLIGHT.
+        vkDestroyBuffer(vulkanLogicalDevice, uniformBuffers[i], nullptr);
+        vkFreeMemory(vulkanLogicalDevice, uniformBuffersMemory[i], nullptr);        
+    }
+    
     vkDestroyDescriptorPool(vulkanLogicalDevice, descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(vulkanLogicalDevice, descriptorSetLayout, nullptr);
     
@@ -303,10 +308,10 @@ void Renderer::populateDepthStencilCreateInfo(VkBool32 depthTestEnable, VkBool32
 {
     depthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 
-    depthStencilCreateInfo.depthTestEnable = VK_TRUE;
-    depthStencilCreateInfo.depthWriteEnable = VK_TRUE;
+    depthStencilCreateInfo.depthTestEnable = depthTestEnable;
+    depthStencilCreateInfo.depthWriteEnable = depthWriteEnable;
 
-    depthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencilCreateInfo.depthCompareOp = depthCompareOp;
     
     depthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;
     depthStencilCreateInfo.minDepthBounds = 0.0f;
@@ -387,8 +392,10 @@ void Renderer::createMemberScenePipeline(VkSampleCountFlagBits msaaSampleCount)
     VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_scenePipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_scenePipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
     
 
+    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::Vertex), ModelHandler::preservedSceneBindingDescription);
+    ResourceDescriptor::fetchSceneAttributeDescriptions(ModelHandler::preservedSceneAttributeDescriptions);
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
-    ModelHandler::populateVertexInputCreateInfo(vertexInputCreateInfo);
+    ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedSceneAttributeDescriptions, &ModelHandler::preservedSceneBindingDescription, vertexInputCreateInfo);
 
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
@@ -468,9 +475,10 @@ void Renderer::createMemberCubemapPipeline()
     
     VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_cubemapPipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_cubemapPipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
     
-    
+    ResourceDescriptor::populateBindingDescription(sizeof(uint32_t), ModelHandler::preservedCubemapBindingDescription);  // we are only passing the position attribute to the vertex shader.
+    ResourceDescriptor::fetchCubemapAttributeDescriptions(ModelHandler::preservedCubemapAttributeDescriptions);
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
-    ModelHandler::populateVertexInputCreateInfo(vertexInputCreateInfo);
+    ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedCubemapAttributeDescriptions, &ModelHandler::preservedCubemapBindingDescription, vertexInputCreateInfo);
 
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
@@ -486,7 +494,7 @@ void Renderer::createMemberCubemapPipeline()
 
 
     VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
-    populateMultisamplingCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0, multisamplingCreateInfo);
+    populateMultisamplingCreateInfo(VK_SAMPLE_COUNT_1_BIT, 1.0f, multisamplingCreateInfo);
 
 
     VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
@@ -593,7 +601,7 @@ void Renderer::drawFrame(DisplayManager::DisplayDetails& displayDetails, VkPhysi
     CommandManager::recordGraphicsCommandBufferCommands(m_graphicsCommandBuffers[m_currentFrame], displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_scenePipelineComponents, m_mainModel.shaderBufferComponents, m_cubemapPipelineComponents, m_cubemapModel.shaderBufferComponents, m_currentFrame);
 
     
-    Uniform::updateFrameUniformBuffer(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_mappedUniformBuffersMemory);
+    Uniform::updateFrameUniformBuffers(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_scenePipelineComponents.mappedUniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory);
 
     
     VkSubmitInfo submitInfo{};
@@ -661,14 +669,30 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     
     createMemberSceneRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat, displayDetails.vulkanDisplayDetails.msaaSampleCount, vulkanPhysicalDevice);
     createMemberCubemapRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat, vulkanPhysicalDevice);
+    
+    VkDescriptorSetLayoutBinding sceneUniformBufferLayoutBinding{};
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), sceneUniformBufferLayoutBinding);
+    
+    VkDescriptorSetLayoutBinding sceneCombinedSamplerLayoutBinding{};
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, sceneCombinedSamplerLayoutBinding);
 
-    ResourceDescriptor::createDescriptorSetLayout(*m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSetLayout);
+    std::vector<VkDescriptorSetLayoutBinding> sceneDescriptorSetLayoutBindings = {sceneUniformBufferLayoutBinding, sceneCombinedSamplerLayoutBinding};
+    ResourceDescriptor::createDescriptorSetLayout(sceneDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSetLayout);
+    
     createMemberScenePipeline(displayDetails.vulkanDisplayDetails.msaaSampleCount);
 
-    // conviently uses the same uniforms as the scene pipeline.
-    ResourceDescriptor::createDescriptorSetLayout(*m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSetLayout);
+    
+    VkDescriptorSetLayoutBinding cubemapUniformBufferLayoutBinding{};
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, cubemapUniformBufferLayoutBinding);
+    
+    VkDescriptorSetLayoutBinding cubemapCombinedSamplerLayoutBinding{};
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, cubemapCombinedSamplerLayoutBinding);
+
+    std::vector<VkDescriptorSetLayoutBinding> cubemapDescriptorSetLayoutBindings = {cubemapUniformBufferLayoutBinding, cubemapCombinedSamplerLayoutBinding};
+    ResourceDescriptor::createDescriptorSetLayout(cubemapDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSetLayout);
     createMemberCubemapPipeline();
 
+    
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, m_graphicsCommandPool);
 
     // populate the color image details.
@@ -689,17 +713,18 @@ void Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t gra
     m_cubemapModel.populateShaderBufferComponents(m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
     Image::populateTextureDetails((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, m_graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapTextureDetails);
 
-    Uniform::createUniformBuffers(temporaryVulkanDevices, m_uniformBuffers, m_uniformBuffersMemory, m_mappedUniformBuffersMemory);
+    Uniform::createUniformBuffers(sizeof(Uniform::SceneUniformBufferObject), temporaryVulkanDevices, m_scenePipelineComponents.uniformBuffers, m_scenePipelineComponents.uniformBuffersMemory, m_scenePipelineComponents.mappedUniformBuffersMemory);
     
     ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_scenePipelineComponents.descriptorSetLayout, m_scenePipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_scenePipelineComponents.uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
 
-    // cubemap shaders conviently use the same uniforms.
+    Uniform::createUniformBuffers(sizeof(Uniform::CubemapUniformBufferObject), temporaryVulkanDevices, m_cubemapPipelineComponents.uniformBuffers, m_cubemapPipelineComponents.uniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory);
+
+    // cubemap shaders conviently use the same uniforms/only uniform difference is shader stages.
     ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_cubemapPipelineComponents.descriptorSetLayout, m_cubemapPipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
-    // TODO: custom uniform buffers for the cubemap.
-    ResourceDescriptor::populateDescriptorSets(m_uniformBuffers, m_cubemapTextureDetails.textureImageDetails.imageView, m_cubemapTextureDetails.textureSampler, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_cubemapPipelineComponents.uniformBuffers, m_cubemapTextureDetails.textureImageDetails.imageView, m_cubemapTextureDetails.textureSampler, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
 
     CommandManager::allocateChildCommandBuffers(m_graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, m_graphicsCommandBuffers);
 
@@ -723,9 +748,6 @@ void Renderer::cleanupRenderer()
         vkDestroySemaphore(*m_vulkanLogicalDevice, m_imageAvailibleSemaphores[i], nullptr);
         vkDestroySemaphore(*m_vulkanLogicalDevice, m_renderFinishedSemaphores[i], nullptr);
         vkDestroyFence(*m_vulkanLogicalDevice, m_inFlightFences[i], nullptr);
-
-        vkDestroyBuffer(*m_vulkanLogicalDevice, m_uniformBuffers[i], nullptr);
-        vkFreeMemory(*m_vulkanLogicalDevice, m_uniformBuffersMemory[i], nullptr);
     }
 
     vkDestroyCommandPool(*m_vulkanLogicalDevice, m_graphicsCommandPool, nullptr);  // child command buffers automatically freed.
