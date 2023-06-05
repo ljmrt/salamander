@@ -17,6 +17,21 @@ void ResourceDescriptor::populateBindingDescription(uint32_t stride, VkVertexInp
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 }
 
+void ResourceDescriptor::fetchCubemapAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
+{
+    // attribute formats use RGB for some reason.
+    VkVertexInputAttributeDescription positionAttributeDescription{};
+    
+    positionAttributeDescription.binding = 0;
+    positionAttributeDescription.location = 0;
+    
+    positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+    positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
+
+    
+    attributeDescriptions = {positionAttributeDescription};
+}
+
 void ResourceDescriptor::fetchSceneAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
 {
     // attribute formats use RGB for some reason.
@@ -48,21 +63,6 @@ void ResourceDescriptor::fetchSceneAttributeDescriptions(std::vector<VkVertexInp
 
 
     attributeDescriptions = {positionAttributeDescription, normalAttributeDescription, UVCoordinatesAttributeDescription};
-}
-
-void ResourceDescriptor::fetchCubemapAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
-{
-    // attribute formats use RGB for some reason.
-    VkVertexInputAttributeDescription positionAttributeDescription{};
-    
-    positionAttributeDescription.binding = 0;
-    positionAttributeDescription.location = 0;
-    
-    positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
-
-    
-    attributeDescriptions = {positionAttributeDescription};
 }
 
 void ResourceDescriptor::populateDescriptorSetLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkDescriptorSetLayoutBinding& descriptorSetLayoutBinding)

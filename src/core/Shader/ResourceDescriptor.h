@@ -17,15 +17,15 @@ namespace ResourceDescriptor
     // @param bindingDescription stored fetched binding description.
     void populateBindingDescription(uint32_t stride, VkVertexInputBindingDescription& bindingDescription);
 
-    // fetch the attribute descriptions used for the scene vertex attributes.
-    //
-    // @param attributeDescriptions fetched attribute descriptions.
-    void fetchSceneAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
-
     // fetch the attribute descriptions used for the cubemap vertex attributes.
     //
     // @param attributeDescriptions fetched attribute descriptions.
     void fetchCubemapAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
+
+    // fetch the attribute descriptions used for the scene vertex attributes.
+    //
+    // @param attributeDescriptions fetched attribute descriptions.
+    void fetchSceneAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
 
     // populate a descriptor set layout binding.
     //

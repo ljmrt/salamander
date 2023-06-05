@@ -4,8 +4,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <core/Shader/Image.h>
-#include <core/Config/Config.h>
+#include <core/Renderer/Renderer.h>
 
 #include <string>
 #include <vector>
@@ -13,9 +12,13 @@
 
 namespace DisplayManager
 {
+    // TODO: merge this with the base DisplayDetails struct.
     struct VulkanDisplayDetails {
         VkQueue graphicsQueue;
         VkQueue presentationQueue;
+
+        VkCommandPool graphicsCommandPool;
+        std::vector<VkCommandBuffer> graphicsCommandBuffers;
         
         VkSurfaceKHR windowSurface;
 
@@ -27,10 +30,11 @@ namespace DisplayManager
         std::vector<VkFramebuffer> swapchainFramebuffers;
 
         VkSampleCountFlagBits msaaSampleCount = VK_SAMPLE_COUNT_1_BIT;  // overwritten by functions.
-        Image::ImageDetails colorImageDetails;  // the multisampling offscreen image details.
-        Image::ImageDetails depthImageDetails;
+
+        Image::ImageDetails colorImageDetails;  // the color image details of the swapchain framebuffers.
+        Image::ImageDetails depthImageDetails;  // the depth image details of the swapchain framebuffers.
     };
-    
+
     struct DisplayDetails {
         GLFWwindow *glfwWindow;
         VulkanDisplayDetails vulkanDisplayDetails;

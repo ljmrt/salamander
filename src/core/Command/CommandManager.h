@@ -45,14 +45,15 @@ namespace CommandManager
     // record necessary drawing commands in a graphics command buffer.
     //
     // @param graphicsCommandBuffer graphics command buffer to record in.
-    // @param swapchainImageFramebuffer the swapchain image's framebuffer to use in commands.
     // @param swapchainImageExtent the swapchain image's extent to use in commands.
-    // @param scenePipelineComponents components of the scene graphics pipeline.
-    // @param sceneShaderBufferComponents vertex and index buffer used for the scene's main model.
+    // @param swapchainIndexFramebuffer this image index's swapchain framebuffer.
+    // @param currentFrame the current renderer-drawing frame to use in commands.
     // @param cubemapPipelineComponents components of the cubemap graphics pipeline.
     // @param cubemapShaderBufferComponents vertex and index buffer used for the cubemap's model.
-    // @param currentFrame the current renderer-drawing frame to use in commands.
-    void recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, size_t currentFrame);
+    // @param scenePipelineComponents components of the scene graphics pipeline.
+    // @param sceneShaderBufferComponents vertex and index buffer used for the scene's main model.
+    // @param renderPass the render pass to use in graphics operations.
+    void recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkExtent2D swapchainImageExtent, VkFramebuffer swapchainIndexFramebuffer, size_t currentFrame, RendererDetails::PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, RendererDetails::PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, VkRenderPass renderPass);
 }
 
 

@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include <core/DisplayManager/DisplayManager.h>
+#include <core/Renderer/Renderer.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 
 #include <vector>
@@ -73,16 +74,26 @@ namespace SwapchainHandler
     // @param createdSwapchainImageViews stored created swapchain image views.
     void createSwapchainImageViews(std::vector<VkImage> swapchainImages, VkFormat swapchainImageFormat, VkDevice vulkanLogicalDevice, std::vector<VkImageView>& createdSwapchainImageViews);
 
+    // populate(not create) a framebuffer create info struct.
+    //
+    // @param renderPass the render pass to use in the framebuffer create info.
+    // @param framebufferAttachments array of framebuffer attachments.
+    // @param framebufferAttachmentsCount the amount of framebuffer attachments.
+    // @param framebufferWidth the specified width of the framebuffer.
+    // @param framebufferHeight the specified height of the framebuffer.
+    // @param framebufferCreateInfo populated framebuffer create info.
+    void populateFramebufferCreateInfo(VkRenderPass renderPass, VkImageView framebufferAttachments[], uint32_t framebufferAttachmentsCount, uint32_t framebufferWidth, uint32_t framebufferHeight, VkFramebufferCreateInfo& framebufferCreateInfo);
+    
     // create the framebuffers necessary for all swapchain image views.
     //
     // @param swapchainImageViews swapchain image views to use in framebuffer creation.
+    // @param swapchainExtent swapchain image extent to use in framebuffer creation.
     // @param colorImageView the color image view to use in framebuffer creation.
     // @param depthImageView the depth image view to use in framebuffer creation.
     // @param renderPass render pass to use in framebuffer creation.
-    // @param swapchainExtent swapchain image extent to use in framebuffer creation.
     // @param vulkanLogicalDevice this Vulkan instance's logical device.
     // @param createdSwapchainFramebuffers stored created swapchain framebuffers.
-    void createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkImageView colorImageView, VkImageView depthImageView, VkRenderPass renderPass, VkExtent2D swapchainImageExtent, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers);
+    void createSwapchainFramebuffers(std::vector<VkImageView> swapchainImageViews, VkExtent2D swapchainImageExtent, VkImageView colorImageView, VkImageView depthImageView, VkRenderPass renderPass, VkDevice vulkanLogicalDevice, std::vector<VkFramebuffer>& createdSwapchainFramebuffers);
 
     // recreate the swapchain after some form of incompatibility.
     //
@@ -95,6 +106,7 @@ namespace SwapchainHandler
     // @param displayDetails display details to use and store recreated components in.
     void recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, VkCommandPool commandPool, VkQueue commandQueue, DisplayManager::DisplayDetails& displayDetails);
 
+    // TODO: move this to DisplayManager DisplayDetails method.
     // clean up a swapchain.
     //
     // @param vulkanDisplayDetails vulkan display details to use in swapchain cleanup.

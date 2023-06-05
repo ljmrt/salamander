@@ -8,7 +8,7 @@
 class Application
 {
 private:
-    Renderer m_renderer;
+    RendererDetails::Renderer m_renderer;
     VulkanInstance m_instance;
     
     DisplayManager::DisplayDetails m_displayDetails;

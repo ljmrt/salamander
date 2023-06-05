@@ -6,6 +6,7 @@
 
 #include <core/Shader/Image.h>
 #include <core/Shader/Depth.h>
+#include <core/DisplayManager/DisplayManager.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Command/CommandManager.h>
 #include <core/Buffer/Buffer.h>
@@ -85,9 +86,8 @@ void Image::populateTextureDetails(std::string textureImageFilePath, bool isCube
     std::vector<stbi_uc *> textureImagesPixels;
     textureImagesPixels.resize(textureDetails.textureImageDetails.imageLayerCount);
     for (size_t i = 0; i < textureDetails.textureImageDetails.imageLayerCount; i += 1) {
-        const char *textureImageResolvedFilePath = (isCubemap ? (textureImageFilePath + std::to_string(static_cast<uint32_t>(i)) + ".png") : textureImageFilePath).c_str();
-        std::cout << textureImageResolvedFilePath << std::endl;
-        textureImagesPixels[i] = stbi_load(textureImageResolvedFilePath, &textureDetails.textureImageDetails.imageWidth, &textureDetails.textureImageDetails.imageHeight, &textureDetails.textureImageDetails.imageChannels, STBI_rgb_alpha);
+        std::string textureImageResolvedFilePath = (isCubemap ? (textureImageFilePath + std::to_string(static_cast<uint32_t>(i)) + ".png") : textureImageFilePath);
+        textureImagesPixels[i] = stbi_load(textureImageResolvedFilePath.c_str(), &textureDetails.textureImageDetails.imageWidth, &textureDetails.textureImageDetails.imageHeight, &textureDetails.textureImageDetails.imageChannels, STBI_rgb_alpha);
 
         if (!textureImagesPixels[i]) {  // if image not loaded.
             throwDebugException("Failed to load texture image.");
@@ -119,12 +119,17 @@ void Image::populateTextureDetails(std::string textureImageFilePath, bool isCube
         stbi_image_free(textureImagePixels);
     }
 
+    int imageUsage = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
-    Image::populateImageDetails(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureImageDetails.imageLayerCount, VK_SAMPLE_COUNT_1_BIT, textureDetails.textureImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureDetails.textureImageDetails);
+    Image::populateImageDetails(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureImageDetails.imageLayerCount, VK_SAMPLE_COUNT_1_BIT, textureDetails.textureImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, imageUsage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, textureDetails.textureImageDetails);
 
     Image::transitionImageLayout(textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageFormat, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureImageDetails.imageLayerCount, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, disposableCommandBuffer);
     Image::copyBufferToImage(stagingBuffer, textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight, textureDetails.textureImageDetails.imageLayerCount, disposableCommandBuffer);
 
+    if (isCubemap == true) {
+        Image::transitionImageLayout(textureDetails.textureImageDetails.image, textureDetails.textureImageDetails.imageFormat, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureImageDetails.imageLayerCount, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, disposableCommandBuffer);
+        textureDetails.textureImageDetails.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
     
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
 
@@ -134,10 +139,20 @@ void Image::populateTextureDetails(std::string textureImageFilePath, bool isCube
 
     Image::createImageView(textureDetails.textureImageDetails.image, VK_FORMAT_R8G8B8A8_SRGB, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureImageDetails.imageLayerCount, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, textureDetails.textureImageDetails.imageView);
 
-    Image::createTextureSampler(vulkanDevices, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureSampler);
+    if (isCubemap == false) {
+        Image::generateMipmapLevels(textureDetails.textureImageDetails, commandPool, commandQueue, vulkanDevices);
+        textureDetails.textureImageDetails.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
 
-    Image::generateMipmapLevels(textureDetails.textureImageDetails, commandPool, commandQueue, vulkanDevices);
-    textureDetails.textureImageDetails.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    Image::createTextureSampler(vulkanDevices, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureSampler);
+}
+
+void Image::generateSwapchainImageDetails(DisplayManager::VulkanDisplayDetails& vulkanDisplayDetails, DeviceHandler::VulkanDevices vulkanDevices)
+{
+    Image::populateImageDetails(vulkanDisplayDetails.swapchainImageExtent.width, vulkanDisplayDetails.swapchainImageExtent.height, 1, 1, vulkanDisplayDetails.msaaSampleCount, vulkanDisplayDetails.swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, vulkanDisplayDetails.colorImageDetails);
+    Image::createImageView(vulkanDisplayDetails.colorImageDetails.image, vulkanDisplayDetails.colorImageDetails.imageFormat, 1, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, vulkanDisplayDetails.colorImageDetails.imageView);
+
+    Depth::populateDepthImageDetails(vulkanDisplayDetails.swapchainImageExtent, vulkanDisplayDetails.msaaSampleCount, vulkanDisplayDetails.graphicsCommandPool, vulkanDisplayDetails.graphicsQueue, vulkanDevices, vulkanDisplayDetails.depthImageDetails);
 }
 
 void Image::generateMipmapLevels(Image::ImageDetails& imageDetails, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
@@ -362,7 +377,7 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, uint32_t mipma
         imageMemoryBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
         sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;        
+        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     } else {
         throwDebugException("Unsupported/invalid layout transition.");
     }

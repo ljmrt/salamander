@@ -79,7 +79,7 @@ void CommandManager::submitSingleSubmitCommands(VkCommandBuffer recordedCommandB
     vkFreeCommandBuffers(vulkanLogicalDevice, parentCommandPool, 1, &recordedCommandBuffer);
 }
 
-void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkFramebuffer swapchainImageFramebuffer, VkExtent2D swapchainImageExtent, PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, size_t currentFrame)
+void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkExtent2D swapchainImageExtent, VkFramebuffer swapchainIndexFramebuffer, size_t currentFrame, RendererDetails::PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, RendererDetails::PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, VkRenderPass renderPass)
 {
     VkCommandBufferBeginInfo commandBufferBeginInfo{};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -94,98 +94,60 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
 
 
     // TODO: abstract this to a seperate function.
-    VkRenderPassBeginInfo cubemapRenderPassBeginInfo{};
-    cubemapRenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    VkRenderPassBeginInfo renderPassBeginInfo{};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 
-    cubemapRenderPassBeginInfo.renderPass = cubemapPipelineComponents.renderPass;
-    cubemapRenderPassBeginInfo.framebuffer = swapchainImageFramebuffer;
+    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.framebuffer = swapchainIndexFramebuffer;
     
-    cubemapRenderPassBeginInfo.renderArea.offset = {0, 0};
-    cubemapRenderPassBeginInfo.renderArea.extent = swapchainImageExtent;
+    renderPassBeginInfo.renderArea.offset = {0, 0};
+    renderPassBeginInfo.renderArea.extent = swapchainImageExtent;
 
     // attachment clear values are used in load operation clearing.
-    VkClearValue cubemapColorAttachmentClearValue = {{{0.0f, 0.0f, 0.0f, 1.0f}}};  // black clear color.
-    std::array<VkClearValue, 1> cubemapAttachmentClearValues = {cubemapColorAttachmentClearValue};
+    VkClearValue colorAttachmentClearValue = {{{1.0f, 1.0f, 1.0f, 1.0f}}};  // clear to white.
+    VkClearValue depthAttachmentClearValue = {1.0f, 0};
+    std::array<VkClearValue, 2> attachmentClearValues = {colorAttachmentClearValue, depthAttachmentClearValue};
     
-    cubemapRenderPassBeginInfo.clearValueCount = static_cast<uint32_t>(cubemapAttachmentClearValues.size());
-    cubemapRenderPassBeginInfo.pClearValues = cubemapAttachmentClearValues.data();
+    renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(attachmentClearValues.size());
+    renderPassBeginInfo.pClearValues = attachmentClearValues.data();
 
-    vkCmdBeginRenderPass(graphicsCommandBuffer, &cubemapRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.
+    vkCmdBeginRenderPass(graphicsCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.
 
     // set our dynamic pipeline states.
-    VkViewport cubemapDynamicViewport{};
-    cubemapDynamicViewport.x = 0.0f;
-    cubemapDynamicViewport.y = 0.0f;
-    cubemapDynamicViewport.width = static_cast<float>(swapchainImageExtent.width);
-    cubemapDynamicViewport.height = static_cast<float>(swapchainImageExtent.height);
-    cubemapDynamicViewport.minDepth = 0.0f;
-    cubemapDynamicViewport.maxDepth = 1.0f;
-    vkCmdSetViewport(graphicsCommandBuffer, 0, 1, &cubemapDynamicViewport);
+    VkViewport dynamicViewport{};
+    dynamicViewport.x = 0.0f;
+    dynamicViewport.y = 0.0f;
+    dynamicViewport.width = static_cast<float>(swapchainImageExtent.width);
+    dynamicViewport.height = static_cast<float>(swapchainImageExtent.height);
+    dynamicViewport.minDepth = 0.0f;
+    dynamicViewport.maxDepth = 1.0f;
+    vkCmdSetViewport(graphicsCommandBuffer, 0, 1, &dynamicViewport);
 
-    VkRect2D cubemapDynamicScissor{};
-    cubemapDynamicScissor.offset = {0, 0};
-    cubemapDynamicScissor.extent = swapchainImageExtent;
-    vkCmdSetScissor(graphicsCommandBuffer, 0, 1, &cubemapDynamicScissor);
+    VkRect2D dynamicScissor{};
+    dynamicScissor.offset = {0, 0};
+    dynamicScissor.extent = swapchainImageExtent;
+    vkCmdSetScissor(graphicsCommandBuffer, 0, 1, &dynamicScissor);
 
-    VkDeviceSize cubemapOffsets[] = {0};
-    
+    VkDeviceSize offsets[] = {0};
+
     // draw the cubemap.
-    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, &cubemapShaderBufferComponents.vertexBuffer, cubemapOffsets);
+    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, &cubemapShaderBufferComponents.vertexBuffer, offsets);
     vkCmdBindIndexBuffer(graphicsCommandBuffer, cubemapShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cubemapPipelineComponents.pipelineLayout, 0, 1, &cubemapPipelineComponents.descriptorSets[currentFrame], 0, nullptr);
     vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cubemapPipelineComponents.pipeline);
 
     vkCmdDrawIndexed(graphicsCommandBuffer, cubemapShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
-    
-    vkCmdEndRenderPass(graphicsCommandBuffer);
-    
-    
-    VkRenderPassBeginInfo sceneRenderPassBeginInfo{};
-    sceneRenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-
-    sceneRenderPassBeginInfo.renderPass = scenePipelineComponents.renderPass;
-    sceneRenderPassBeginInfo.framebuffer = swapchainImageFramebuffer;
-    
-    sceneRenderPassBeginInfo.renderArea.offset = {0, 0};
-    sceneRenderPassBeginInfo.renderArea.extent = swapchainImageExtent;
-
-    // attachment clear values are used in load operation clearing.
-    VkClearValue sceneColorAttachmentClearValue = {{{0.0f, 0.0f, 0.0f, 1.0f}}};  // black clear color.
-    VkClearValue sceneDepthAttachmentClearValue = {1.0f, 0};
-    std::array<VkClearValue, 2> sceneAttachmentClearValues = {sceneColorAttachmentClearValue, sceneDepthAttachmentClearValue};
-    
-    sceneRenderPassBeginInfo.clearValueCount = static_cast<uint32_t>(sceneAttachmentClearValues.size());
-    sceneRenderPassBeginInfo.pClearValues = sceneAttachmentClearValues.data();
-
-    vkCmdBeginRenderPass(graphicsCommandBuffer, &sceneRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.
-
-    // set our dynamic pipeline states.
-    VkViewport sceneDynamicViewport{};
-    sceneDynamicViewport.x = 0.0f;
-    sceneDynamicViewport.y = 0.0f;
-    sceneDynamicViewport.width = static_cast<float>(swapchainImageExtent.width);
-    sceneDynamicViewport.height = static_cast<float>(swapchainImageExtent.height);
-    sceneDynamicViewport.minDepth = 0.0f;
-    sceneDynamicViewport.maxDepth = 1.0f;
-    vkCmdSetViewport(graphicsCommandBuffer, 0, 1, &sceneDynamicViewport);
-
-    VkRect2D sceneDynamicScissor{};
-    sceneDynamicScissor.offset = {0, 0};
-    sceneDynamicScissor.extent = swapchainImageExtent;
-    vkCmdSetScissor(graphicsCommandBuffer, 0, 1, &sceneDynamicScissor);
-
-    VkDeviceSize sceneOffsets[] = {0};
 
     // draw the scene.
-    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, &sceneShaderBufferComponents.vertexBuffer, sceneOffsets);
+    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, &sceneShaderBufferComponents.vertexBuffer, offsets);
     vkCmdBindIndexBuffer(graphicsCommandBuffer, sceneShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, scenePipelineComponents.pipelineLayout, 0, 1, &scenePipelineComponents.descriptorSets[currentFrame], 0, nullptr);
     vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, scenePipelineComponents.pipeline);
 
     vkCmdDrawIndexed(graphicsCommandBuffer, sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
-
+    
     vkCmdEndRenderPass(graphicsCommandBuffer);
     
 
