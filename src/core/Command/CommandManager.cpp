@@ -130,6 +130,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
 
     VkDeviceSize offsets[] = {0};
 
+    // TODO: draw after to prevent overdraw.
     // draw the cubemap.
     vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, &cubemapShaderBufferComponents.vertexBuffer, offsets);
     vkCmdBindIndexBuffer(graphicsCommandBuffer, cubemapShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
