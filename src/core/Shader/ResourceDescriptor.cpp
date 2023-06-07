@@ -26,7 +26,7 @@ void ResourceDescriptor::fetchCubemapAttributeDescriptions(std::vector<VkVertexI
     positionAttributeDescription.location = 0;
     
     positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
+    positionAttributeDescription.offset = 0;  // offsetof(ModelHandler::Vertex, position);
 
     
     attributeDescriptions = {positionAttributeDescription};

@@ -321,8 +321,8 @@ void RendererDetails::Renderer::createMemberCubemapPipeline(VkSampleCountFlagBit
     
     VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_cubemapPipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_cubemapPipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
     
-    ResourceDescriptor::populateBindingDescription(sizeof(uint32_t), ModelHandler::preservedCubemapBindingDescription);  // we are only passing the position attribute to the vertex shader.
-    ResourceDescriptor::fetchCubemapAttributeDescriptions(ModelHandler::preservedCubemapAttributeDescriptions);
+    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::Vertex), ModelHandler::preservedCubemapBindingDescription);  // we are only passing the position attribute to the vertex shader.
+    ResourceDescriptor::fetchSceneAttributeDescriptions(ModelHandler::preservedCubemapAttributeDescriptions);
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
     ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedCubemapAttributeDescriptions, &ModelHandler::preservedCubemapBindingDescription, vertexInputCreateInfo);
 
@@ -344,7 +344,7 @@ void RendererDetails::Renderer::createMemberCubemapPipeline(VkSampleCountFlagBit
 
 
     VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
-    populateDepthStencilCreateInfo(VK_TRUE, VK_FALSE, VK_COMPARE_OP_LESS_OR_EQUAL, depthStencilCreateInfo);
+    populateDepthStencilCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, depthStencilCreateInfo);
 
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
@@ -404,6 +404,7 @@ void RendererDetails::Renderer::createMemberScenePipeline(VkSampleCountFlagBits 
     VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_scenePipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_scenePipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
     
 
+    // TODO: implement vertex-position-only buffer/vector to load rather than loading unnecessary data.
     ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::Vertex), ModelHandler::preservedSceneBindingDescription);
     ResourceDescriptor::fetchSceneAttributeDescriptions(ModelHandler::preservedSceneAttributeDescriptions);
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
@@ -634,7 +635,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     m_mainModel.populateShaderBufferComponents(displayDetails.vulkanDisplayDetails.graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
     Image::populateTextureDetails(m_mainModel.absoluteTextureImagePath, false, displayDetails.vulkanDisplayDetails.graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_mainModel.textureDetails);
 
-    m_cubemapModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/CubemapCube.gltf"));
+    m_cubemapModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Cube/Cube.gltf"));
     m_cubemapModel.populateShaderBufferComponents(displayDetails.vulkanDisplayDetails.graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
     Image::populateTextureDetails((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.vulkanDisplayDetails.graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapTextureDetails);
 
@@ -668,6 +669,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 void RendererDetails::Renderer::cleanupRenderer()
 {
     m_mainModel.cleanupModel(*m_vulkanLogicalDevice);
+    m_cubemapModel.cleanupModel(*m_vulkanLogicalDevice);
     
     for (size_t i = 0; i < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; i += 1) {
         vkDestroySemaphore(*m_vulkanLogicalDevice, m_imageAvailibleSemaphores[i], nullptr);

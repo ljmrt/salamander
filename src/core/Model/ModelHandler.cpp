@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <string.h>
 
 
 std::vector<VkVertexInputAttributeDescription> ModelHandler::preservedSceneAttributeDescriptions;
@@ -38,6 +39,8 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
 
     bool modelLoadingSuccess = modelLoader.LoadASCIIFromFile(&loadedModel, &loaderErrors, &loaderWarnings, absoluteModelPath.c_str());
     if (modelLoadingSuccess == false) {
+        std::cout << loaderWarnings << std::endl;
+        std::cout << loaderErrors << std::endl;
         throwDebugException("Failed to load model/parse glTF.");
     }
 
@@ -77,7 +80,10 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
             const uint32_t VERTEX_INDEX_POSITION_OFFSET = (vertexIndex * POSITION_STRIDE);
             const float rawXPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 0];
             const float rawYPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 1];
-            const float rawZPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 2];
+            float rawZPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 2];
+            if (rawZPosition > -1 && rawZPosition < -0.999) {  // correct strange values.
+                rawZPosition = -1;
+            }
 
             // uses the X position minimum and maximum coordinates to get a general scaling factor, as individual factors would cause models to be squished into a cube.
             const float generalMinimumPositionCoordinate = positionAttributeAccessor.minValues[0];
@@ -85,7 +91,13 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
             primitiveVertices[vertexIndex].position.x = ModelHandler::normalizeValueToRanges(rawXPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
             primitiveVertices[vertexIndex].position.y = ModelHandler::normalizeValueToRanges(rawYPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
             primitiveVertices[vertexIndex].position.z = ModelHandler::normalizeValueToRanges(rawZPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
-
+            if (strcmp(loadedModel.nodes[0].name.c_str(), "Cube") == 0) {  // if the model's first node's name is "Cube".
+                // this is the cubemap model, scale all positions up.
+                primitiveVertices[vertexIndex].position.x = rawXPosition * 256;
+                primitiveVertices[vertexIndex].position.y = rawYPosition * 256;
+                primitiveVertices[vertexIndex].position.z = rawZPosition * 256;
+            }
+            
 
             const uint32_t VERTEX_INDEX_NORMAL_OFFSET = (vertexIndex * NORMAL_STRIDE);
             primitiveVertices[vertexIndex].normal.x = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 1];
