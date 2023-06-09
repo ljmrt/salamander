@@ -14,6 +14,7 @@
 #include <core/Buffer/Buffer.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Logging/ErrorLogger.h>
+#include <utils/MathUtils.h>
 
 #include <array>
 #include <vector>
@@ -30,7 +31,7 @@ VkVertexInputBindingDescription ModelHandler::preservedCubemapBindingDescription
 
 void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPath)
 {
-    absoluteModelDirectory = absoluteModelPath.substr(0, absoluteModelPath.find_last_of("/"));
+    this->absoluteModelDirectory = absoluteModelPath.substr(0, absoluteModelPath.find_last_of("/"));
     
     tinygltf::Model loadedModel;
     tinygltf::TinyGLTF modelLoader;
@@ -44,7 +45,7 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         throwDebugException("Failed to load model/parse glTF.");
     }
 
-    for (tinygltf::Primitive meshPrimitive : loadedModel.meshes[0].primitives) {  // only supports one mesh?
+    for (tinygltf::Primitive meshPrimitive : loadedModel.meshes[0].primitives) {  // TODO: dynamic mesh selection.
         const tinygltf::Accessor& positionAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["POSITION"]];
         const tinygltf::BufferView& positionAttributeBufferView = loadedModel.bufferViews[positionAttributeAccessor.bufferView];
         const tinygltf::Buffer& positionAttributeBuffer = loadedModel.buffers[positionAttributeBufferView.buffer];
@@ -88,9 +89,9 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
             // uses the X position minimum and maximum coordinates to get a general scaling factor, as individual factors would cause models to be squished into a cube.
             const float generalMinimumPositionCoordinate = positionAttributeAccessor.minValues[0];
             const float generalMaximumPositionCoordinate = positionAttributeAccessor.maxValues[0];
-            primitiveVertices[vertexIndex].position.x = ModelHandler::normalizeValueToRanges(rawXPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
-            primitiveVertices[vertexIndex].position.y = ModelHandler::normalizeValueToRanges(rawYPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
-            primitiveVertices[vertexIndex].position.z = ModelHandler::normalizeValueToRanges(rawZPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
+            primitiveVertices[vertexIndex].position.x = MathUtils::normalizeValueToRanges(rawXPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
+            primitiveVertices[vertexIndex].position.y = MathUtils::normalizeValueToRanges(rawYPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
+            primitiveVertices[vertexIndex].position.z = MathUtils::normalizeValueToRanges(rawZPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
             if (strcmp(loadedModel.nodes[0].name.c_str(), "Cube") == 0) {  // if the model's first node's name is "Cube".
                 // this is the cubemap model, scale all positions up.
                 primitiveVertices[vertexIndex].position.x = rawXPosition * 256;
@@ -110,7 +111,7 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
             primitiveVertices[vertexIndex].UVCoordinates.y = UVCoordinateAttributes[VERTEX_INDEX_UV_COORDINATES_OFFSET + 1];
         }
 
-        meshVertices.insert(meshVertices.end(), primitiveVertices.begin(), primitiveVertices.end());
+        this->meshVertices.insert(this->meshVertices.end(), primitiveVertices.begin(), primitiveVertices.end());
         
 
         const tinygltf::Accessor& indicesAccessor = loadedModel.accessors[meshPrimitive.indices];
@@ -123,7 +124,7 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         const uint16_t *indices = reinterpret_cast<const uint16_t *>(&indicesBuffer.data[indicesBufferView.byteOffset + indicesAccessor.byteOffset]);
         std::vector<uint32_t> primitiveIndices(indices, (indices + indicesAccessor.count));
 
-        meshIndices.insert(meshIndices.end(), primitiveIndices.begin(), primitiveIndices.end());
+        this->meshIndices.insert(this->meshIndices.end(), primitiveIndices.begin(), primitiveIndices.end());
 
 
         const tinygltf::Material modelMaterial = loadedModel.materials[0];
@@ -131,9 +132,9 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         if (baseColorTextureInfo.index != -1) {
             const tinygltf::Texture baseColorTexture = loadedModel.textures[baseColorTextureInfo.index];
             const tinygltf::Image baseColorTextureImage = loadedModel.images[baseColorTexture.source];
-            absoluteTextureImagePath = (absoluteModelDirectory + "/" + baseColorTextureImage.uri);
+            this->absoluteTextureImagePath = (this->absoluteModelDirectory + "/" + baseColorTextureImage.uri);
         } else {
-            absoluteTextureImagePath = "NOT AVAILIBLE";
+            this->absoluteTextureImagePath = "NOT AVAILIBLE";
         }
     }
 }
@@ -143,7 +144,7 @@ void ModelHandler::Model::normalizeNormalValues()
     // taken from the minimum and maximum normal X coordinates
     float generalMinimumNormalValue = 100000;
     float generalMaximumNormalValue = 0;
-    for (ModelHandler::Vertex meshVertex : meshVertices) {
+    for (ModelHandler::Vertex meshVertex : this->meshVertices) {
         if (meshVertex.normal.x < generalMinimumNormalValue) {
             generalMinimumNormalValue = meshVertex.normal.x;
         }
@@ -153,38 +154,28 @@ void ModelHandler::Model::normalizeNormalValues()
     }
 
     for (ModelHandler::Vertex meshVertex : meshVertices) {
-        meshVertex.normal.x = ModelHandler::normalizeValueToRanges(meshVertex.normal.x, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
-        meshVertex.normal.y = ModelHandler::normalizeValueToRanges(meshVertex.normal.y, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
-        meshVertex.normal.z = ModelHandler::normalizeValueToRanges(meshVertex.normal.z, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
+        meshVertex.normal.x = MathUtils::normalizeValueToRanges(meshVertex.normal.x, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
+        meshVertex.normal.y = MathUtils::normalizeValueToRanges(meshVertex.normal.y, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
+        meshVertex.normal.z = MathUtils::normalizeValueToRanges(meshVertex.normal.z, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
     }
 }
 
 void ModelHandler::Model::populateShaderBufferComponents(VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
 {
-    Buffer::createDataBufferComponents(meshVertices.data(), (sizeof(meshVertices[0]) * meshVertices.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, shaderBufferComponents.vertexBuffer, shaderBufferComponents.vertexBufferMemory);
-    Buffer::createDataBufferComponents(meshIndices.data(), (sizeof(meshIndices[0]) * meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, shaderBufferComponents.indexBuffer, shaderBufferComponents.indexBufferMemory);
-    shaderBufferComponents.indiceCount = static_cast<uint32_t>(meshIndices.size());
+    Buffer::createDataBufferComponents(this->meshVertices.data(), (sizeof(this->meshVertices[0]) * this->meshVertices.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.vertexBuffer, this->shaderBufferComponents.vertexBufferMemory);
+    Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
+    shaderBufferComponents.indiceCount = static_cast<uint32_t>(this->meshIndices.size());
 }
 
 void ModelHandler::Model::cleanupModel(VkDevice vulkanLogicalDevice)
 {
-    vkDestroyBuffer(vulkanLogicalDevice, shaderBufferComponents.vertexBuffer, nullptr);
-    vkFreeMemory(vulkanLogicalDevice, shaderBufferComponents.vertexBufferMemory, nullptr);
+    vkDestroyBuffer(vulkanLogicalDevice, this->shaderBufferComponents.vertexBuffer, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, this->shaderBufferComponents.vertexBufferMemory, nullptr);
 
-    vkDestroyBuffer(vulkanLogicalDevice, shaderBufferComponents.indexBuffer, nullptr);
-    vkFreeMemory(vulkanLogicalDevice, shaderBufferComponents.indexBufferMemory, nullptr);
+    vkDestroyBuffer(vulkanLogicalDevice, this->shaderBufferComponents.indexBuffer, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, this->shaderBufferComponents.indexBufferMemory, nullptr);
 
-    vkDestroySampler(vulkanLogicalDevice, textureDetails.textureSampler, nullptr);
-    vkDestroyImageView(vulkanLogicalDevice, textureDetails.textureImageDetails.imageView, nullptr);
-    
-    vkDestroyImage(vulkanLogicalDevice, textureDetails.textureImageDetails.image, nullptr);
-    vkFreeMemory(vulkanLogicalDevice, textureDetails.textureImageDetails.imageMemory, nullptr);
-}
-
-float ModelHandler::normalizeValueToRanges(float initialValue, float initialRangeMinimumValue, float initialRangeMaximumValue, float targetRangeMinimumValue, float targetRangeMaximumValue)
-{
-    float zeroToOneNormalizedValue = ((initialValue - initialRangeMinimumValue) / (initialRangeMaximumValue - initialRangeMinimumValue));
-    return (zeroToOneNormalizedValue * ((targetRangeMaximumValue - targetRangeMinimumValue) + targetRangeMinimumValue));
+    this->textureDetails.cleanupTextureDetails(vulkanLogicalDevice);
 }
 
 void ModelHandler::populateVertexInputCreateInfo(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions, VkVertexInputBindingDescription *bindingDescription, VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)

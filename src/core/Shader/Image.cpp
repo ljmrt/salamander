@@ -17,6 +17,19 @@
 #include <iostream>
 
 
+void Image::ImageDetails::cleanupImageDetails(VkDevice vulkanLogicalDevice)
+{
+    vkDestroyImageView(vulkanLogicalDevice, this->imageView, nullptr);
+    vkDestroyImage(vulkanLogicalDevice, this->image, nullptr);
+    vkFreeMemory(vulkanLogicalDevice, this->imageMemory, nullptr);
+}
+
+void Image::TextureDetails::cleanupTextureDetails(VkDevice vulkanLogicalDevice)
+{
+    this->textureImageDetails.cleanupImageDetails(vulkanLogicalDevice);
+    vkDestroySampler(vulkanLogicalDevice, this->textureSampler, nullptr);
+}
+
 void Image::populateImageDetails(uint32_t width, uint32_t height, uint32_t mipmapLevels, uint32_t layerCount, VkSampleCountFlagBits msaaSampleCount, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags memoryProperties, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& imageDetails)
 {
     VkImageCreateInfo imageCreateInfo{};
@@ -147,12 +160,12 @@ void Image::populateTextureDetails(std::string textureImageFilePath, bool isCube
     Image::createTextureSampler(vulkanDevices, textureDetails.textureImageDetails.mipmapLevels, textureDetails.textureSampler);
 }
 
-void Image::generateSwapchainImageDetails(DisplayManager::VulkanDisplayDetails& vulkanDisplayDetails, DeviceHandler::VulkanDevices vulkanDevices)
+void Image::generateSwapchainImageDetails(DisplayManager::DisplayDetails& displayDetails, DeviceHandler::VulkanDevices vulkanDevices)
 {
-    Image::populateImageDetails(vulkanDisplayDetails.swapchainImageExtent.width, vulkanDisplayDetails.swapchainImageExtent.height, 1, 1, vulkanDisplayDetails.msaaSampleCount, vulkanDisplayDetails.swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, vulkanDisplayDetails.colorImageDetails);
-    Image::createImageView(vulkanDisplayDetails.colorImageDetails.image, vulkanDisplayDetails.colorImageDetails.imageFormat, 1, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, vulkanDisplayDetails.colorImageDetails.imageView);
+    Image::populateImageDetails(displayDetails.swapchainImageExtent.width, displayDetails.swapchainImageExtent.height, 1, 1, displayDetails.msaaSampleCount, displayDetails.swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, displayDetails.colorImageDetails);
+    Image::createImageView(displayDetails.colorImageDetails.image, displayDetails.colorImageDetails.imageFormat, 1, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, displayDetails.colorImageDetails.imageView);
 
-    Depth::populateDepthImageDetails(vulkanDisplayDetails.swapchainImageExtent, vulkanDisplayDetails.msaaSampleCount, vulkanDisplayDetails.graphicsCommandPool, vulkanDisplayDetails.graphicsQueue, vulkanDevices, vulkanDisplayDetails.depthImageDetails);
+    Depth::populateDepthImageDetails(displayDetails.swapchainImageExtent, displayDetails.msaaSampleCount, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, vulkanDevices, displayDetails.depthImageDetails);
 }
 
 void Image::generateMipmapLevels(Image::ImageDetails& imageDetails, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)

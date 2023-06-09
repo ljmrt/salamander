@@ -12,13 +12,11 @@
 
 namespace DisplayManager  // forward declaration.
 {
-    struct VulkanDisplayDetails;
     struct DisplayDetails;
 }
 
 namespace Image
 {
-    // TODO: add cleanup function for image details.
     struct ImageDetails {
         VkImage image;
         VkDeviceMemory imageMemory;
@@ -33,11 +31,23 @@ namespace Image
 
         uint32_t mipmapLevels;
         uint32_t imageLayerCount;
+
+
+        // cleanup this image details.
+        //
+        // @param vulkanLogicalDevice Vulkan logical device to use in image details cleanup.
+        void cleanupImageDetails(VkDevice vulkanLogicalDevice);
     };
     struct TextureDetails {
         Image::ImageDetails textureImageDetails;  // guarenteed to be completely populated after Image::populateTextureDetails.
         
         VkSampler textureSampler;
+
+
+        // cleanup this texture details.
+        //
+        // @param vulkanLogicalDevice Vulkan logical device to use in texture details cleanup.
+        void cleanupTextureDetails(VkDevice vulkanLogicalDevice);
     };
     
     // populate an image struct.
@@ -68,9 +78,9 @@ namespace Image
 
     // generate the image details necessary for the swapchain.
     //
-    // @param vulkanDisplayDetails Vulkan display details to use in swapchain image details generation.
+    // @param displayDetails display details to use in swapchain image details generation.
     // @param vulkanDevices Vulkan physical and logical device.
-    void generateSwapchainImageDetails(DisplayManager::VulkanDisplayDetails& vulkanDisplayDetails, DeviceHandler::VulkanDevices vulkanDevices);
+    void generateSwapchainImageDetails(DisplayManager::DisplayDetails& displayDetails, DeviceHandler::VulkanDevices vulkanDevices);
 
     // TODO: store/read from stored mipmaps file.
     // generate mipmap levels for image details.

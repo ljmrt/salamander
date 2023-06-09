@@ -15,7 +15,6 @@
 
 namespace DisplayManager  // forward declaration.
 {
-    struct VulkanDisplayDetails;
     struct DisplayDetails;
 }
 
@@ -61,7 +60,6 @@ namespace RendererDetails
         ModelHandler::Model m_mainModel;  // the main loaded model.
 
         ModelHandler::Model m_cubemapModel;  // the loaded model used for the cubemap.
-        Image::TextureDetails m_cubemapTextureDetails;  // the cubemap's texture details.
     
 
         // populate a color attachment description, reference, color attachment resolve description, reference for the scene render pass.
@@ -184,7 +182,7 @@ namespace RendererDetails
         // @param displayDetails the display details to use in rendering.
         // @param graphicsFamilyIndex index of the graphics queue family.
         // @param vulkanPhysicalDevice the Vulkan instance's physical device to use in frame drawing.
-        void render(DisplayManager::DisplayDetails& displayDetails, size_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice);
+        void render(DisplayManager::DisplayDetails& displayDetails, uint32_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice);
 
         // terminates/destroys renderer and its members.
         void cleanupRenderer();

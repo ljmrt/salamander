@@ -4,11 +4,25 @@
 #include <glm/glm.hpp>
 
 #include <core/DisplayManager/DisplayManager.h>
+#include <core/DisplayManager/SwapchainHandler.h>
 #include <core/Defaults/Defaults.h>
 #include <core/Logging/ErrorLogger.h>
 
 #include <string>
 
+
+void DisplayManager::DisplayDetails::cleanupDisplayDetails(VkDevice vulkanLogicalDevice, bool preserveCommandPool)
+{
+    SwapchainHandler::cleanupSwapchain(*this, vulkanLogicalDevice);
+    
+    this->depthImageDetails.cleanupImageDetails(vulkanLogicalDevice);
+    this->colorImageDetails.cleanupImageDetails(vulkanLogicalDevice);
+
+    if (preserveCommandPool == false) {
+        vkDestroyCommandPool(vulkanLogicalDevice, this->graphicsCommandPool, nullptr);  // child command buffers automatically freed.    
+    }
+
+}
 
 void DisplayManager::initializeGLFW()
 {

@@ -25,15 +25,15 @@
 void RendererDetails::PipelineComponents::cleanupPipelineComponents(VkDevice vulkanLogicalDevice)
 {   
     for (size_t i = 0; i < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; i += 1) {  // uniform buffers are the size of MAX_FRAME_IN_FLIGHT.
-        vkDestroyBuffer(vulkanLogicalDevice, uniformBuffers[i], nullptr);
-        vkFreeMemory(vulkanLogicalDevice, uniformBuffersMemory[i], nullptr);        
+        vkDestroyBuffer(vulkanLogicalDevice, this->uniformBuffers[i], nullptr);
+        vkFreeMemory(vulkanLogicalDevice, this->uniformBuffersMemory[i], nullptr);        
     }
     
-    vkDestroyDescriptorPool(vulkanLogicalDevice, descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(vulkanLogicalDevice, descriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(vulkanLogicalDevice, this->descriptorPool, nullptr);
+    vkDestroyDescriptorSetLayout(vulkanLogicalDevice, this->descriptorSetLayout, nullptr);
     
-    vkDestroyPipeline(vulkanLogicalDevice, pipeline, nullptr);
-    vkDestroyPipelineLayout(vulkanLogicalDevice, pipelineLayout, nullptr);
+    vkDestroyPipeline(vulkanLogicalDevice, this->pipeline, nullptr);
+    vkDestroyPipelineLayout(vulkanLogicalDevice, this->pipelineLayout, nullptr);
 }
 
 void RendererDetails::Renderer::populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference, VkAttachmentDescription& colorAttachmentResolveDescription, VkAttachmentReference& colorAttachmentResolveReference)
@@ -514,11 +514,11 @@ void RendererDetails::Renderer::drawFrame(DisplayManager::DisplayDetails& displa
 
 
     uint32_t swapchainImageIndex;  // prefer to use size_t, but want to avoid weird casts to uint32_t.
-    VkResult imageAcquisitionResult = vkAcquireNextImageKHR(*m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchain, UINT64_MAX, m_imageAvailibleSemaphores[m_currentFrame], VK_NULL_HANDLE, &swapchainImageIndex);  // get the index of an availbile swapchain image.
+    VkResult imageAcquisitionResult = vkAcquireNextImageKHR(*m_vulkanLogicalDevice, displayDetails.swapchain, UINT64_MAX, m_imageAvailibleSemaphores[m_currentFrame], VK_NULL_HANDLE, &swapchainImageIndex);  // get the index of an availbile swapchain image.
 
     if (imageAcquisitionResult == VK_ERROR_OUT_OF_DATE_KHR) {
-        SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices{vulkanPhysicalDevice, *m_vulkanLogicalDevice}, m_renderPass, displayDetails.vulkanDisplayDetails.graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, displayDetails);
-        m_mainCamera.swapchainImageExtent = displayDetails.vulkanDisplayDetails.swapchainImageExtent;
+        SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices{vulkanPhysicalDevice, *m_vulkanLogicalDevice}, m_renderPass, displayDetails);
+        m_mainCamera.swapchainImageExtent = displayDetails.swapchainImageExtent;
         return;
     } else if (imageAcquisitionResult != VK_SUCCESS && imageAcquisitionResult != VK_SUBOPTIMAL_KHR) {
         throwDebugException("Failed to acquire swapchain image.");
@@ -528,11 +528,11 @@ void RendererDetails::Renderer::drawFrame(DisplayManager::DisplayDetails& displa
     vkResetFences(*m_vulkanLogicalDevice, 1, &m_inFlightFences[m_currentFrame]);  // reset fences only after successful image acquisition.
 
 
-    vkResetCommandBuffer(displayDetails.vulkanDisplayDetails.graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(displayDetails.vulkanDisplayDetails.graphicsCommandBuffers[m_currentFrame], displayDetails.vulkanDisplayDetails.swapchainImageExtent, displayDetails.vulkanDisplayDetails.swapchainFramebuffers[swapchainImageIndex], m_currentFrame, m_cubemapPipelineComponents, m_cubemapModel.shaderBufferComponents, m_scenePipelineComponents, m_mainModel.shaderBufferComponents, m_renderPass);
+    vkResetCommandBuffer(displayDetails.graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
+    CommandManager::recordGraphicsCommandBufferCommands(displayDetails.graphicsCommandBuffers[m_currentFrame], displayDetails.swapchainImageExtent, displayDetails.swapchainFramebuffers[swapchainImageIndex], m_currentFrame, m_cubemapPipelineComponents, m_cubemapModel.shaderBufferComponents, m_scenePipelineComponents, m_mainModel.shaderBufferComponents, m_renderPass);
 
     
-    Uniform::updateFrameUniformBuffers(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.vulkanDisplayDetails.swapchainImageExtent, m_scenePipelineComponents.mappedUniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory);
+    Uniform::updateFrameUniformBuffers(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.swapchainImageExtent, m_scenePipelineComponents.mappedUniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory);
 
     
     VkSubmitInfo submitInfo{};
@@ -547,7 +547,7 @@ void RendererDetails::Renderer::drawFrame(DisplayManager::DisplayDetails& displa
     submitInfo.pWaitDstStageMask = waitStages;
 
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &displayDetails.vulkanDisplayDetails.graphicsCommandBuffers[m_currentFrame];
+    submitInfo.pCommandBuffers = &displayDetails.graphicsCommandBuffers[m_currentFrame];
 
     // what semaphore to signal when the command buffers have finished executing.
     VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[m_currentFrame]};
@@ -566,7 +566,7 @@ void RendererDetails::Renderer::drawFrame(DisplayManager::DisplayDetails& displa
     presentationInfo.waitSemaphoreCount = 1;
     presentationInfo.pWaitSemaphores = signalSemaphores;
 
-    VkSwapchainKHR swapchains[] = {displayDetails.vulkanDisplayDetails.swapchain};
+    VkSwapchainKHR swapchains[] = {displayDetails.swapchain};
     presentationInfo.swapchainCount = 1;
     presentationInfo.pSwapchains = swapchains;
     presentationInfo.pImageIndices = &swapchainImageIndex;
@@ -583,7 +583,7 @@ void RendererDetails::Renderer::setVulkanLogicalDevice(VkDevice *vulkanLogicalDe
     m_vulkanLogicalDevice = vulkanLogicalDevice;
 }
 
-void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDetails, size_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice)
+void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDetails, uint32_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice)
 {
     DeviceHandler::VulkanDevices temporaryVulkanDevices{};
     temporaryVulkanDevices.physicalDevice = vulkanPhysicalDevice;
@@ -594,11 +594,11 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     m_mainCamera.up = glm::vec3(0.0f, 1.0f, 0.0f);
     m_mainCamera.eye = glm::vec3(0.0f, 0.0f, -3.0f);
     m_mainCamera.center = glm::vec3(0.0f, 0.0f, 0.0f);
-    m_mainCamera.swapchainImageExtent = displayDetails.vulkanDisplayDetails.swapchainImageExtent;
+    m_mainCamera.swapchainImageExtent = displayDetails.swapchainImageExtent;
 
-    fetchMaximumUsableSampleCount(vulkanPhysicalDevice, displayDetails.vulkanDisplayDetails.msaaSampleCount);
+    fetchMaximumUsableSampleCount(vulkanPhysicalDevice, displayDetails.msaaSampleCount);
     
-    createMemberRenderPass(displayDetails.vulkanDisplayDetails.swapchainImageFormat, displayDetails.vulkanDisplayDetails.msaaSampleCount, vulkanPhysicalDevice);
+    createMemberRenderPass(displayDetails.swapchainImageFormat, displayDetails.msaaSampleCount, vulkanPhysicalDevice);
     
 
     VkDescriptorSetLayoutBinding cubemapUniformBufferLayoutBinding{};
@@ -610,7 +610,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     std::vector<VkDescriptorSetLayoutBinding> cubemapDescriptorSetLayoutBindings = {cubemapUniformBufferLayoutBinding, cubemapCombinedSamplerLayoutBinding};
     ResourceDescriptor::createDescriptorSetLayout(cubemapDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSetLayout);
     
-    createMemberCubemapPipeline(displayDetails.vulkanDisplayDetails.msaaSampleCount);
+    createMemberCubemapPipeline(displayDetails.msaaSampleCount);
     
     VkDescriptorSetLayoutBinding sceneUniformBufferLayoutBinding{};
     ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), sceneUniformBufferLayoutBinding);
@@ -621,23 +621,23 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     std::vector<VkDescriptorSetLayoutBinding> sceneDescriptorSetLayoutBindings = {sceneUniformBufferLayoutBinding, sceneCombinedSamplerLayoutBinding};
     ResourceDescriptor::createDescriptorSetLayout(sceneDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSetLayout);
     
-    createMemberScenePipeline(displayDetails.vulkanDisplayDetails.msaaSampleCount);
+    createMemberScenePipeline(displayDetails.msaaSampleCount);
     
-    CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.graphicsCommandPool);
+    CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, displayDetails.graphicsCommandPool);
 
-    Image::generateSwapchainImageDetails(displayDetails.vulkanDisplayDetails, temporaryVulkanDevices);
+    Image::generateSwapchainImageDetails(displayDetails, temporaryVulkanDevices);
 
-    SwapchainHandler::createSwapchainFramebuffers(displayDetails.vulkanDisplayDetails.swapchainImageViews, displayDetails.vulkanDisplayDetails.swapchainImageExtent, displayDetails.vulkanDisplayDetails.colorImageDetails.imageView, displayDetails.vulkanDisplayDetails.depthImageDetails.imageView, m_renderPass, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.swapchainFramebuffers);
+    SwapchainHandler::createSwapchainFramebuffers(displayDetails.swapchainImageViews, displayDetails.swapchainImageExtent, displayDetails.colorImageDetails.imageView, displayDetails.depthImageDetails.imageView, m_renderPass, *m_vulkanLogicalDevice, displayDetails.swapchainFramebuffers);
 
     m_mainModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Avocado/Avocado.gltf"));
     // m_mainModel.normalizeNormalValues();
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
-    m_mainModel.populateShaderBufferComponents(displayDetails.vulkanDisplayDetails.graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
-    Image::populateTextureDetails(m_mainModel.absoluteTextureImagePath, false, displayDetails.vulkanDisplayDetails.graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_mainModel.textureDetails);
+    m_mainModel.populateShaderBufferComponents(displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+    Image::populateTextureDetails(m_mainModel.absoluteTextureImagePath, false, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_mainModel.textureDetails);
 
     m_cubemapModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Cube/Cube.gltf"));
-    m_cubemapModel.populateShaderBufferComponents(displayDetails.vulkanDisplayDetails.graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices);
-    Image::populateTextureDetails((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.vulkanDisplayDetails.graphicsCommandPool, displayDetails.vulkanDisplayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapTextureDetails);
+    m_cubemapModel.populateShaderBufferComponents(displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+    Image::populateTextureDetails((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapModel.textureDetails);
 
     Uniform::createUniformBuffers(sizeof(Uniform::SceneUniformBufferObject), temporaryVulkanDevices, m_scenePipelineComponents.uniformBuffers, m_scenePipelineComponents.uniformBuffersMemory, m_scenePipelineComponents.mappedUniformBuffersMemory);
     
@@ -650,9 +650,9 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     // cubemap shaders conviently use the same uniforms/only uniform difference is shader stages.
     ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_cubemapPipelineComponents.descriptorSetLayout, m_cubemapPipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_cubemapPipelineComponents.uniformBuffers, m_cubemapTextureDetails.textureImageDetails.imageView, m_cubemapTextureDetails.textureSampler, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_cubemapPipelineComponents.uniformBuffers, m_cubemapModel.textureDetails.textureImageDetails.imageView, m_cubemapModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
 
-    CommandManager::allocateChildCommandBuffers(displayDetails.vulkanDisplayDetails.graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, displayDetails.vulkanDisplayDetails.graphicsCommandBuffers);
+    CommandManager::allocateChildCommandBuffers(displayDetails.graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, displayDetails.graphicsCommandBuffers);
 
     createMemberSynchronizationObjects();
 
@@ -660,7 +660,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
         DisplayManager::processWindowInput(displayDetails.glfwWindow);
         glfwPollEvents();
 
-        drawFrame(displayDetails, vulkanPhysicalDevice, displayDetails.vulkanDisplayDetails.graphicsQueue, displayDetails.vulkanDisplayDetails.presentationQueue);
+        drawFrame(displayDetails, vulkanPhysicalDevice, displayDetails.graphicsQueue, displayDetails.presentationQueue);
     }
 
     vkDeviceWaitIdle(*m_vulkanLogicalDevice);  // wait for the logical device to finish all operations before termination.

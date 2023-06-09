@@ -79,17 +79,6 @@ namespace ModelHandler
     extern std::vector<VkVertexInputAttributeDescription> preservedCubemapAttributeDescriptions;  // preserved cubemap attribute descriptions(pointer reasons).
     extern VkVertexInputBindingDescription preservedCubemapBindingDescription;  // preserved cubemap binding description(pointer reasons).
 
-    // TODO: move this into utils or a math namespace.
-    // normalize value to targetMinimumValue..targetMaximumValue through the equation shown here(https://stats.stackexchange.com/questions/281162/scale-a-number-between-a-range).
-    //
-    // @param initialValue the initial value.
-    // @param initialRangeMinimumValue the lowest(minimum) value in the initial range.
-    // @param initialRangeMaximumValue the highest(maximum) value in the initial range.
-    // @param targetRangeMinimumValue the lowest(minimum) value in the target range.
-    // @param targetRangeMaximumValue the highest(maximum) value in the target range.
-    // @return normalized value.
-    float normalizeValueToRanges(float initialValue, float initialRangeMinimumValue, float initialRangeMaximumValue, float targetRangeMinimumValue, float targetRangeMaximumValue);
-    
     // populate a vertex input's create info.
     //
     // @param attributeDescriptions container of attribute descriptions.

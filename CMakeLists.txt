@@ -66,6 +66,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Config/Config.cpp
     ${PROJECT_SOURCE_DIR}/core/Defaults/Defaults.cpp
     ${PROJECT_SOURCE_DIR}/utils/FileUtils.cpp
+    ${PROJECT_SOURCE_DIR}/utils/MathUtils.cpp
     ${PROJECT_SOURCE_DIR}/main.cpp
 )
 

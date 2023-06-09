@@ -16,10 +16,11 @@ Defaults::callbacksConfig Defaults::callbacksVariables;
 void Defaults::initializeDefaults()
 {
     // initialize misc. defaults.
-    miscDefaults.SALAMANDER_ROOT_DIRECTORY = (std::string)std::getenv("SALAMANDER_ROOT");
-    // TODO: this check doesn't seem to work.
-    if (std::getenv("SALAMANDER_ROOT") == nullptr) {  // environment variable not set.
+    const char *rawRootDirectoryVariable = std::getenv("SALAMANDER_ROOT");
+    if (!rawRootDirectoryVariable) {  // environment variable not set.
         std::cerr << "%SALAMANDER_ROOT% environment variable not set! See \"Setup\" section under \"README.md\"." << std::endl;  // we want this to output on both debug and release builds.
+    } else {
+        miscDefaults.SALAMANDER_ROOT_DIRECTORY = (std::string)(rawRootDirectoryVariable);
     }
     
     

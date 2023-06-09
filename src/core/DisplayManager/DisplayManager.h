@@ -12,8 +12,9 @@
 
 namespace DisplayManager
 {
-    // TODO: merge this with the base DisplayDetails struct.
-    struct VulkanDisplayDetails {
+    struct DisplayDetails {
+        GLFWwindow *glfwWindow;
+
         VkQueue graphicsQueue;
         VkQueue presentationQueue;
 
@@ -33,11 +34,13 @@ namespace DisplayManager
 
         Image::ImageDetails colorImageDetails;  // the color image details of the swapchain framebuffers.
         Image::ImageDetails depthImageDetails;  // the depth image details of the swapchain framebuffers.
-    };
 
-    struct DisplayDetails {
-        GLFWwindow *glfwWindow;
-        VulkanDisplayDetails vulkanDisplayDetails;
+
+        // clean up the display details.
+        //
+        // @param vulkanLogicalDevice Vulkan logical device to use in display details cleanup.
+        // @param preserveCommandPool if the command pool should be preserved or not(destroyed).
+        void cleanupDisplayDetails(VkDevice vulkanLogicalDevice, bool preserveCommandPool);
     };
     
     

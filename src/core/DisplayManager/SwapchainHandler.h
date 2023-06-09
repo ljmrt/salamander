@@ -101,17 +101,14 @@ namespace SwapchainHandler
     //
     // @param vulkanDevices Vulkan logical and physical devices.
     // @param renderPass render pass to use in swapchain recreation.
-    // @param commandPool command pool to use in swapchain recreation.
-    // @param commandQueue queue to sumbit necessary commands on.
     // @param displayDetails display details to use and store recreated components in.
-    void recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, VkCommandPool commandPool, VkQueue commandQueue, DisplayManager::DisplayDetails& displayDetails);
+    void recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, DisplayManager::DisplayDetails& displayDetails);
 
-    // TODO: move this to DisplayManager DisplayDetails method.
     // clean up a swapchain.
     //
-    // @param vulkanDisplayDetails vulkan display details to use in swapchain cleanup.
+    // @param displayDetails display details to use in swapchain cleanup.
     // @param vulkanLogicalDevice the Vulkan instance's logical device.
-    void cleanupSwapchain(DisplayManager::VulkanDisplayDetails vulkanDisplayDetails, VkDevice vulkanLogicalDevice);
+    void cleanupSwapchain(DisplayManager::DisplayDetails displayDetails, VkDevice vulkanLogicalDevice);
 }
 
 

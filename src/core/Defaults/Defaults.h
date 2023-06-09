@@ -5,7 +5,6 @@
 #include <core/Config/Config.h>
 
 
-// TODO: move outside "/core"?
 namespace Defaults
 {
     namespace

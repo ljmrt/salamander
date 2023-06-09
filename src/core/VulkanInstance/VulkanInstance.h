@@ -32,7 +32,7 @@ public:
 
     // clean up this class/instance.
     //
-    // @param displayDetails displayDetails.to use in clean up.
+    // @param displayDetails display details.to use in clean up.
     void cleanupInstance(DisplayManager::DisplayDetails displayDetails);
 
     VulkanInstance();

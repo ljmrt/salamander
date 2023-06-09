@@ -79,6 +79,36 @@ void CommandManager::submitSingleSubmitCommands(VkCommandBuffer recordedCommandB
     vkFreeCommandBuffers(vulkanLogicalDevice, parentCommandPool, 1, &recordedCommandBuffer);
 }
 
+void CommandManager::populateRenderPassBeginInfo(VkRenderPass renderPass, VkFramebuffer framebuffer, VkExtent2D extent, uint32_t clearValueCount, VkClearValue pClearValues[], VkRenderPassBeginInfo& renderPassBeginInfo)
+{
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+
+    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.framebuffer = framebuffer;
+    
+    renderPassBeginInfo.renderArea.offset = {0, 0};
+    renderPassBeginInfo.renderArea.extent = extent;
+    
+    renderPassBeginInfo.clearValueCount = clearValueCount;
+    renderPassBeginInfo.pClearValues = pClearValues;
+}
+
+void CommandManager::populateViewportInfo(float x, float y, float width, float height, float minDepth, float maxDepth, VkViewport& viewportInfo)
+{
+    viewportInfo.x = x;
+    viewportInfo.y = y;
+    viewportInfo.width = width;
+    viewportInfo.height = height;
+    viewportInfo.minDepth = minDepth;
+    viewportInfo.maxDepth = maxDepth;
+}
+
+void CommandManager::populateRect2DInfo(VkExtent2D extent, VkRect2D& rect2DInfo)
+{
+    rect2DInfo.offset = {0, 0};
+    rect2DInfo.extent = extent;
+}
+
 void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkExtent2D swapchainImageExtent, VkFramebuffer swapchainIndexFramebuffer, size_t currentFrame, RendererDetails::PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, RendererDetails::PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, VkRenderPass renderPass)
 {
     VkCommandBufferBeginInfo commandBufferBeginInfo{};
@@ -91,41 +121,25 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     if (commandBufferBeginResult != VK_SUCCESS) {
         throwDebugException("Failed to begin recording graphics command buffer commands.");
     }
-
-
-    // TODO: abstract this to a seperate function.
-    VkRenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-
-    renderPassBeginInfo.renderPass = renderPass;
-    renderPassBeginInfo.framebuffer = swapchainIndexFramebuffer;
     
-    renderPassBeginInfo.renderArea.offset = {0, 0};
-    renderPassBeginInfo.renderArea.extent = swapchainImageExtent;
 
     // attachment clear values are used in load operation clearing.
     VkClearValue colorAttachmentClearValue = {{{1.0f, 1.0f, 1.0f, 1.0f}}};  // clear to white.
     VkClearValue depthAttachmentClearValue = {1.0f, 0};
     std::array<VkClearValue, 2> attachmentClearValues = {colorAttachmentClearValue, depthAttachmentClearValue};
     
-    renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(attachmentClearValues.size());
-    renderPassBeginInfo.pClearValues = attachmentClearValues.data();
+    VkRenderPassBeginInfo renderPassBeginInfo{};
+    CommandManager::populateRenderPassBeginInfo(renderPass, swapchainIndexFramebuffer, swapchainImageExtent, static_cast<uint32_t>(attachmentClearValues.size()), attachmentClearValues.data(), renderPassBeginInfo);
 
     vkCmdBeginRenderPass(graphicsCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.
 
     // set our dynamic pipeline states.
     VkViewport dynamicViewport{};
-    dynamicViewport.x = 0.0f;
-    dynamicViewport.y = 0.0f;
-    dynamicViewport.width = static_cast<float>(swapchainImageExtent.width);
-    dynamicViewport.height = static_cast<float>(swapchainImageExtent.height);
-    dynamicViewport.minDepth = 0.0f;
-    dynamicViewport.maxDepth = 1.0f;
+    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(swapchainImageExtent.width), static_cast<float>(swapchainImageExtent.height), 0.0f, 1.0f, dynamicViewport);
     vkCmdSetViewport(graphicsCommandBuffer, 0, 1, &dynamicViewport);
 
     VkRect2D dynamicScissor{};
-    dynamicScissor.offset = {0, 0};
-    dynamicScissor.extent = swapchainImageExtent;
+    CommandManager::populateRect2DInfo(swapchainImageExtent, dynamicScissor);
     vkCmdSetScissor(graphicsCommandBuffer, 0, 1, &dynamicScissor);
 
     VkDeviceSize offsets[] = {0};

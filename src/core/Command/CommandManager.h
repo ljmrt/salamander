@@ -42,6 +42,33 @@ namespace CommandManager
     // @param vulkanLogicalDevice Vulkan logical device to use in single-submit command submission.
     void submitSingleSubmitCommands(VkCommandBuffer recordedCommandBuffer, VkCommandPool parentCommandPool, VkQueue submissionQueue, VkDevice vulkanLogicalDevice);
 
+    // TODO: large namespace containing all necessary "initializers" for Vulkan structs.
+    // TODO: modify "initializer" functions to return the specified struct.
+    // populate render pass begin info.
+    //
+    // @param renderPass see VkRenderPassBeginInfo documentation.
+    // @param framebuffer see VkRenderPassBeginInfo documentation.
+    // @param extent see VkRenderPassBeginInfo documentation.
+    // @param clearValueCount see VkRenderPassBeginInfo documentation.
+    // @param pClearValues see VkRenderPassBeginInfo documentation.
+    // @param renderPassBeginInfo populated render pass begin info.
+    void populateRenderPassBeginInfo(VkRenderPass renderPass, VkFramebuffer framebuffer, VkExtent2D extent, uint32_t clearValueCount, VkClearValue pClearValues[], VkRenderPassBeginInfo& renderPassBeginInfo);
+
+    // populate viewport info.
+    //
+    // @param x see VkViewport documentation.
+    // @param y see VkViewport documentation.
+    // @param width see VkViewport documentation.
+    // @param height see VkViewport documentation.
+    // @param minDepth see VkViewport documentation.
+    // @param maxDepth see VkViewport documentation.
+    // @param viewportInfo populated viewport info.
+    void populateViewportInfo(float x, float y, float width, float height, float minDepth, float maxDepth, VkViewport& viewportInfo);
+
+    // @param extent see VkRect2D documentation.
+    // @param rect2DInfo populated Rect2D info.
+    void populateRect2DInfo(VkExtent2D extent, VkRect2D& rect2DInfo);
+
     // record necessary drawing commands in a graphics command buffer.
     //
     // @param graphicsCommandBuffer graphics command buffer to record in.
