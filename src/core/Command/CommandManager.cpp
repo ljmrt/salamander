@@ -109,7 +109,7 @@ void CommandManager::populateRect2DInfo(VkExtent2D extent, VkRect2D& rect2DInfo)
     rect2DInfo.extent = extent;
 }
 
-void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkExtent2D swapchainImageExtent, VkFramebuffer swapchainIndexFramebuffer, size_t currentFrame, RendererDetails::PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, RendererDetails::PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, VkRenderPass renderPass)
+void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkExtent2D swapchainImageExtent, VkFramebuffer swapchainIndexFramebuffer, size_t currentFrame, RendererDetails::PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, RendererDetails::PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, RendererDetails::PipelineComponents sceneNormalsPipelineComponents, VkRenderPass renderPass)
 {
     VkCommandBufferBeginInfo commandBufferBeginInfo{};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -161,7 +161,13 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, scenePipelineComponents.pipelineLayout, 0, 1, &scenePipelineComponents.descriptorSets[currentFrame], 0, nullptr);
     vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, scenePipelineComponents.pipeline);
 
-    vkCmdDrawIndexed(graphicsCommandBuffer, sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
+    vkCmdDrawIndexed(graphicsCommandBuffer, sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+
+    // draw the scene normals.
+    vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneNormalsPipelineComponents.pipelineLayout, 0, 1, &sceneNormalsPipelineComponents.descriptorSets[currentFrame], 0, nullptr);
+    vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneNormalsPipelineComponents.pipeline);
+
+    vkCmdDrawIndexed(graphicsCommandBuffer, sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);
     
     vkCmdEndRenderPass(graphicsCommandBuffer);
     

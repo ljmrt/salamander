@@ -27,6 +27,11 @@ namespace ResourceDescriptor
     // @param attributeDescriptions fetched attribute descriptions.
     void fetchSceneAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
 
+    // fetch the attribute descriptions used for the scene normals vertex attributes.
+    //
+    // @param attributeDescriptions fetched attribute descriptions.
+    void fetchSceneNormalsAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
+
     // populate a descriptor set layout binding.
     //
     // @param binding see VkDescriptorSetLayoutBinding documentation.
@@ -68,9 +73,10 @@ namespace ResourceDescriptor
     // @param uniformBuffers uniform buffers to populate the descriptor sets with.
     // @param textureImageView the main texture's image view to use in descriptor sets population.
     // @param combinedSampler the main texture's sampler to use in descriptor sets population.
+    // @param combinedSamplerProvided if a combined sampler is provided.
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor sets population.
     // @param descriptorSets populated descriptor sets.
-    void populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageView, VkSampler combinedSampler, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
+    void populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageView, VkSampler combinedSampler, bool combinedSamplerProvided, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
 }
 
 

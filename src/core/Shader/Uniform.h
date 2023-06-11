@@ -15,22 +15,29 @@
 
 namespace Uniform
 {
+    struct CubemapUniformBufferObject {  // identical to the cubemap shader structs.
+        glm::mat4 projectionMatrix;  // identical to scene uniform buffer object projection matrix.
+        glm::mat4 viewMatrix;  // identical to scene uniform buffer object view matrix.
+    };
+
     struct SceneUniformBufferObject {  // identical to the scene shader structs.
         glm::mat4 projectionMatrix;
         glm::mat4 viewMatrix;
         glm::mat4 modelMatrix;
-        glm::mat3 normalMatrix;
+        glm::mat4 normalMatrix;
 
-        alignas(16) glm::vec3 viewingPosition;
+        glm::vec3 viewingPosition;
         // all (*)color vec4's are structered as [R, G, B, light intensity].
         alignas(16) glm::vec4 ambientLightColor;
         glm::vec3 pointLightPosition;
         alignas(16) glm::vec4 pointLightColor;
     };
 
-    struct CubemapUniformBufferObject {  // identical to the cubemap shader structs.
-        glm::mat4 projectionMatrix;  // identical to scene uniform buffer object projection matrix.
-        glm::mat4 viewMatrix;  // identical to scene uniform buffer object view matrix.
+    struct SceneNormalsUniformBufferObject {
+        glm::mat4 projectionMatrix;
+        glm::mat4 viewMatrix;
+        glm::mat4 modelMatrix;
+        glm::mat4 normalMatrix;
     };
 
 
@@ -51,8 +58,9 @@ namespace Uniform
     // @param glfwWindow GLFW window to use in frame uniform buffer updating.
     // @param swapchainImageExtent Vulkan swapchain image extent.
     // @param mappedSceneUniformBuffersMemory mapped scene uniform buffers memory.
+    // @param mappedSceneNormalsUniformBuffersMemory mapped scene normals uniform buffers memory.
     // @param mappedCubemapUniformBuffersMemory mapped cubemap uniform buffers memory.
-    void updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory);
+    void updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory);
 }
 
 

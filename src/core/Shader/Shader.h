@@ -18,6 +18,7 @@ namespace Shader
 
     struct PipelineShaders {
         Shader vertexShader;
+        Shader geometryShader;  // optional.
         Shader fragmentShader;
     };
     

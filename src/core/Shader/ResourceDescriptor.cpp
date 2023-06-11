@@ -26,7 +26,7 @@ void ResourceDescriptor::fetchCubemapAttributeDescriptions(std::vector<VkVertexI
     positionAttributeDescription.location = 0;
     
     positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    positionAttributeDescription.offset = 0;  // offsetof(ModelHandler::Vertex, position);
+    positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
 
     
     attributeDescriptions = {positionAttributeDescription};
@@ -63,6 +63,31 @@ void ResourceDescriptor::fetchSceneAttributeDescriptions(std::vector<VkVertexInp
 
 
     attributeDescriptions = {positionAttributeDescription, normalAttributeDescription, UVCoordinatesAttributeDescription};
+}
+
+void ResourceDescriptor::fetchSceneNormalsAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
+{
+    // attribute formats use RGB for some reason.
+    // TODO: abstract VkVertexInputAttributeDescription population.
+    VkVertexInputAttributeDescription positionAttributeDescription{};
+    
+    positionAttributeDescription.binding = 0;
+    positionAttributeDescription.location = 0;
+    
+    positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+    positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
+
+
+    VkVertexInputAttributeDescription normalAttributeDescription{};
+
+    normalAttributeDescription.binding = 0;
+    normalAttributeDescription.location = 1;
+    
+    normalAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+    normalAttributeDescription.offset = offsetof(ModelHandler::Vertex, normal);
+
+    
+    attributeDescriptions = {positionAttributeDescription, normalAttributeDescription};
 }
 
 void ResourceDescriptor::populateDescriptorSetLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkDescriptorSetLayoutBinding& descriptorSetLayoutBinding)
@@ -141,7 +166,7 @@ void ResourceDescriptor::createDescriptorSets(VkDescriptorSetLayout descriptorSe
     }
 }
 
-void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageView, VkSampler combinedSampler, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets)
+void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageView, VkSampler combinedSampler, bool combinedSamplerProvided, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets)
 {
     for (size_t i = 0; i < descriptorSets.size(); i += 1) {
         VkDescriptorBufferInfo descriptorBufferInfo{};
@@ -157,7 +182,9 @@ void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBu
         descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         descriptorImageInfo.imageView = textureImageView;
 
-        descriptorImageInfo.sampler = combinedSampler;
+        if (combinedSamplerProvided == true) {
+            descriptorImageInfo.sampler = combinedSampler;
+        }
 
 
         VkWriteDescriptorSet uniformBufferWriteDescriptorSet{};
@@ -174,24 +201,32 @@ void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBu
         uniformBufferWriteDescriptorSet.pImageInfo = nullptr;
         uniformBufferWriteDescriptorSet.pTexelBufferView = nullptr;
 
+        VkWriteDescriptorSet writeDescriptorSets[2];  // bad hack, but allocate the highest used size.
+        uint32_t writeDescriptorSetsSize = -1;
 
-        VkWriteDescriptorSet combinedSamplerWriteDescriptorSet{};
-        combinedSamplerWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        if (combinedSamplerProvided == true) {
+            VkWriteDescriptorSet combinedSamplerWriteDescriptorSet{};
+            combinedSamplerWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 
-        combinedSamplerWriteDescriptorSet.dstSet = descriptorSets[i];
-        combinedSamplerWriteDescriptorSet.dstBinding = 1;  // the combined image sampler binding index.
-        combinedSamplerWriteDescriptorSet.dstArrayElement = 0;
+            combinedSamplerWriteDescriptorSet.dstSet = descriptorSets[i];
+            combinedSamplerWriteDescriptorSet.dstBinding = 1;  // the combined image sampler binding index.
+            combinedSamplerWriteDescriptorSet.dstArrayElement = 0;
 
-        combinedSamplerWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        combinedSamplerWriteDescriptorSet.descriptorCount = 1;
+            combinedSamplerWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            combinedSamplerWriteDescriptorSet.descriptorCount = 1;
 
-        combinedSamplerWriteDescriptorSet.pBufferInfo = nullptr;
-        combinedSamplerWriteDescriptorSet.pImageInfo = &descriptorImageInfo;
-        combinedSamplerWriteDescriptorSet.pTexelBufferView = nullptr;
+            combinedSamplerWriteDescriptorSet.pBufferInfo = nullptr;
+            combinedSamplerWriteDescriptorSet.pImageInfo = &descriptorImageInfo;
+            combinedSamplerWriteDescriptorSet.pTexelBufferView = nullptr;
 
+            writeDescriptorSets[0] = uniformBufferWriteDescriptorSet;
+            writeDescriptorSets[1] = combinedSamplerWriteDescriptorSet;
+            writeDescriptorSetsSize = 2;
+        } else {
+            writeDescriptorSets[0] = uniformBufferWriteDescriptorSet;
+            writeDescriptorSetsSize = 1;
+        }
 
-        std::array<VkWriteDescriptorSet, 2> writeDescriptorSets = {uniformBufferWriteDescriptorSet, combinedSamplerWriteDescriptorSet};
-
-        vkUpdateDescriptorSets(vulkanLogicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);  // populate/update the descriptor set.
+        vkUpdateDescriptorSets(vulkanLogicalDevice, writeDescriptorSetsSize, writeDescriptorSets, 0, nullptr);  // populate/update the descriptor set.
     }
 }

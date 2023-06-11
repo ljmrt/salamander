@@ -110,7 +110,6 @@ void RendererDetails::Renderer::createMemberRenderPass(VkFormat swapchainImageFo
     populateColorAttachmentComponents(swapchainImageFormat, msaaSampleCount, colorAttachmentDescription, colorAttachmentReference, colorAttachmentResolveDescription, colorAttachmentResolveReference);
 
 
-    m_scenePipelineComponents.imageDetailsUsed = true;
     VkAttachmentDescription depthAttachmentDescription{};
     VkAttachmentReference depthAttachmentReference{};
     populateDepthAttachmentComponents(msaaSampleCount, vulkanPhysicalDevice, depthAttachmentDescription, depthAttachmentReference);
@@ -313,14 +312,15 @@ void RendererDetails::Renderer::createMemberPipelineLayout(VkDescriptorSetLayout
 
 void RendererDetails::Renderer::createMemberCubemapPipeline(VkSampleCountFlagBits msaaSampleCount)
 {
-    std::string vertexBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapVertex.spv";
-    std::string fragmentBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapFragment.spv";
+    std::string vertexBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapVertex.spv");
+    std::string fragmentBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapFragment.spv");
 
     Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.pipelineShaders.vertexShader);
     Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.pipelineShaders.fragmentShader);
     
     VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_cubemapPipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_cubemapPipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
-    
+
+    // TODO: implement vertex-position-only buffer/vector to load rather than loading unnecessary data.
     ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::Vertex), ModelHandler::preservedCubemapBindingDescription);  // we are only passing the position attribute to the vertex shader.
     ResourceDescriptor::fetchSceneAttributeDescriptions(ModelHandler::preservedCubemapAttributeDescriptions);
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
@@ -395,8 +395,8 @@ void RendererDetails::Renderer::createMemberCubemapPipeline(VkSampleCountFlagBit
 
 void RendererDetails::Renderer::createMemberScenePipeline(VkSampleCountFlagBits msaaSampleCount)
 {
-    std::string vertexBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneVertex.spv";
-    std::string fragmentBytecodeFilePath = Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneFragment.spv";
+    std::string vertexBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneVertex.spv");
+    std::string fragmentBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneFragment.spv");
 
     Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, m_scenePipelineComponents.pipelineShaders.vertexShader);
     Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, m_scenePipelineComponents.pipelineShaders.fragmentShader);
@@ -478,6 +478,92 @@ void RendererDetails::Renderer::createMemberScenePipeline(VkSampleCountFlagBits 
     vkDestroyShaderModule(*m_vulkanLogicalDevice, m_scenePipelineComponents.pipelineShaders.vertexShader.shaderModule, nullptr);
 }
 
+void RendererDetails::Renderer::createMemberSceneNormalsPipeline(VkSampleCountFlagBits msaaSampleCount)
+{
+    std::string vertexBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsVertex.spv");
+    std::string geometryBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsGeometry.spv");
+    std::string fragmentBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsFragment.spv");
+
+    Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.vertexShader);
+    Shader::createShader(geometryBytecodeFilePath, VK_SHADER_STAGE_GEOMETRY_BIT, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.geometryShader);
+    Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.fragmentShader);
+    
+    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_sceneNormalsPipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_sceneNormalsPipelineComponents.pipelineShaders.geometryShader.shaderStageCreateInfo, m_sceneNormalsPipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
+    
+
+    ResourceDescriptor::fetchSceneNormalsAttributeDescriptions(ModelHandler::preservedSceneNormalsAttributeDescriptions);
+    VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
+    ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedSceneNormalsAttributeDescriptions, &ModelHandler::preservedSceneBindingDescription, vertexInputCreateInfo);
+
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
+    ModelHandler::populateInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, inputAssemblyCreateInfo);
+
+
+    VkPipelineViewportStateCreateInfo viewportCreateInfo{};
+    populateViewportCreateInfo(1, 1, viewportCreateInfo);
+
+    
+    // TODO: update cull modes on all pipelines to the correct mode.
+    VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
+    populateRasterizationCreateInfo(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
+
+
+    VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
+    populateMultisamplingCreateInfo(msaaSampleCount, 0.2f, multisamplingCreateInfo);
+
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
+    populateDepthStencilCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, depthStencilCreateInfo);
+
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+    VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
+    populateColorBlendComponents(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_TRUE, colorBlendAttachment, colorBlendCreateInfo);
+
+    std::vector<VkDynamicState> dynamicStates = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+    VkPipelineDynamicStateCreateInfo dynamicStatesCreateInfo{};
+    populateDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
+
+
+    createMemberPipelineLayout(m_sceneNormalsPipelineComponents.descriptorSetLayout, m_sceneNormalsPipelineComponents.pipelineLayout);
+
+
+    VkGraphicsPipelineCreateInfo scenePipelineCreateInfo{};
+    scenePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    
+    scenePipelineCreateInfo.stageCount = 3;
+    scenePipelineCreateInfo.pStages = shaderStageCreateInfos;
+    
+    scenePipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
+    scenePipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
+    scenePipelineCreateInfo.pViewportState = &viewportCreateInfo;
+    scenePipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
+    scenePipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
+    scenePipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
+    scenePipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
+    scenePipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
+
+    scenePipelineCreateInfo.layout = m_sceneNormalsPipelineComponents.pipelineLayout;
+    scenePipelineCreateInfo.renderPass = m_renderPass;
+    scenePipelineCreateInfo.subpass = 0;
+
+    scenePipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+    scenePipelineCreateInfo.basePipelineIndex = -1;
+
+    size_t scenePipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &scenePipelineCreateInfo, nullptr, &m_sceneNormalsPipelineComponents.pipeline);
+    if (scenePipelineCreationResult != VK_SUCCESS) {
+        throwDebugException("Failed to create scene normals graphics pipeline.");
+    }
+
+
+    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.fragmentShader.shaderModule, nullptr);
+    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.vertexShader.shaderModule, nullptr);
+}
+
 void RendererDetails::Renderer::createMemberSynchronizationObjects()
 {
     m_imageAvailibleSemaphores.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
@@ -529,10 +615,10 @@ void RendererDetails::Renderer::drawFrame(DisplayManager::DisplayDetails& displa
 
 
     vkResetCommandBuffer(displayDetails.graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(displayDetails.graphicsCommandBuffers[m_currentFrame], displayDetails.swapchainImageExtent, displayDetails.swapchainFramebuffers[swapchainImageIndex], m_currentFrame, m_cubemapPipelineComponents, m_cubemapModel.shaderBufferComponents, m_scenePipelineComponents, m_mainModel.shaderBufferComponents, m_renderPass);
+    CommandManager::recordGraphicsCommandBufferCommands(displayDetails.graphicsCommandBuffers[m_currentFrame], displayDetails.swapchainImageExtent, displayDetails.swapchainFramebuffers[swapchainImageIndex], m_currentFrame, m_cubemapPipelineComponents, m_cubemapModel.shaderBufferComponents, m_scenePipelineComponents, m_mainModel.shaderBufferComponents, m_sceneNormalsPipelineComponents, m_renderPass);
 
     
-    Uniform::updateFrameUniformBuffers(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.swapchainImageExtent, m_scenePipelineComponents.mappedUniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory);
+    Uniform::updateFrameUniformBuffers(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.swapchainImageExtent, m_scenePipelineComponents.mappedUniformBuffersMemory, m_sceneNormalsPipelineComponents.mappedUniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory);
 
     
     VkSubmitInfo submitInfo{};
@@ -622,6 +708,14 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     ResourceDescriptor::createDescriptorSetLayout(sceneDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSetLayout);
     
     createMemberScenePipeline(displayDetails.msaaSampleCount);
+
+    VkDescriptorSetLayoutBinding sceneNormalsUniformBufferLayoutBinding{};
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT), sceneNormalsUniformBufferLayoutBinding);
+    
+    std::vector<VkDescriptorSetLayoutBinding> sceneNormalsDescriptorSetLayoutBindings = {sceneNormalsUniformBufferLayoutBinding};
+    ResourceDescriptor::createDescriptorSetLayout(sceneNormalsDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorSetLayout);
+    
+    createMemberSceneNormalsPipeline(displayDetails.msaaSampleCount);
     
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, displayDetails.graphicsCommandPool);
 
@@ -639,18 +733,21 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     m_cubemapModel.populateShaderBufferComponents(displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
     Image::populateTextureDetails((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapModel.textureDetails);
 
+    // TODO: only use a single descriptor pool if possible.
     Uniform::createUniformBuffers(sizeof(Uniform::SceneUniformBufferObject), temporaryVulkanDevices, m_scenePipelineComponents.uniformBuffers, m_scenePipelineComponents.uniformBuffersMemory, m_scenePipelineComponents.mappedUniformBuffersMemory);
-    
     ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_scenePipelineComponents.descriptorSetLayout, m_scenePipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_scenePipelineComponents.uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_scenePipelineComponents.uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, true, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
+
+    Uniform::createUniformBuffers(sizeof(Uniform::SceneNormalsUniformBufferObject), temporaryVulkanDevices, m_sceneNormalsPipelineComponents.uniformBuffers, m_sceneNormalsPipelineComponents.uniformBuffersMemory, m_sceneNormalsPipelineComponents.mappedUniformBuffersMemory);
+    ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorSets(m_sceneNormalsPipelineComponents.descriptorSetLayout, m_sceneNormalsPipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_sceneNormalsPipelineComponents.uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, {0}, false, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorSets);
 
     Uniform::createUniformBuffers(sizeof(Uniform::CubemapUniformBufferObject), temporaryVulkanDevices, m_cubemapPipelineComponents.uniformBuffers, m_cubemapPipelineComponents.uniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory);
-
-    // cubemap shaders conviently use the same uniforms/only uniform difference is shader stages.
     ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_cubemapPipelineComponents.descriptorSetLayout, m_cubemapPipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_cubemapPipelineComponents.uniformBuffers, m_cubemapModel.textureDetails.textureImageDetails.imageView, m_cubemapModel.textureDetails.textureSampler, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
+    ResourceDescriptor::populateDescriptorSets(m_cubemapPipelineComponents.uniformBuffers, m_cubemapModel.textureDetails.textureImageDetails.imageView, m_cubemapModel.textureDetails.textureSampler, true, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
 
     CommandManager::allocateChildCommandBuffers(displayDetails.graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, displayDetails.graphicsCommandBuffers);
 
@@ -677,8 +774,9 @@ void RendererDetails::Renderer::cleanupRenderer()
         vkDestroyFence(*m_vulkanLogicalDevice, m_inFlightFences[i], nullptr);
     }
 
-    m_scenePipelineComponents.cleanupPipelineComponents(*m_vulkanLogicalDevice);
     m_cubemapPipelineComponents.cleanupPipelineComponents(*m_vulkanLogicalDevice);
+    m_scenePipelineComponents.cleanupPipelineComponents(*m_vulkanLogicalDevice);
+    m_sceneNormalsPipelineComponents.cleanupPipelineComponents(*m_vulkanLogicalDevice);
 
     vkDestroyRenderPass(*m_vulkanLogicalDevice, m_renderPass, nullptr);
 }

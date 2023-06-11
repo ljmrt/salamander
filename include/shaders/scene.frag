@@ -4,7 +4,7 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 projectionMatrix;
     mat4 viewMatrix;
     mat4 modelMatrix;
-    mat3 normalMatrix;
+    mat4 normalMatrix;
 
     vec3 viewingPosition;
     vec4 ambientLightColor;
@@ -32,10 +32,15 @@ void main()
     float diffuseLightValue = max(dot(normalize(fragmentNormalWorldSpace), pointLightRayDirection), 0.0);  // we want to avoid negative values.
     vec3 diffuseLighting = (unpackedPointLightColor * diffuseLightValue);
 
+    float shininessValue = 16;
+    float specularExponent = 1;
+    
     vec3 viewingDirection = normalize(uniformBufferObject.viewingPosition - fragmentPositionWorldSpace);
     vec3 reflectionDirection = reflect(pointLightRayDirection, fragmentNormalWorldSpace);
-    float specularComponent = pow(max(dot(viewingDirection, reflectionDirection), 0.0), 32);
-    vec3 specularLighting = 0.5 * specularComponent * unpackedPointLightColor;
+    vec3 halfwayDirection = normalize(pointLightRayDirection + viewingDirection);
+    float specularComponent = pow(max(dot(fragmentNormalWorldSpace, halfwayDirection), 0.0), shininessValue);
+    
+    vec3 specularLighting = specularExponent * specularComponent * unpackedPointLightColor;
     
     vec4 completeLighting = vec4((ambientLighting + diffuseLighting + specularLighting), 1.0);
     

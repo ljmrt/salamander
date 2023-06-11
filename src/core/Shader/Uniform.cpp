@@ -29,7 +29,7 @@ void Uniform::createUniformBuffers(VkDeviceSize uniformBufferObjectSize, DeviceH
     }
 }
 
-void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory)
+void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory)
 {
     Uniform::SceneUniformBufferObject sceneUniformBufferObject{};
 
@@ -57,14 +57,24 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     sceneUniformBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), swapchainImageExtent.width / (float)(swapchainImageExtent.height), 0.1f, 256.0f);  // 45-degree vertical field-of-view.
     sceneUniformBufferObject.projectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
 
-    sceneUniformBufferObject.normalMatrix = glm::mat3(glm::transpose(glm::inverse(sceneUniformBufferObject.modelMatrix)));
+    sceneUniformBufferObject.normalMatrix = glm::mat4(glm::mat3(glm::transpose(glm::inverse(sceneUniformBufferObject.modelMatrix))));
 
     sceneUniformBufferObject.viewingPosition = mainCamera.eye;
     sceneUniformBufferObject.ambientLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
     sceneUniformBufferObject.pointLightPosition = glm::vec3(0.0f, 0.0f, -1.0f);  // this is in world space.
-    sceneUniformBufferObject.pointLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    sceneUniformBufferObject.pointLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.25f);
     
     memcpy(mappedSceneUniformBuffersMemory[currentImage], &sceneUniformBufferObject, sizeof(Uniform::SceneUniformBufferObject));
+
+    
+    Uniform::SceneNormalsUniformBufferObject sceneNormalsUniformBufferObject{};
+
+    sceneNormalsUniformBufferObject.projectionMatrix = sceneUniformBufferObject.projectionMatrix;
+    sceneNormalsUniformBufferObject.viewMatrix = sceneUniformBufferObject.viewMatrix;
+    sceneNormalsUniformBufferObject.modelMatrix = sceneUniformBufferObject.modelMatrix;
+    sceneNormalsUniformBufferObject.normalMatrix = glm::mat4(glm::mat3(glm::transpose(glm::inverse(sceneUniformBufferObject.viewMatrix * sceneUniformBufferObject.modelMatrix))));
+    
+    memcpy(mappedSceneNormalsUniformBuffersMemory[currentImage], &sceneNormalsUniformBufferObject, sizeof(Uniform::SceneNormalsUniformBufferObject));
 
 
     Uniform::CubemapUniformBufferObject cubemapUniformBufferObject{};

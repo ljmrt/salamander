@@ -4,7 +4,7 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 projectionMatrix;
     mat4 viewMatrix;
     mat4 modelMatrix;
-    mat3 normalMatrix;
+    mat4 normalMatrix;
 
     vec3 viewingPosition;
     vec4 ambientLightColor;
@@ -27,7 +27,7 @@ void main()
     
     vec4 vertexWorldSpacePosition = (uniformBufferObject.modelMatrix * positionAttributeVec4);
     fragmentPositionWorldSpace = vertexWorldSpacePosition.xyz;
-    fragmentNormalWorldSpace = (uniformBufferObject.normalMatrix * normalAttribute);    
+    fragmentNormalWorldSpace = normalize(vec3(vec4((mat3(uniformBufferObject.normalMatrix) * normalAttribute), 0.0)));
     
     fragmentUVCoordinates = UVCoordinatesAttribute;
 }

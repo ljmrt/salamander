@@ -20,6 +20,7 @@ namespace DisplayManager  // forward declaration.
 
 namespace RendererDetails
 {
+    // TODO: abstract various component creation/usage into methods and allow for disabling(e.g scene normals).
     struct PipelineComponents {        
         VkDescriptorSetLayout descriptorSetLayout;  // this pipeline layout's descriptor set layout.
         VkDescriptorPool descriptorPool;  // the descriptor pool to use in scene descriptor set creation.
@@ -29,8 +30,6 @@ namespace RendererDetails
         std::vector<VkDeviceMemory> uniformBuffersMemory;  // the uniform buffers' memory.
         std::vector<void *> mappedUniformBuffersMemory;  // the mapped memory of the uniform buffers.
 
-        bool imageDetailsUsed = false;  // if the above image details are used at all.
-    
         VkPipelineLayout pipelineLayout;  // this pipeline's pipeline layout.
         VkPipeline pipeline;  // the pipeline.
 
@@ -47,6 +46,7 @@ namespace RendererDetails
     
         PipelineComponents m_cubemapPipelineComponents;  // the components used in the cubemap's graphics pipeline.    
         PipelineComponents m_scenePipelineComponents;  // the components used in the scene's graphics pipeline.
+        PipelineComponents m_sceneNormalsPipelineComponents;  // the components used in the scene normals' graphics pipeline.
 
         VkRenderPass m_renderPass;  // we only need a singular render pass.
 
@@ -58,7 +58,6 @@ namespace RendererDetails
 
         Camera::ArcballCamera m_mainCamera;  // the scene's main camera.
         ModelHandler::Model m_mainModel;  // the main loaded model.
-
         ModelHandler::Model m_cubemapModel;  // the loaded model used for the cubemap.
     
 
@@ -150,15 +149,20 @@ namespace RendererDetails
         // @param memberPipelineLayout the created member pipeline layout.
         void createMemberPipelineLayout(VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& memberPipelineLayout);
 
-        // create member Vulkan cubemap pipeline.
+        // create member cubemap pipeline.
         //
         // @param msaaSampleCount the amount of msaa samples.
         void createMemberCubemapPipeline(VkSampleCountFlagBits msaaSampleCount);
     
-        // create member Vulkan scene pipeline.
+        // create member scene pipeline.
         //
         // @param msaaSampleCount the amount of msaa samples.
         void createMemberScenePipeline(VkSampleCountFlagBits msaaSampleCount);
+
+        // create member scene normals pipeline.
+        //
+        // @param msaaSampleCount the amount of msaa samples.
+        void createMemberSceneNormalsPipeline(VkSampleCountFlagBits msaaSampleCount);
 
         // create member synchronization objects(semaphores, fences).
         void createMemberSynchronizationObjects();
