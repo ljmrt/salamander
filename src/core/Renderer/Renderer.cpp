@@ -170,8 +170,8 @@ void RendererDetails::Renderer::populateRasterizationCreateInfo(VkCullModeFlags 
     rasterizationCreateInfo.depthClampEnable = VK_FALSE;  // default to discarding rather than clamping fragments beyond the near and far planes. 
     rasterizationCreateInfo.rasterizerDiscardEnable = VK_FALSE;  // pass through the rasterization stage.
     
-    // TODO: wireframe mode(fragments for only the edges of polygons): polygon mode VK_POLYGON_MODE_LINE
-    // TODO: point mode(fragments for only the polygon vertices): polygon mode VK_POLYGON_MODE_POINT
+    // wireframe mode(fragments for only the edges of polygons): polygon mode VK_POLYGON_MODE_LINE
+    // point mode(fragments for only the polygon vertices): polygon mode VK_POLYGON_MODE_POINT
     rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;  // fill the area of the polygon with fragments.
     
     rasterizationCreateInfo.lineWidth = 1.0f;
@@ -320,9 +320,8 @@ void RendererDetails::Renderer::createMemberCubemapPipeline(VkSampleCountFlagBit
     
     VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_cubemapPipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_cubemapPipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
 
-    // TODO: implement vertex-position-only buffer/vector to load rather than loading unnecessary data.
-    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::Vertex), ModelHandler::preservedCubemapBindingDescription);  // we are only passing the position attribute to the vertex shader.
-    ResourceDescriptor::fetchSceneAttributeDescriptions(ModelHandler::preservedCubemapAttributeDescriptions);
+    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::CubemapVertexData), ModelHandler::preservedCubemapBindingDescription);  // we are only passing the position attribute to the vertex shader.
+    ResourceDescriptor::fetchCubemapAttributeDescriptions(ModelHandler::preservedCubemapAttributeDescriptions);
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
     ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedCubemapAttributeDescriptions, &ModelHandler::preservedCubemapBindingDescription, vertexInputCreateInfo);
 
@@ -336,7 +335,7 @@ void RendererDetails::Renderer::createMemberCubemapPipeline(VkSampleCountFlagBit
 
     
     VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
-    populateRasterizationCreateInfo(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
+    populateRasterizationCreateInfo(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
 
 
     VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
@@ -404,8 +403,7 @@ void RendererDetails::Renderer::createMemberScenePipeline(VkSampleCountFlagBits 
     VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_scenePipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_scenePipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
     
 
-    // TODO: implement vertex-position-only buffer/vector to load rather than loading unnecessary data.
-    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::Vertex), ModelHandler::preservedSceneBindingDescription);
+    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::SceneVertexData), ModelHandler::preservedSceneBindingDescription);
     ResourceDescriptor::fetchSceneAttributeDescriptions(ModelHandler::preservedSceneAttributeDescriptions);
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
     ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedSceneAttributeDescriptions, &ModelHandler::preservedSceneBindingDescription, vertexInputCreateInfo);
@@ -420,7 +418,7 @@ void RendererDetails::Renderer::createMemberScenePipeline(VkSampleCountFlagBits 
 
     
     VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
-    populateRasterizationCreateInfo(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
+    populateRasterizationCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
 
 
     VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
@@ -490,10 +488,10 @@ void RendererDetails::Renderer::createMemberSceneNormalsPipeline(VkSampleCountFl
     
     VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_sceneNormalsPipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_sceneNormalsPipelineComponents.pipelineShaders.geometryShader.shaderStageCreateInfo, m_sceneNormalsPipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
     
-
+    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::SceneNormalsVertexData), ModelHandler::preservedSceneNormalsBindingDescription);
     ResourceDescriptor::fetchSceneNormalsAttributeDescriptions(ModelHandler::preservedSceneNormalsAttributeDescriptions);
     VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
-    ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedSceneNormalsAttributeDescriptions, &ModelHandler::preservedSceneBindingDescription, vertexInputCreateInfo);
+    ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedSceneNormalsAttributeDescriptions, &ModelHandler::preservedSceneNormalsBindingDescription, vertexInputCreateInfo);
 
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
@@ -504,9 +502,8 @@ void RendererDetails::Renderer::createMemberSceneNormalsPipeline(VkSampleCountFl
     populateViewportCreateInfo(1, 1, viewportCreateInfo);
 
     
-    // TODO: update cull modes on all pipelines to the correct mode.
     VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
-    populateRasterizationCreateInfo(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
+    populateRasterizationCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
 
 
     VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
@@ -561,6 +558,7 @@ void RendererDetails::Renderer::createMemberSceneNormalsPipeline(VkSampleCountFl
 
 
     vkDestroyShaderModule(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.fragmentShader.shaderModule, nullptr);
+    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.geometryShader.shaderModule, nullptr);
     vkDestroyShaderModule(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.vertexShader.shaderModule, nullptr);
 }
 
@@ -615,7 +613,23 @@ void RendererDetails::Renderer::drawFrame(DisplayManager::DisplayDetails& displa
 
 
     vkResetCommandBuffer(displayDetails.graphicsCommandBuffers[m_currentFrame], 0);  // 0 for no additional flags.
-    CommandManager::recordGraphicsCommandBufferCommands(displayDetails.graphicsCommandBuffers[m_currentFrame], displayDetails.swapchainImageExtent, displayDetails.swapchainFramebuffers[swapchainImageIndex], m_currentFrame, m_cubemapPipelineComponents, m_cubemapModel.shaderBufferComponents, m_scenePipelineComponents, m_mainModel.shaderBufferComponents, m_sceneNormalsPipelineComponents, m_renderPass);
+
+    CommandManager::GraphicsRecordingPackage graphicsRecordingPackage{};
+    graphicsRecordingPackage.graphicsCommandBuffer = displayDetails.graphicsCommandBuffers[m_currentFrame];
+    graphicsRecordingPackage.renderPass = m_renderPass;
+    
+    graphicsRecordingPackage.swapchainImageExtent = displayDetails.swapchainImageExtent;
+    graphicsRecordingPackage.swapchainIndexFramebuffer = displayDetails.swapchainFramebuffers[swapchainImageIndex];
+    graphicsRecordingPackage.currentFrame = m_currentFrame;
+    
+    graphicsRecordingPackage.cubemapPipelineComponents = m_cubemapPipelineComponents;
+    graphicsRecordingPackage.cubemapShaderBufferComponents = m_cubemapModel.shaderBufferComponents;
+    graphicsRecordingPackage.scenePipelineComponents = m_scenePipelineComponents;
+    graphicsRecordingPackage.sceneShaderBufferComponents = m_mainModel.shaderBufferComponents;
+    graphicsRecordingPackage.sceneNormalsPipelineComponents = m_sceneNormalsPipelineComponents;
+    graphicsRecordingPackage.sceneNormalsShaderBufferComponents = m_dummySceneNormalsModel.shaderBufferComponents;
+    
+    CommandManager::recordGraphicsCommandBufferCommands(graphicsRecordingPackage);
 
     
     Uniform::updateFrameUniformBuffers(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.swapchainImageExtent, m_scenePipelineComponents.mappedUniformBuffersMemory, m_sceneNormalsPipelineComponents.mappedUniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory);
@@ -726,26 +740,42 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     m_mainModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Avocado/Avocado.gltf"));
     // m_mainModel.normalizeNormalValues();
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
-    m_mainModel.populateShaderBufferComponents(displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+    m_mainModel.populateShaderBufferComponents(m_mainModel.meshVertices, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
     Image::populateTextureDetails(m_mainModel.absoluteTextureImagePath, false, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_mainModel.textureDetails);
 
+    m_dummySceneNormalsModel.meshVertices = m_mainModel.meshVertices;
+    m_dummySceneNormalsModel.meshIndices = m_mainModel.meshIndices;
+    
+    std::vector<ModelHandler::SceneNormalsVertexData> sceneNormalsVertexData;
+    sceneNormalsVertexData.resize(m_mainModel.meshVertices.size());
+    for (size_t i = 0; i < m_mainModel.meshVertices.size(); i += 1) {
+        sceneNormalsVertexData[i] = {m_mainModel.meshVertices[i].position, m_mainModel.meshVertices[i].normal};
+    }
+    m_dummySceneNormalsModel.populateShaderBufferComponents(sceneNormalsVertexData, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+
     m_cubemapModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Cube/Cube.gltf"));
-    m_cubemapModel.populateShaderBufferComponents(displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+    
+    std::vector<ModelHandler::CubemapVertexData> cubemapVertexData;
+    cubemapVertexData.resize(m_cubemapModel.meshVertices.size());
+    for (size_t i = 0; i < m_cubemapModel.meshVertices.size(); i += 1) {
+        cubemapVertexData[i] = {m_cubemapModel.meshVertices[i].position};
+    }
+    m_cubemapModel.populateShaderBufferComponents(cubemapVertexData, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+    
     Image::populateTextureDetails((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapModel.textureDetails);
 
-    // TODO: only use a single descriptor pool if possible.
     Uniform::createUniformBuffers(sizeof(Uniform::SceneUniformBufferObject), temporaryVulkanDevices, m_scenePipelineComponents.uniformBuffers, m_scenePipelineComponents.uniformBuffersMemory, m_scenePipelineComponents.mappedUniformBuffersMemory);
-    ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorPool(true, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_scenePipelineComponents.descriptorSetLayout, m_scenePipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
     ResourceDescriptor::populateDescriptorSets(m_scenePipelineComponents.uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, true, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
 
     Uniform::createUniformBuffers(sizeof(Uniform::SceneNormalsUniformBufferObject), temporaryVulkanDevices, m_sceneNormalsPipelineComponents.uniformBuffers, m_sceneNormalsPipelineComponents.uniformBuffersMemory, m_sceneNormalsPipelineComponents.mappedUniformBuffersMemory);
-    ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorPool(false, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_sceneNormalsPipelineComponents.descriptorSetLayout, m_sceneNormalsPipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorSets);
     ResourceDescriptor::populateDescriptorSets(m_sceneNormalsPipelineComponents.uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, {0}, false, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorSets);
 
     Uniform::createUniformBuffers(sizeof(Uniform::CubemapUniformBufferObject), temporaryVulkanDevices, m_cubemapPipelineComponents.uniformBuffers, m_cubemapPipelineComponents.uniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory);
-    ResourceDescriptor::createDescriptorPool(*m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorPool(true, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_cubemapPipelineComponents.descriptorSetLayout, m_cubemapPipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
     ResourceDescriptor::populateDescriptorSets(m_cubemapPipelineComponents.uniformBuffers, m_cubemapModel.textureDetails.textureImageDetails.imageView, m_cubemapModel.textureDetails.textureSampler, true, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
 
@@ -765,8 +795,9 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 
 void RendererDetails::Renderer::cleanupRenderer()
 {
-    m_mainModel.cleanupModel(*m_vulkanLogicalDevice);
-    m_cubemapModel.cleanupModel(*m_vulkanLogicalDevice);
+    m_mainModel.cleanupModel(false, *m_vulkanLogicalDevice);
+    m_dummySceneNormalsModel.cleanupModel(true, *m_vulkanLogicalDevice);
+    m_cubemapModel.cleanupModel(false, *m_vulkanLogicalDevice);
     
     for (size_t i = 0; i < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; i += 1) {
         vkDestroySemaphore(*m_vulkanLogicalDevice, m_imageAvailibleSemaphores[i], nullptr);

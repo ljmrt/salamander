@@ -18,10 +18,20 @@
 
 namespace ModelHandler
 {
-    struct Vertex {
+    // different vertex data structs to populate the vertex buffer with, dependent on what pipeline is in use.
+    struct SceneVertexData {
         glm::vec3 position;
         glm::vec3 normal;
         glm::vec2 UVCoordinates;
+    };
+
+    struct SceneNormalsVertexData {
+        glm::vec3 position;
+        glm::vec3 normal;
+    };
+
+    struct CubemapVertexData {
+        glm::vec3 position;
     };
 
     struct ShaderBufferComponents {
@@ -37,7 +47,7 @@ namespace ModelHandler
     {
         std::string absoluteModelDirectory;  // the absolute directory of the model.
         
-        std::vector<ModelHandler::Vertex> meshVertices;  // vertice compenets are normalized to a 0..1 range.
+        std::vector<ModelHandler::SceneVertexData> meshVertices;  // vertice compenets are normalized to a 0..1 range, expected to "reinterpet" this into the desired vertex data(see above structs).
         std::vector<uint32_t> meshIndices;
 
         glm::quat meshQuaternion = glm::identity<glm::quat>();  // the stored quaternion to rotate the mesh using.
@@ -60,15 +70,33 @@ namespace ModelHandler
 
         // populate the shader buffer components for this model.
         //
+        // @param vertexData the vertex data to pass into the vertex buffer.
         // @param commandPool command pool to allocate necessary command buffers on.
         // @param commandQueue queue to submit necessary commands on.
         // @param vulkanDevices Vulkan logical and physical device to use in model buffers creation.
-        void populateShaderBufferComponents(VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
+        void populateShaderBufferComponents(std::vector<ModelHandler::SceneVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
+        
+        // populate the shader buffer components for this model.
+        //
+        // @param vertexData the vertex data to pass into the vertex buffer.
+        // @param commandPool command pool to allocate necessary command buffers on.
+        // @param commandQueue queue to submit necessary commands on.
+        // @param vulkanDevices Vulkan logical and physical device to use in model buffers creation.
+        void populateShaderBufferComponents(std::vector<ModelHandler::SceneNormalsVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
+        
+        // populate the shader buffer components for this model.
+        //
+        // @param vertexData the vertex data to pass into the vertex buffer.
+        // @param commandPool command pool to allocate necessary command buffers on.
+        // @param commandQueue queue to submit necessary commands on.
+        // @param vulkanDevices Vulkan logical and physical device to use in model buffers creation.
+        void populateShaderBufferComponents(std::vector<ModelHandler::CubemapVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
 
         // cleanup the model.
         //
+        // @param preserveTextureDetails if the model's texture details should be preserved(not destroyed).
         // @param vulkanLogicalDevice Vulkan logical device to use in model cleanup.
-        void cleanupModel(VkDevice vulkanLogicalDevice);
+        void cleanupModel(bool preserveTextureDetails, VkDevice vulkanLogicalDevice);
     };
 
 
@@ -78,7 +106,8 @@ namespace ModelHandler
 
     extern std::vector<VkVertexInputAttributeDescription> preservedSceneAttributeDescriptions;  // preserved scene attribute descriptions(pointer reasons).
     extern VkVertexInputBindingDescription preservedSceneBindingDescription;  // preserved scene binding description(pointer reasons).
-    extern std::vector<VkVertexInputAttributeDescription> preservedSceneNormalsAttributeDescriptions;  // preserved scene attribute descriptions(pointer reasons).
+    extern std::vector<VkVertexInputAttributeDescription> preservedSceneNormalsAttributeDescriptions;  // preserved scene normals attribute descriptions(pointer reasons).
+    extern VkVertexInputBindingDescription preservedSceneNormalsBindingDescription;  // preserved scene normals binding description(pointer reasons).
 
     // populate a vertex input's create info.
     //

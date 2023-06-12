@@ -17,6 +17,15 @@ namespace ResourceDescriptor
     // @param bindingDescription stored fetched binding description.
     void populateBindingDescription(uint32_t stride, VkVertexInputBindingDescription& bindingDescription);
 
+    // populate a vertex input attribute description.
+    //
+    // @param location see VkVertexInputAttributeDescription documentation.
+    // @param binding see VkVertexInputAttributeDescription documentation.
+    // @param format see VkVertexInputAttributeDescription documentation.
+    // @param offset see VkVertexInputAttributeDescription documentation.
+    // @param vertexInputAttributeDescription populated vertex input attribute description.
+    void populateVertexInputAttributeDescription(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset, VkVertexInputAttributeDescription& vertexInputAttributeDescription);
+
     // fetch the attribute descriptions used for the cubemap vertex attributes.
     //
     // @param attributeDescriptions fetched attribute descriptions.
@@ -56,9 +65,10 @@ namespace ResourceDescriptor
 
     // create descriptor pool.
     //
+    // @param useCombinedSampler if the descriptor pool will be used for descriptor sets with combined samplers.
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor pool creation.
     // @param descriptorPool created descriptor pool.
-    void createDescriptorPool(VkDevice vulkanLogicalDevice, VkDescriptorPool& descriptorPool);
+    void createDescriptorPool(bool useCombinedSampler, VkDevice vulkanLogicalDevice, VkDescriptorPool& descriptorPool);
 
     // create descriptor sets.
     //

@@ -29,7 +29,7 @@ VkVertexInputBindingDescription ModelHandler::preservedCubemapBindingDescription
 std::vector<VkVertexInputAttributeDescription> ModelHandler::preservedSceneAttributeDescriptions;
 VkVertexInputBindingDescription ModelHandler::preservedSceneBindingDescription;
 std::vector<VkVertexInputAttributeDescription> ModelHandler::preservedSceneNormalsAttributeDescriptions;
-
+VkVertexInputBindingDescription ModelHandler::preservedSceneNormalsBindingDescription;
 
 void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPath)
 {
@@ -78,7 +78,7 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         const float *UVCoordinateAttributes = reinterpret_cast<const float *>(&UVCoordinateAttributeBuffer.data[UVCoordinateAttributeBufferView.byteOffset + UVCoordinateAttributeAccessor.byteOffset]);
         const uint32_t UV_COORDINATES_STRIDE = 2;  // UV coordinates are vec2 components.
 
-        std::vector<ModelHandler::Vertex> primitiveVertices(positionAttributeAccessor.count);  // the amount of vertices is equivalent to the amount of positions in a primitive.
+        std::vector<ModelHandler::SceneVertexData> primitiveVertices(positionAttributeAccessor.count);  // the amount of vertices is equivalent to the amount of positions in a primitive.
         for (size_t vertexIndex = 0; vertexIndex < positionAttributeAccessor.count; vertexIndex += 1) {
             const uint32_t VERTEX_INDEX_POSITION_OFFSET = (vertexIndex * POSITION_STRIDE);
             const float rawXPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 0];
@@ -146,7 +146,7 @@ void ModelHandler::Model::normalizeNormalValues()
     // taken from the minimum and maximum normal X coordinates
     float generalMinimumNormalValue = 100000;
     float generalMaximumNormalValue = 0;
-    for (ModelHandler::Vertex meshVertex : this->meshVertices) {
+    for (ModelHandler::SceneVertexData meshVertex : this->meshVertices) {
         if (meshVertex.normal.x < generalMinimumNormalValue) {
             generalMinimumNormalValue = meshVertex.normal.x;
         }
@@ -155,21 +155,35 @@ void ModelHandler::Model::normalizeNormalValues()
         }
     }
 
-    for (ModelHandler::Vertex meshVertex : meshVertices) {
+    for (ModelHandler::SceneVertexData meshVertex : this->meshVertices) {
         meshVertex.normal.x = MathUtils::normalizeValueToRanges(meshVertex.normal.x, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
         meshVertex.normal.y = MathUtils::normalizeValueToRanges(meshVertex.normal.y, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
         meshVertex.normal.z = MathUtils::normalizeValueToRanges(meshVertex.normal.z, generalMinimumNormalValue, generalMaximumNormalValue, 0, 1);
     }
 }
 
-void ModelHandler::Model::populateShaderBufferComponents(VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
+void ModelHandler::Model::populateShaderBufferComponents(std::vector<ModelHandler::SceneVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
 {
-    Buffer::createDataBufferComponents(this->meshVertices.data(), (sizeof(this->meshVertices[0]) * this->meshVertices.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.vertexBuffer, this->shaderBufferComponents.vertexBufferMemory);
+    Buffer::createDataBufferComponents(vertexData.data(), (sizeof(vertexData[0]) * vertexData.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.vertexBuffer, this->shaderBufferComponents.vertexBufferMemory);
     Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
     shaderBufferComponents.indiceCount = static_cast<uint32_t>(this->meshIndices.size());
 }
 
-void ModelHandler::Model::cleanupModel(VkDevice vulkanLogicalDevice)
+void ModelHandler::Model::populateShaderBufferComponents(std::vector<ModelHandler::SceneNormalsVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
+{
+    Buffer::createDataBufferComponents(vertexData.data(), (sizeof(vertexData[0]) * vertexData.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.vertexBuffer, this->shaderBufferComponents.vertexBufferMemory);
+    Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
+    shaderBufferComponents.indiceCount = static_cast<uint32_t>(this->meshIndices.size());
+}
+
+void ModelHandler::Model::populateShaderBufferComponents(std::vector<ModelHandler::CubemapVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
+{
+    Buffer::createDataBufferComponents(vertexData.data(), (sizeof(vertexData[0]) * vertexData.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.vertexBuffer, this->shaderBufferComponents.vertexBufferMemory);
+    Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
+    shaderBufferComponents.indiceCount = static_cast<uint32_t>(this->meshIndices.size());
+}
+
+void ModelHandler::Model::cleanupModel(bool preserveTextureDetails, VkDevice vulkanLogicalDevice)
 {
     vkDestroyBuffer(vulkanLogicalDevice, this->shaderBufferComponents.vertexBuffer, nullptr);
     vkFreeMemory(vulkanLogicalDevice, this->shaderBufferComponents.vertexBufferMemory, nullptr);
@@ -177,7 +191,9 @@ void ModelHandler::Model::cleanupModel(VkDevice vulkanLogicalDevice)
     vkDestroyBuffer(vulkanLogicalDevice, this->shaderBufferComponents.indexBuffer, nullptr);
     vkFreeMemory(vulkanLogicalDevice, this->shaderBufferComponents.indexBufferMemory, nullptr);
 
-    this->textureDetails.cleanupTextureDetails(vulkanLogicalDevice);
+    if (preserveTextureDetails == false) {
+        this->textureDetails.cleanupTextureDetails(vulkanLogicalDevice);
+    }
 }
 
 void ModelHandler::populateVertexInputCreateInfo(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions, VkVertexInputBindingDescription *bindingDescription, VkPipelineVertexInputStateCreateInfo& vertexInputCreateInfo)

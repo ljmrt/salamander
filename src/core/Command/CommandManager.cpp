@@ -109,7 +109,7 @@ void CommandManager::populateRect2DInfo(VkExtent2D extent, VkRect2D& rect2DInfo)
     rect2DInfo.extent = extent;
 }
 
-void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkExtent2D swapchainImageExtent, VkFramebuffer swapchainIndexFramebuffer, size_t currentFrame, RendererDetails::PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, RendererDetails::PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, RendererDetails::PipelineComponents sceneNormalsPipelineComponents, VkRenderPass renderPass)
+void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::GraphicsRecordingPackage graphicsRecordingPackage)
 {
     VkCommandBufferBeginInfo commandBufferBeginInfo{};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -117,7 +117,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     commandBufferBeginInfo.flags = 0;
     commandBufferBeginInfo.pInheritanceInfo = nullptr;
 
-    uint32_t commandBufferBeginResult = vkBeginCommandBuffer(graphicsCommandBuffer, &commandBufferBeginInfo);  // will reset command buffer if already recorded.
+    uint32_t commandBufferBeginResult = vkBeginCommandBuffer(graphicsRecordingPackage.graphicsCommandBuffer, &commandBufferBeginInfo);  // will reset command buffer if already recorded.
     if (commandBufferBeginResult != VK_SUCCESS) {
         throwDebugException("Failed to begin recording graphics command buffer commands.");
     }
@@ -129,50 +129,53 @@ void CommandManager::recordGraphicsCommandBufferCommands(VkCommandBuffer graphic
     std::array<VkClearValue, 2> attachmentClearValues = {colorAttachmentClearValue, depthAttachmentClearValue};
     
     VkRenderPassBeginInfo renderPassBeginInfo{};
-    CommandManager::populateRenderPassBeginInfo(renderPass, swapchainIndexFramebuffer, swapchainImageExtent, static_cast<uint32_t>(attachmentClearValues.size()), attachmentClearValues.data(), renderPassBeginInfo);
+    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.renderPass, graphicsRecordingPackage.swapchainIndexFramebuffer, graphicsRecordingPackage.swapchainImageExtent, static_cast<uint32_t>(attachmentClearValues.size()), attachmentClearValues.data(), renderPassBeginInfo);
 
-    vkCmdBeginRenderPass(graphicsCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.
+    vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.
 
     // set our dynamic pipeline states.
     VkViewport dynamicViewport{};
-    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(swapchainImageExtent.width), static_cast<float>(swapchainImageExtent.height), 0.0f, 1.0f, dynamicViewport);
-    vkCmdSetViewport(graphicsCommandBuffer, 0, 1, &dynamicViewport);
+    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.swapchainImageExtent.width), static_cast<float>(graphicsRecordingPackage.swapchainImageExtent.height), 0.0f, 1.0f, dynamicViewport);
+    vkCmdSetViewport(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &dynamicViewport);
 
     VkRect2D dynamicScissor{};
-    CommandManager::populateRect2DInfo(swapchainImageExtent, dynamicScissor);
-    vkCmdSetScissor(graphicsCommandBuffer, 0, 1, &dynamicScissor);
+    CommandManager::populateRect2DInfo(graphicsRecordingPackage.swapchainImageExtent, dynamicScissor);
+    vkCmdSetScissor(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &dynamicScissor);
 
     VkDeviceSize offsets[] = {0};
 
     // TODO: draw after to prevent overdraw.
     // draw the cubemap.
-    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, &cubemapShaderBufferComponents.vertexBuffer, offsets);
-    vkCmdBindIndexBuffer(graphicsCommandBuffer, cubemapShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.cubemapShaderBufferComponents.vertexBuffer, offsets);
+    vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.cubemapShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-    vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cubemapPipelineComponents.pipelineLayout, 0, 1, &cubemapPipelineComponents.descriptorSets[currentFrame], 0, nullptr);
-    vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cubemapPipelineComponents.pipeline);
+    vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.cubemapPipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.cubemapPipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
+    vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.cubemapPipelineComponents.pipeline);
 
-    vkCmdDrawIndexed(graphicsCommandBuffer, cubemapShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
+    vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.cubemapShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
 
     // draw the scene.
-    vkCmdBindVertexBuffers(graphicsCommandBuffer, 0, 1, &sceneShaderBufferComponents.vertexBuffer, offsets);
-    vkCmdBindIndexBuffer(graphicsCommandBuffer, sceneShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.sceneShaderBufferComponents.vertexBuffer, offsets);
+    vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-    vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, scenePipelineComponents.pipelineLayout, 0, 1, &scenePipelineComponents.descriptorSets[currentFrame], 0, nullptr);
-    vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, scenePipelineComponents.pipeline);
+    vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.scenePipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.scenePipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
+    vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.scenePipelineComponents.pipeline);
 
-    vkCmdDrawIndexed(graphicsCommandBuffer, sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+    vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);
 
     // draw the scene normals.
-    vkCmdBindDescriptorSets(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneNormalsPipelineComponents.pipelineLayout, 0, 1, &sceneNormalsPipelineComponents.descriptorSets[currentFrame], 0, nullptr);
-    vkCmdBindPipeline(graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sceneNormalsPipelineComponents.pipeline);
-
-    vkCmdDrawIndexed(graphicsCommandBuffer, sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.sceneNormalsShaderBufferComponents.vertexBuffer, offsets);
+    vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneNormalsShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     
-    vkCmdEndRenderPass(graphicsCommandBuffer);
+    vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.sceneNormalsPipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.sceneNormalsPipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
+    vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.sceneNormalsPipelineComponents.pipeline);
+
+    vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+    
+    vkCmdEndRenderPass(graphicsRecordingPackage.graphicsCommandBuffer);
     
 
-    uint32_t recordBufferCommandsResult = vkEndCommandBuffer(graphicsCommandBuffer);
+    uint32_t recordBufferCommandsResult = vkEndCommandBuffer(graphicsRecordingPackage.graphicsCommandBuffer);
     if (recordBufferCommandsResult != VK_SUCCESS) {
         throwDebugException("Failed to end recording graphics command buffer commands.");
     }

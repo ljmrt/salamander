@@ -12,6 +12,24 @@
 
 namespace CommandManager
 {
+    struct GraphicsRecordingPackage {  // contains all necessary data for the "recordGraphicsCommandBufferCommands" function.
+        VkCommandBuffer graphicsCommandBuffer;
+        VkRenderPass renderPass;
+        
+        VkExtent2D swapchainImageExtent;
+        VkFramebuffer swapchainIndexFramebuffer;
+        
+        uint32_t currentFrame;
+        
+        RendererDetails::PipelineComponents cubemapPipelineComponents;
+        ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents;
+        RendererDetails::PipelineComponents scenePipelineComponents;
+        ModelHandler::ShaderBufferComponents sceneShaderBufferComponents;
+        RendererDetails::PipelineComponents sceneNormalsPipelineComponents;
+        ModelHandler::ShaderBufferComponents sceneNormalsShaderBufferComponents;
+    };
+    
+    
     // create a command pool for graphics command buffers.
     //
     // @param graphicsFamilyIndex index of the graphics queue family.
@@ -69,20 +87,10 @@ namespace CommandManager
     // @param rect2DInfo populated Rect2D info.
     void populateRect2DInfo(VkExtent2D extent, VkRect2D& rect2DInfo);
 
-    // TODO: explore options concerning packaging data for certain functions(to reduce their length).
     // record necessary drawing commands in a graphics command buffer.
     //
-    // @param graphicsCommandBuffer graphics command buffer to record in.
-    // @param swapchainImageExtent the swapchain image's extent to use in commands.
-    // @param swapchainIndexFramebuffer this image index's swapchain framebuffer.
-    // @param currentFrame the current renderer-drawing frame to use in commands.
-    // @param cubemapPipelineComponents components of the cubemap graphics pipeline.
-    // @param cubemapShaderBufferComponents vertex and index buffer used for the cubemap's model.
-    // @param scenePipelineComponents components of the scene graphics pipeline.
-    // @param sceneNormalsPipelineComponents components of the scene normals graphics pipeline.
-    // @param sceneShaderBufferComponents vertex and index buffer used for the scene's main model.
-    // @param renderPass the render pass to use in graphics operations.
-    void recordGraphicsCommandBufferCommands(VkCommandBuffer graphicsCommandBuffer, VkExtent2D swapchainImageExtent, VkFramebuffer swapchainIndexFramebuffer, size_t currentFrame, RendererDetails::PipelineComponents cubemapPipelineComponents, ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents, RendererDetails::PipelineComponents scenePipelineComponents, ModelHandler::ShaderBufferComponents sceneShaderBufferComponents, RendererDetails::PipelineComponents sceneNormalsPipelineComponents, VkRenderPass renderPass);
+    // @param graphicsRecordingPackage a package of all necessary data for this function.
+    void recordGraphicsCommandBufferCommands(CommandManager::GraphicsRecordingPackage graphicsRecordingPackage);
 }
 
 

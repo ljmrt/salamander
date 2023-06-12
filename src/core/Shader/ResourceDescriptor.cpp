@@ -17,75 +17,44 @@ void ResourceDescriptor::populateBindingDescription(uint32_t stride, VkVertexInp
     bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 }
 
+void ResourceDescriptor::populateVertexInputAttributeDescription(uint32_t location, uint32_t binding, VkFormat format, uint32_t offset, VkVertexInputAttributeDescription& vertexInputAttributeDescription)
+{
+    vertexInputAttributeDescription.location = location;
+    vertexInputAttributeDescription.binding = binding;
+    
+    vertexInputAttributeDescription.format = format;
+    vertexInputAttributeDescription.offset = offset;
+}
+
 void ResourceDescriptor::fetchCubemapAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
 {
-    // attribute formats use RGB for some reason.
     VkVertexInputAttributeDescription positionAttributeDescription{};
-    
-    positionAttributeDescription.binding = 0;
-    positionAttributeDescription.location = 0;
-    
-    positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
-
+    ResourceDescriptor::populateVertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelHandler::CubemapVertexData, position), positionAttributeDescription);
     
     attributeDescriptions = {positionAttributeDescription};
 }
 
 void ResourceDescriptor::fetchSceneAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
 {
-    // attribute formats use RGB for some reason.
     VkVertexInputAttributeDescription positionAttributeDescription{};
-    
-    positionAttributeDescription.binding = 0;
-    positionAttributeDescription.location = 0;
-    
-    positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
-
+    ResourceDescriptor::populateVertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelHandler::SceneVertexData, position), positionAttributeDescription);
 
     VkVertexInputAttributeDescription normalAttributeDescription{};
-
-    normalAttributeDescription.binding = 0;
-    normalAttributeDescription.location = 1;
-    
-    normalAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    normalAttributeDescription.offset = offsetof(ModelHandler::Vertex, normal);
-
+    ResourceDescriptor::populateVertexInputAttributeDescription(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelHandler::SceneVertexData, normal), normalAttributeDescription);
     
     VkVertexInputAttributeDescription UVCoordinatesAttributeDescription{};
-
-    UVCoordinatesAttributeDescription.binding = 0;
-    UVCoordinatesAttributeDescription.location = 2;
-    
-    UVCoordinatesAttributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
-    UVCoordinatesAttributeDescription.offset = offsetof(ModelHandler::Vertex, UVCoordinates);
-
+    ResourceDescriptor::populateVertexInputAttributeDescription(2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ModelHandler::SceneVertexData, UVCoordinates), UVCoordinatesAttributeDescription);
 
     attributeDescriptions = {positionAttributeDescription, normalAttributeDescription, UVCoordinatesAttributeDescription};
 }
 
 void ResourceDescriptor::fetchSceneNormalsAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
 {
-    // attribute formats use RGB for some reason.
-    // TODO: abstract VkVertexInputAttributeDescription population.
     VkVertexInputAttributeDescription positionAttributeDescription{};
-    
-    positionAttributeDescription.binding = 0;
-    positionAttributeDescription.location = 0;
-    
-    positionAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    positionAttributeDescription.offset = offsetof(ModelHandler::Vertex, position);
-
+    ResourceDescriptor::populateVertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelHandler::SceneNormalsVertexData, position), positionAttributeDescription);
 
     VkVertexInputAttributeDescription normalAttributeDescription{};
-
-    normalAttributeDescription.binding = 0;
-    normalAttributeDescription.location = 1;
-    
-    normalAttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-    normalAttributeDescription.offset = offsetof(ModelHandler::Vertex, normal);
-
+    ResourceDescriptor::populateVertexInputAttributeDescription(1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelHandler::SceneNormalsVertexData, normal), normalAttributeDescription);
     
     attributeDescriptions = {positionAttributeDescription, normalAttributeDescription};
 }
@@ -122,22 +91,30 @@ void ResourceDescriptor::populateDescriptorPoolSize(VkDescriptorType type, uint3
     descriptorPoolSize.descriptorCount = descriptorCount;
 }
 
-void ResourceDescriptor::createDescriptorPool(VkDevice vulkanLogicalDevice, VkDescriptorPool& descriptorPool)
+void ResourceDescriptor::createDescriptorPool(bool useCombinedSampler, VkDevice vulkanLogicalDevice, VkDescriptorPool& descriptorPool)
 {
+    VkDescriptorPoolSize descriptorPoolSizes[2];
+    uint32_t descriptorPoolSizeCount = -1;
+    
     VkDescriptorPoolSize uniformBufferPoolSize{};
     ResourceDescriptor::populateDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, uniformBufferPoolSize);
 
-    VkDescriptorPoolSize combinedSamplerPoolSize{};
-    ResourceDescriptor::populateDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, combinedSamplerPoolSize);
-    
-    std::array<VkDescriptorPoolSize, 2> descriptorPoolSizes = {uniformBufferPoolSize, combinedSamplerPoolSize};
+    descriptorPoolSizes[0] = uniformBufferPoolSize;
+    descriptorPoolSizeCount = 1;
+    if (useCombinedSampler == true) {
+        VkDescriptorPoolSize combinedSamplerPoolSize{};
+        ResourceDescriptor::populateDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, combinedSamplerPoolSize);
+
+        descriptorPoolSizes[1] = combinedSamplerPoolSize;
+        descriptorPoolSizeCount = 2;
+    }
     
     
     VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
     descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 
-    descriptorPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
-    descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
+    descriptorPoolCreateInfo.poolSizeCount = descriptorPoolSizeCount;
+    descriptorPoolCreateInfo.pPoolSizes = descriptorPoolSizes;
 
     descriptorPoolCreateInfo.maxSets = static_cast<uint32_t>(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
 

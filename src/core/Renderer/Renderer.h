@@ -58,6 +58,7 @@ namespace RendererDetails
 
         Camera::ArcballCamera m_mainCamera;  // the scene's main camera.
         ModelHandler::Model m_mainModel;  // the main loaded model.
+        ModelHandler::Model m_dummySceneNormalsModel;  // a "dummy" scene normals model used to populate the scene normals shader buffer components.
         ModelHandler::Model m_cubemapModel;  // the loaded model used for the cubemap.
     
 
