@@ -29,7 +29,7 @@ void Uniform::createUniformBuffers(VkDeviceSize uniformBufferObjectSize, DeviceH
     }
 }
 
-void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory)
+void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory, std::vector<void *>& mappedOffscreenUniformBuffersMemory)
 {
     Uniform::SceneUniformBufferObject sceneUniformBufferObject{};
 
@@ -83,4 +83,10 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     cubemapUniformBufferObject.viewMatrix = sceneUniformBufferObject.viewMatrix;
 
     memcpy(mappedCubemapUniformBuffersMemory[currentImage], &cubemapUniformBufferObject, sizeof(Uniform::CubemapUniformBufferObject));
+
+    Uniform::OffscreenUniformBufferObject offscreenUniformBufferObject{};
+
+    offscreenUniformBufferObject.modelViewProjectionMatrix = (sceneUniformBufferObject.modelMatrix * sceneUniformBufferObject.viewMatrix * sceneUniformBufferObject.projectionMatrix);
+    
+    memcpy(mappedOffscreenUniformBuffersMemory[currentImage], &offscreenUniformBufferObject, sizeof(Uniform::OffscreenUniformBufferObject));
 }

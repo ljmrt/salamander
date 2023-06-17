@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 
 #include <core/Renderer/Renderer.h>
+#include <core/Renderer/Offscreen.h>
 
 #include <vector>
 
@@ -27,6 +28,8 @@ namespace CommandManager
         ModelHandler::ShaderBufferComponents sceneShaderBufferComponents;
         RendererDetails::PipelineComponents sceneNormalsPipelineComponents;
         ModelHandler::ShaderBufferComponents sceneNormalsShaderBufferComponents;
+        Offscreen::OffscreenOperation offscreenOperation;
+        ModelHandler::ShaderBufferComponents offscreenShaderBufferComponents;
     };
     
     

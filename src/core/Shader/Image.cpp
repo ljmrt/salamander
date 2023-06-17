@@ -107,7 +107,7 @@ void Image::populateTextureDetails(std::string textureImageFilePath, bool isCube
         }
     }
     
-    textureDetails.textureImageDetails.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+    textureDetails.textureImageDetails.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;  // TODO: this format should be incorrect for data textures(normal maps, etc.), as they are generally created in linear space.
 
     VkDeviceSize textureImageSize = (textureDetails.textureImageDetails.imageWidth * textureDetails.textureImageDetails.imageHeight * 4);
     textureDetails.textureImageDetails.mipmapLevels = (isCubemap ? 1 : (static_cast<uint32_t>(std::floor(std::log2(std::max(textureDetails.textureImageDetails.imageWidth, textureDetails.textureImageDetails.imageHeight)))) + 1));  // get the correct amount of mipmap levels.
@@ -165,7 +165,7 @@ void Image::generateSwapchainImageDetails(DisplayManager::DisplayDetails& displa
     Image::populateImageDetails(displayDetails.swapchainImageExtent.width, displayDetails.swapchainImageExtent.height, 1, 1, displayDetails.msaaSampleCount, displayDetails.swapchainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, displayDetails.colorImageDetails);
     Image::createImageView(displayDetails.colorImageDetails.image, displayDetails.colorImageDetails.imageFormat, 1, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, displayDetails.colorImageDetails.imageView);
 
-    Depth::populateDepthImageDetails(displayDetails.swapchainImageExtent, displayDetails.msaaSampleCount, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, vulkanDevices, displayDetails.depthImageDetails);
+    Depth::populateDepthImageDetails(displayDetails.swapchainImageExtent, displayDetails.msaaSampleCount, (VkImageUsageFlagBits)(0), displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, vulkanDevices, displayDetails.depthImageDetails);
 }
 
 void Image::generateMipmapLevels(Image::ImageDetails& imageDetails, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)

@@ -22,6 +22,10 @@ glslc ../include/shaders/sceneNormals.frag -o sceneNormalsFragment.spv
 echo "../include/shaders/sceneNormals.vert --> sceneNormalsVertex.spv"
 echo "../include/shaders/sceneNormals.geom --> sceneNormalsGeometry.spv"
 echo "../include/shaders/sceneNormals.frag --> sceneNormalsFragment.spv"
+glslc ../include/shaders/offscreen.vert -o offscreenVertex.spv
+glslc ../include/shaders/offscreen.frag -o offscreenFragment.spv
+echo "../include/shaders/offscreen.vert --> offscreenVertex.spv"
+echo "../include/shaders/offscreen.frag --> offscreenFragment.spv"
 echo
 echo
 cmake -DCMAKE_BUILD_TYPE=Release .. &&

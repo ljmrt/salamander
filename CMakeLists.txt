@@ -46,6 +46,7 @@ add_executable(${PROJECT_NAME}
     ${PROJECT_SOURCE_DIR}/core/Logging/ErrorLogger.cpp
     ${PROJECT_SOURCE_DIR}/core/Logging/DebugMessenger.cpp
     ${PROJECT_SOURCE_DIR}/core/Renderer/Renderer.cpp
+    ${PROJECT_SOURCE_DIR}/core/Renderer/Offscreen.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/Shader.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/ResourceDescriptor.cpp
     ${PROJECT_SOURCE_DIR}/core/Shader/Uniform.cpp

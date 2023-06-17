@@ -40,6 +40,10 @@ namespace Uniform
         glm::mat4 normalMatrix;
     };
 
+    struct OffscreenUniformBufferObject {
+        glm::mat4 modelViewProjectionMatrix;
+    };
+
 
     // create multiple uniform buffers(one for each frame in flight).
     //
@@ -60,7 +64,8 @@ namespace Uniform
     // @param mappedSceneUniformBuffersMemory mapped scene uniform buffers memory.
     // @param mappedSceneNormalsUniformBuffersMemory mapped scene normals uniform buffers memory.
     // @param mappedCubemapUniformBuffersMemory mapped cubemap uniform buffers memory.
-    void updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory);
+    // @param mappedOffscreenUniformBuffersMemory mapped offscreen uniform buffers memory.
+    void updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory, std::vector<void *>& mappedOffscreenUniformBuffersMemory);
 }
 
 

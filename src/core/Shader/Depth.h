@@ -15,11 +15,12 @@ namespace Depth
     //
     // @param swapchainImageExtent swapchain image extent to use in depth component creation.
     // @param msaaSampleCount the amount of msaa samples.
+    // @param additionalImageUsage additional image usage to VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     // @param commandPool command pool to use in command buffer creation.
     // @param commandQueue queue to submit necessary commands on.
     // @param vulkanDevices Vulkan physical and logical device to use in depth component creation.
     // @param depthImageDetails populated depth image details.
-    void populateDepthImageDetails(VkExtent2D swapchainImageExtent, VkSampleCountFlagBits msaaSampleCount, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& depthImageDetails);
+    void populateDepthImageDetails(VkExtent2D swapchainImageExtent, VkSampleCountFlagBits msaaSampleCount, VkImageUsageFlagBits additionalImageUsage, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& depthImageDetails);
 
     // select a depth image format.
     //

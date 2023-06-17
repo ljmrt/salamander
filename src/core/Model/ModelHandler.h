@@ -19,6 +19,10 @@
 namespace ModelHandler
 {
     // different vertex data structs to populate the vertex buffer with, dependent on what pipeline is in use.
+    struct CubemapVertexData {
+        glm::vec3 position;
+    };
+    
     struct SceneVertexData {
         glm::vec3 position;
         glm::vec3 normal;
@@ -28,10 +32,6 @@ namespace ModelHandler
     struct SceneNormalsVertexData {
         glm::vec3 position;
         glm::vec3 normal;
-    };
-
-    struct CubemapVertexData {
-        glm::vec3 position;
     };
 
     struct ShaderBufferComponents {
@@ -108,6 +108,9 @@ namespace ModelHandler
     extern VkVertexInputBindingDescription preservedSceneBindingDescription;  // preserved scene binding description(pointer reasons).
     extern std::vector<VkVertexInputAttributeDescription> preservedSceneNormalsAttributeDescriptions;  // preserved scene normals attribute descriptions(pointer reasons).
     extern VkVertexInputBindingDescription preservedSceneNormalsBindingDescription;  // preserved scene normals binding description(pointer reasons).
+
+    extern std::vector<VkVertexInputAttributeDescription> preservedOffscreenAttributeDescriptions;
+    extern VkVertexInputBindingDescription preservedOffscreenBindingDescription;
 
     // populate a vertex input's create info.
     //

@@ -31,6 +31,9 @@ VkVertexInputBindingDescription ModelHandler::preservedSceneBindingDescription;
 std::vector<VkVertexInputAttributeDescription> ModelHandler::preservedSceneNormalsAttributeDescriptions;
 VkVertexInputBindingDescription ModelHandler::preservedSceneNormalsBindingDescription;
 
+std::vector<VkVertexInputAttributeDescription> ModelHandler::preservedOffscreenAttributeDescriptions;
+VkVertexInputBindingDescription ModelHandler::preservedOffscreenBindingDescription;
+
 void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPath)
 {
     this->absoluteModelDirectory = absoluteModelPath.substr(0, absoluteModelPath.find_last_of("/"));

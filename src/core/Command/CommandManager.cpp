@@ -128,7 +128,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
     VkClearValue depthAttachmentClearValue = {1.0f, 0};
     std::array<VkClearValue, 2> attachmentClearValues = {colorAttachmentClearValue, depthAttachmentClearValue};
     
-    VkRenderPassBeginInfo renderPassBeginInfo{};
+    VkRenderPassBeginInfo renderPassBeginInfo{};  // TODO: abstract this and run shadow mapping render pass.
     CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.renderPass, graphicsRecordingPackage.swapchainIndexFramebuffer, graphicsRecordingPackage.swapchainImageExtent, static_cast<uint32_t>(attachmentClearValues.size()), attachmentClearValues.data(), renderPassBeginInfo);
 
     vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.

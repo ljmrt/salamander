@@ -14,10 +14,10 @@
 #include <core/Logging/ErrorLogger.h>
 
 
-void Depth::populateDepthImageDetails(VkExtent2D swapchainImageExtent, VkSampleCountFlagBits msaaSampleCount, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& depthImageDetails)
+void Depth::populateDepthImageDetails(VkExtent2D swapchainImageExtent, VkSampleCountFlagBits msaaSampleCount, VkImageUsageFlagBits additionalImageUsage, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices, Image::ImageDetails& depthImageDetails)
 {
     Depth::selectDepthImageFormat(vulkanDevices.physicalDevice, depthImageDetails.imageFormat);
-    Image::populateImageDetails(swapchainImageExtent.width, swapchainImageExtent.height, 1, 1, msaaSampleCount, depthImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, depthImageDetails);
+    Image::populateImageDetails(swapchainImageExtent.width, swapchainImageExtent.height, 1, 1, msaaSampleCount, depthImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | additionalImageUsage), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, depthImageDetails);
     Image::createImageView(depthImageDetails.image, depthImageDetails.imageFormat, 1, 1, VK_IMAGE_ASPECT_DEPTH_BIT, vulkanDevices.logicalDevice, depthImageDetails.imageView);
 
     
