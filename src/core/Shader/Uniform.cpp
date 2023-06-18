@@ -31,6 +31,10 @@ void Uniform::createUniformBuffers(VkDeviceSize uniformBufferObjectSize, DeviceH
 
 void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory, std::vector<void *>& mappedOffscreenUniformBuffersMemory)
 {
+    const float nearPlane = 0.1f;
+    const float farPlane = 256.0f;
+    
+    
     Uniform::SceneUniformBufferObject sceneUniformBufferObject{};
 
     sceneUniformBufferObject.modelMatrix = glm::mat4(1.0f);  // glm::rotate(glm::mat4(1.0f), passedTime * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));  // rotate around the y-axis over time.
@@ -54,10 +58,13 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     sceneUniformBufferObject.viewMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -mainCamera.zoomAmount));
     sceneUniformBufferObject.viewMatrix *= glm::mat4_cast(rotationQuaternion);
 
-    sceneUniformBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), swapchainImageExtent.width / (float)(swapchainImageExtent.height), 0.1f, 256.0f);  // 45-degree vertical field-of-view.
+    sceneUniformBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), swapchainImageExtent.width / (float)(swapchainImageExtent.height), nearPlane, farPlane);
     sceneUniformBufferObject.projectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
 
     sceneUniformBufferObject.normalMatrix = glm::mat4(glm::mat3(glm::transpose(glm::inverse(sceneUniformBufferObject.modelMatrix))));
+
+    glm::mat4 lightViewMatrix = glm::lookAt(sceneUniformBufferObject.pointLightPosition, mainCamera.center, mainCamera.up);
+    sceneUniformBufferObject.lightSpaceMatrix = (sceneUniformBufferObject.projectionMatrix * lightViewMatrix * sceneUniformBufferObject.modelMatrix);
 
     sceneUniformBufferObject.viewingPosition = mainCamera.eye;
     sceneUniformBufferObject.ambientLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
@@ -84,9 +91,10 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
 
     memcpy(mappedCubemapUniformBuffersMemory[currentImage], &cubemapUniformBufferObject, sizeof(Uniform::CubemapUniformBufferObject));
 
+    
     Uniform::OffscreenUniformBufferObject offscreenUniformBufferObject{};
 
-    offscreenUniformBufferObject.modelViewProjectionMatrix = (sceneUniformBufferObject.modelMatrix * sceneUniformBufferObject.viewMatrix * sceneUniformBufferObject.projectionMatrix);
+    offscreenUniformBufferObject.lightMVPMatrix = (sceneUniformBufferObject.lightSpaceMatrix * sceneUniformBufferObject.modelMatrix);
     
     memcpy(mappedOffscreenUniformBuffersMemory[currentImage], &offscreenUniformBufferObject, sizeof(Uniform::OffscreenUniformBufferObject));
 }

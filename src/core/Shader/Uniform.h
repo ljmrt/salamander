@@ -25,6 +25,7 @@ namespace Uniform
         glm::mat4 viewMatrix;
         glm::mat4 modelMatrix;
         glm::mat4 normalMatrix;
+        glm::mat4 lightSpaceMatrix;
 
         glm::vec3 viewingPosition;
         // all (*)color vec4's are structered as [R, G, B, light intensity].
@@ -41,7 +42,7 @@ namespace Uniform
     };
 
     struct OffscreenUniformBufferObject {
-        glm::mat4 modelViewProjectionMatrix;
+        glm::mat4 lightMVPMatrix;
     };
 
 

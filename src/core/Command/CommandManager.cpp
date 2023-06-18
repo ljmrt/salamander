@@ -126,27 +126,58 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
     // attachment clear values are used in load operation clearing.
     VkClearValue colorAttachmentClearValue = {{{1.0f, 1.0f, 1.0f, 1.0f}}};  // clear to white.
     VkClearValue depthAttachmentClearValue = {1.0f, 0};
-    std::array<VkClearValue, 2> attachmentClearValues = {colorAttachmentClearValue, depthAttachmentClearValue};
-    
-    VkRenderPassBeginInfo renderPassBeginInfo{};  // TODO: abstract this and run shadow mapping render pass.
-    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.renderPass, graphicsRecordingPackage.swapchainIndexFramebuffer, graphicsRecordingPackage.swapchainImageExtent, static_cast<uint32_t>(attachmentClearValues.size()), attachmentClearValues.data(), renderPassBeginInfo);
+    std::array<VkClearValue, 1> offscreenAttachmentClearValues = {depthAttachmentClearValue};
+    std::array<VkClearValue, 2> mainAttachmentClearValues = {colorAttachmentClearValue, depthAttachmentClearValue};
 
-    vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.
+    
+    VkRenderPassBeginInfo offscreenRenderPassBeginInfo{};
+    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.offscreenOperation.renderPass, graphicsRecordingPackage.offscreenOperation.framebuffers[graphicsRecordingPackage.currentFrame], graphicsRecordingPackage.offscreenOperation.offscreenExtent, static_cast<uint32_t>(offscreenAttachmentClearValues.size()), offscreenAttachmentClearValues.data(), offscreenRenderPassBeginInfo);
+
+    vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &offscreenRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    // TODO: is this necessary for an offsceen operation?
+    // set our dynamic pipeline states.
+    VkViewport offscreenDynamicViewport{};
+    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.offscreenOperation.offscreenExtent.width), static_cast<float>(graphicsRecordingPackage.offscreenOperation.offscreenExtent.height), 0.0f, 1.0f, offscreenDynamicViewport);
+    vkCmdSetViewport(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &offscreenDynamicViewport);
+
+    VkRect2D offscreenDynamicScissor{};
+    CommandManager::populateRect2DInfo(graphicsRecordingPackage.offscreenOperation.offscreenExtent, offscreenDynamicScissor);
+    vkCmdSetScissor(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &offscreenDynamicScissor);
+
+    VkDeviceSize offscreenOffsets[] = {0};
+
+    // draw/populate the depth map.
+    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.offscreenShaderBufferComponents.vertexBuffer, offscreenOffsets);
+    vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+    vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.offscreenOperation.pipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.offscreenOperation.pipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
+    vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.offscreenOperation.pipelineComponents.pipeline);
+
+    vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.    
+
+    vkCmdEndRenderPass(graphicsRecordingPackage.graphicsCommandBuffer);
+    
+    
+    VkRenderPassBeginInfo mainRenderPassBeginInfo{};
+    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.renderPass, graphicsRecordingPackage.swapchainIndexFramebuffer, graphicsRecordingPackage.swapchainImageExtent, static_cast<uint32_t>(mainAttachmentClearValues.size()), mainAttachmentClearValues.data(), mainRenderPassBeginInfo);
+
+    vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &mainRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);  // embed render pass commands directly into the primary command buffer.
 
     // set our dynamic pipeline states.
-    VkViewport dynamicViewport{};
-    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.swapchainImageExtent.width), static_cast<float>(graphicsRecordingPackage.swapchainImageExtent.height), 0.0f, 1.0f, dynamicViewport);
-    vkCmdSetViewport(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &dynamicViewport);
+    VkViewport mainDynamicViewport{};
+    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.swapchainImageExtent.width), static_cast<float>(graphicsRecordingPackage.swapchainImageExtent.height), 0.0f, 1.0f, mainDynamicViewport);
+    vkCmdSetViewport(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &mainDynamicViewport);
 
-    VkRect2D dynamicScissor{};
-    CommandManager::populateRect2DInfo(graphicsRecordingPackage.swapchainImageExtent, dynamicScissor);
-    vkCmdSetScissor(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &dynamicScissor);
+    VkRect2D mainDynamicScissor{};
+    CommandManager::populateRect2DInfo(graphicsRecordingPackage.swapchainImageExtent, mainDynamicScissor);
+    vkCmdSetScissor(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &mainDynamicScissor);
 
-    VkDeviceSize offsets[] = {0};
+    VkDeviceSize mainOffsets[] = {0};
 
     // TODO: draw after to prevent overdraw.
     // draw the cubemap.
-    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.cubemapShaderBufferComponents.vertexBuffer, offsets);
+    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.cubemapShaderBufferComponents.vertexBuffer, mainOffsets);
     vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.cubemapShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.cubemapPipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.cubemapPipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
@@ -155,7 +186,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
     vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.cubemapShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
 
     // draw the scene.
-    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.sceneShaderBufferComponents.vertexBuffer, offsets);
+    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.sceneShaderBufferComponents.vertexBuffer, mainOffsets);
     vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.scenePipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.scenePipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
@@ -164,7 +195,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
     vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);
 
     // draw the scene normals.
-    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.sceneNormalsShaderBufferComponents.vertexBuffer, offsets);
+    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.sceneNormalsShaderBufferComponents.vertexBuffer, mainOffsets);
     vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneNormalsShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     
     vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.sceneNormalsPipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.sceneNormalsPipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);

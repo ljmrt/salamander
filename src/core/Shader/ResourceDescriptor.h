@@ -65,10 +65,10 @@ namespace ResourceDescriptor
 
     // create descriptor pool.
     //
-    // @param useCombinedSampler if the descriptor pool will be used for descriptor sets with combined samplers.
+    // @param combinedSamplerCount the amount of combined samplers that will be allocated in the pool.
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor pool creation.
     // @param descriptorPool created descriptor pool.
-    void createDescriptorPool(bool useCombinedSampler, VkDevice vulkanLogicalDevice, VkDescriptorPool& descriptorPool);
+    void createDescriptorPool(uint32_t combinedSamplerCount, VkDevice vulkanLogicalDevice, VkDescriptorPool& descriptorPool);
 
     // create descriptor sets.
     //
@@ -77,16 +77,17 @@ namespace ResourceDescriptor
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor sets creation.
     // @param descriptorSets created descriptorSets.
     void createDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
-    
+
+    // TODO: find a easier/less complicated way of specifying descriptor set data(combined samplers, etc.).
     // populate descriptor sets.
     //
     // @param uniformBuffers uniform buffers to populate the descriptor sets with.
-    // @param textureImageView the main texture's image view to use in descriptor sets population.
-    // @param combinedSampler the main texture's sampler to use in descriptor sets population.
-    // @param combinedSamplerProvided if a combined sampler is provided.
+    // @param textureImageViews image views to use in descriptor sets population.
+    // @param combinedSamplers samplers to use in descriptor sets population.
+    // @param combinedSamplerCount the amount of combinded samplers that were provided.
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor sets population.
     // @param descriptorSets populated descriptor sets.
-    void populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageView, VkSampler combinedSampler, bool combinedSamplerProvided, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
+    void populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageViews[], VkSampler combinedSamplers[], uint32_t combinedSamplerCount, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
 }
 
 

@@ -842,10 +842,13 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     VkDescriptorSetLayoutBinding sceneUniformBufferLayoutBinding{};
     ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), sceneUniformBufferLayoutBinding);
     
-    VkDescriptorSetLayoutBinding sceneCombinedSamplerLayoutBinding{};
+    VkDescriptorSetLayoutBinding sceneCombinedSamplerLayoutBinding{};  // main model albedo texture sampler.
     ResourceDescriptor::populateDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, sceneCombinedSamplerLayoutBinding);
 
-    std::vector<VkDescriptorSetLayoutBinding> sceneDescriptorSetLayoutBindings = {sceneUniformBufferLayoutBinding, sceneCombinedSamplerLayoutBinding};
+    VkDescriptorSetLayoutBinding sceneCombinedSampler2LayoutBinding{};  // shadow map sampler.
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, sceneCombinedSampler2LayoutBinding);
+
+    std::vector<VkDescriptorSetLayoutBinding> sceneDescriptorSetLayoutBindings = {sceneUniformBufferLayoutBinding, sceneCombinedSamplerLayoutBinding, sceneCombinedSampler2LayoutBinding};
     ResourceDescriptor::createDescriptorSetLayout(sceneDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSetLayout);
     
     createMemberScenePipeline(displayDetails.msaaSampleCount);
@@ -910,24 +913,32 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     Image::populateTextureDetails((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapModel.textureDetails);
 
     Uniform::createUniformBuffers(sizeof(Uniform::SceneUniformBufferObject), temporaryVulkanDevices, m_scenePipelineComponents.uniformBuffers, m_scenePipelineComponents.uniformBuffersMemory, m_scenePipelineComponents.mappedUniformBuffersMemory);
-    ResourceDescriptor::createDescriptorPool(true, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorPool(2, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_scenePipelineComponents.descriptorSetLayout, m_scenePipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_scenePipelineComponents.uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureSampler, true, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
+    VkImageView sceneDescriptorSetsImageViews[2] = {m_mainModel.textureDetails.textureImageDetails.imageView, m_offscreenOperation.depthTextureDetails.textureImageDetails.imageView};
+    VkSampler sceneDescriptorSetsSamplers[2] = {m_mainModel.textureDetails.textureSampler, m_offscreenOperation.depthTextureDetails.textureSampler};
+    ResourceDescriptor::populateDescriptorSets(m_scenePipelineComponents.uniformBuffers, sceneDescriptorSetsImageViews, sceneDescriptorSetsSamplers, 2, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
 
     Uniform::createUniformBuffers(sizeof(Uniform::SceneNormalsUniformBufferObject), temporaryVulkanDevices, m_sceneNormalsPipelineComponents.uniformBuffers, m_sceneNormalsPipelineComponents.uniformBuffersMemory, m_sceneNormalsPipelineComponents.mappedUniformBuffersMemory);
-    ResourceDescriptor::createDescriptorPool(false, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorPool(0, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_sceneNormalsPipelineComponents.descriptorSetLayout, m_sceneNormalsPipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_sceneNormalsPipelineComponents.uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, {0}, false, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorSets);
+    VkImageView sceneNormalsDescriptorSetsImageViews[1] = {0};
+    VkSampler sceneNormalsDescriptorSetsSamplers[1] = {0};
+    ResourceDescriptor::populateDescriptorSets(m_sceneNormalsPipelineComponents.uniformBuffers, sceneNormalsDescriptorSetsImageViews, sceneNormalsDescriptorSetsSamplers, 0, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorSets);
 
     Uniform::createUniformBuffers(sizeof(Uniform::CubemapUniformBufferObject), temporaryVulkanDevices, m_cubemapPipelineComponents.uniformBuffers, m_cubemapPipelineComponents.uniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory);
-    ResourceDescriptor::createDescriptorPool(true, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorPool(1, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_cubemapPipelineComponents.descriptorSetLayout, m_cubemapPipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_cubemapPipelineComponents.uniformBuffers, m_cubemapModel.textureDetails.textureImageDetails.imageView, m_cubemapModel.textureDetails.textureSampler, true, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
+    VkImageView cubemapDescriptorSetsImageViews[1] = {m_cubemapModel.textureDetails.textureImageDetails.imageView};
+    VkSampler cubemapDescriptorSetsSamplers[1] = {m_cubemapModel.textureDetails.textureSampler};
+    ResourceDescriptor::populateDescriptorSets(m_cubemapPipelineComponents.uniformBuffers, cubemapDescriptorSetsImageViews, cubemapDescriptorSetsSamplers, 1, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
 
     Uniform::createUniformBuffers(sizeof(Uniform::OffscreenUniformBufferObject), temporaryVulkanDevices, m_offscreenOperation.pipelineComponents.uniformBuffers, m_offscreenOperation.pipelineComponents.uniformBuffersMemory, m_offscreenOperation.pipelineComponents.mappedUniformBuffersMemory);
-    ResourceDescriptor::createDescriptorPool(false, *m_vulkanLogicalDevice, m_offscreenOperation.pipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorPool(0, *m_vulkanLogicalDevice, m_offscreenOperation.pipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_offscreenOperation.pipelineComponents.descriptorSetLayout, m_offscreenOperation.pipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_offscreenOperation.pipelineComponents.descriptorSets);
-    ResourceDescriptor::populateDescriptorSets(m_offscreenOperation.pipelineComponents.uniformBuffers, m_mainModel.textureDetails.textureImageDetails.imageView, {0}, false, *m_vulkanLogicalDevice, m_offscreenOperation.pipelineComponents.descriptorSets);
+    VkImageView offscreenDescriptorSetsImageViews[1] = {0};
+    VkSampler offscreenDescriptorSetsSamplers[1] = {0};
+    ResourceDescriptor::populateDescriptorSets(m_offscreenOperation.pipelineComponents.uniformBuffers, offscreenDescriptorSetsImageViews, offscreenDescriptorSetsSamplers, 0, *m_vulkanLogicalDevice, m_offscreenOperation.pipelineComponents.descriptorSets);
 
     CommandManager::allocateChildCommandBuffers(displayDetails.graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, displayDetails.graphicsCommandBuffers);
 

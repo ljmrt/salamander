@@ -17,8 +17,9 @@ namespace Offscreen
     struct OffscreenOperation {  // currently used for shadow mapping.
         VkExtent2D offscreenExtent;
         std::vector<VkFramebuffer> framebuffers;  // multiple frames-in-flight.
-        
-        Image::ImageDetails depthImageDetails;  // framebuffer depth attachment.
+
+        // TODO: transition image layout of the offscreen framebuffer depth attachment from VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+        Image::TextureDetails depthTextureDetails;  // framebuffer depth attachment.
 
         RendererDetails::PipelineComponents pipelineComponents;
         VkRenderPass renderPass;

@@ -17,7 +17,8 @@ void Offscreen::OffscreenOperation::generateMemberComponents(int32_t offscreenWi
     this->offscreenExtent.height = offscreenHeight;
 
     
-    Depth::populateDepthImageDetails(this->offscreenExtent, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, graphicsCommandPool, graphicsQueue, vulkanDevices, this->depthImageDetails);
+    Depth::populateDepthImageDetails(this->offscreenExtent, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, graphicsCommandPool, graphicsQueue, vulkanDevices, this->depthTextureDetails.textureImageDetails);
+    Image::createTextureSampler(vulkanDevices, 1, this->depthTextureDetails.textureSampler);
 
 
     createSpecializedRenderPass(vulkanDevices, this->renderPass);
@@ -27,7 +28,7 @@ void Offscreen::OffscreenOperation::generateMemberComponents(int32_t offscreenWi
     // similar to SwapchainHandler::createSwapchainFramebuffers.
     this->framebuffers.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
     for (size_t i = 0; i < framebuffers.size(); i += 1) {
-        std::array<VkImageView, 1> framebufferAttachments = {this->depthImageDetails.imageView};
+        std::array<VkImageView, 1> framebufferAttachments = {this->depthTextureDetails.textureImageDetails.imageView};
 
         VkFramebufferCreateInfo framebufferCreateInfo{};
         SwapchainHandler::populateFramebufferCreateInfo(this->renderPass, framebufferAttachments.data(), static_cast<uint32_t>(framebufferAttachments.size()), this->offscreenExtent.width, this->offscreenExtent.height, framebufferCreateInfo);
@@ -44,7 +45,7 @@ void Offscreen::OffscreenOperation::cleanupOffscreenOperation(VkDevice vulkanLog
         vkDestroyFramebuffer(vulkanLogicalDevice, framebuffer, nullptr);
     }
 
-    this->depthImageDetails.cleanupImageDetails(vulkanLogicalDevice);
+    this->depthTextureDetails.cleanupTextureDetails(vulkanLogicalDevice);
     
     this->pipelineComponents.cleanupPipelineComponents(vulkanLogicalDevice);
 
