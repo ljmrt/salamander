@@ -164,7 +164,7 @@ void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBu
             descriptorImageInfo.sampler = combinedSamplers[0];
 
             if (combinedSamplerCount == 2) {
-                additionalDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                additionalDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;  // this depth attachment is used as a depth attachment(writing) and a shader-accessible image(reading).
                 additionalDescriptorImageInfo.imageView = textureImageViews[1];
 
                 additionalDescriptorImageInfo.sampler = combinedSamplers[1];

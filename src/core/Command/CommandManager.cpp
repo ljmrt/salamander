@@ -154,7 +154,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
     vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.offscreenOperation.pipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.offscreenOperation.pipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
     vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.offscreenOperation.pipelineComponents.pipeline);
 
-    vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.    
+    vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
 
     vkCmdEndRenderPass(graphicsRecordingPackage.graphicsCommandBuffer);
     

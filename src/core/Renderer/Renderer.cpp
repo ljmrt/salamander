@@ -83,8 +83,11 @@ void RendererDetails::populateDepthAttachmentComponents(VkSampleCountFlagBits ms
     depthAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
     depthAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;  // we have no need for the previous depth buffer's contents.
-    depthAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
+    if (storeOp == VK_ATTACHMENT_STORE_OP_STORE) {  // the attachment will be read later.
+        depthAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;  // allows use as a depth attachment(writing) and shader-accessible image(reading, through a combined sampler).
+    } else {
+        depthAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    }
 
     depthAttachmentReference.attachment = attachment;
     depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -162,20 +165,33 @@ void RendererDetails::createOffscreenRenderPass(DeviceHandler::VulkanDevices vul
     subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
 
     
-    VkSubpassDependency subpassDependency{};
+    VkSubpassDependency depthAttachmentSubpassDependency{};
     
-    subpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    subpassDependency.dstSubpass = 0;
+    depthAttachmentSubpassDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    depthAttachmentSubpassDependency.dstSubpass = 0;
 
     // operations to wait on/operations that should wait.
-    subpassDependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    subpassDependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    depthAttachmentSubpassDependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    depthAttachmentSubpassDependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     
-    subpassDependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    subpassDependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    depthAttachmentSubpassDependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    depthAttachmentSubpassDependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+    // ensure depth stencil attachment is wrote before it is read.
+    VkSubpassDependency shaderReadSubpassDependency{};
+
+    shaderReadSubpassDependency.srcSubpass = 0;
+    shaderReadSubpassDependency.dstSubpass = VK_SUBPASS_EXTERNAL;
+
+    shaderReadSubpassDependency.srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    shaderReadSubpassDependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    
+    shaderReadSubpassDependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    shaderReadSubpassDependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
 
     std::array<VkAttachmentDescription, 1> attachmentDescriptions = {depthAttachmentDescription};
+    std::array<VkSubpassDependency, 2> subpassDependencies = {depthAttachmentSubpassDependency, shaderReadSubpassDependency};
     
     VkRenderPassCreateInfo renderPassCreateInfo{};
     renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -186,8 +202,8 @@ void RendererDetails::createOffscreenRenderPass(DeviceHandler::VulkanDevices vul
     renderPassCreateInfo.subpassCount = 1;
     renderPassCreateInfo.pSubpasses = &subpassDescription;
 
-    renderPassCreateInfo.dependencyCount = 1;
-    renderPassCreateInfo.pDependencies = &subpassDependency;
+    renderPassCreateInfo.dependencyCount = static_cast<uint32_t>(subpassDependencies.size());
+    renderPassCreateInfo.pDependencies = subpassDependencies.data();
 
     
     size_t renderPassCreationResult = vkCreateRenderPass(vulkanDevices.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass);
