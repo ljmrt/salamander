@@ -8,9 +8,11 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 lightSpaceMatrix;
 
     vec3 viewingPosition;
+    
     vec4 ambientLightColor;
-    vec3 pointLightPosition;
-    vec4 pointLightColor;
+
+    vec4 mainLightProperties;
+    vec4 mainLightColor;
 } uniformBufferObject;
 
 // TODO: can we make this a struct(VS_IN)?

@@ -63,13 +63,18 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
 
     sceneUniformBufferObject.normalMatrix = glm::mat4(glm::mat3(glm::transpose(glm::inverse(sceneUniformBufferObject.modelMatrix))));
 
-    glm::mat4 lightViewMatrix = glm::lookAt(sceneUniformBufferObject.pointLightPosition, mainCamera.center, mainCamera.up);
-    sceneUniformBufferObject.lightSpaceMatrix = (sceneUniformBufferObject.projectionMatrix * lightViewMatrix * sceneUniformBufferObject.modelMatrix);
+    sceneUniformBufferObject.mainLightProperties = glm::vec4(-2.0f, 0.0f, -1.0f, 0.0f);
+    sceneUniformBufferObject.mainLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.75f);
+    
+    glm::mat4 lightViewMatrix = glm::lookAt(glm::vec3(sceneUniformBufferObject.mainLightProperties), mainCamera.center, mainCamera.up);
+    
+    glm::mat4 lightProjectionMatrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, nearPlane, farPlane);  // we are using a directional light.
+    lightProjectionMatrix = sceneUniformBufferObject.projectionMatrix;
+    sceneUniformBufferObject.lightSpaceMatrix = (lightProjectionMatrix * lightViewMatrix * sceneUniformBufferObject.modelMatrix);
 
     sceneUniformBufferObject.viewingPosition = mainCamera.eye;
+    
     sceneUniformBufferObject.ambientLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
-    sceneUniformBufferObject.pointLightPosition = glm::vec3(0.0f, 0.0f, -1.0f);  // this is in world space.
-    sceneUniformBufferObject.pointLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.25f);
     
     memcpy(mappedSceneUniformBuffersMemory[currentImage], &sceneUniformBufferObject, sizeof(Uniform::SceneUniformBufferObject));
 
@@ -94,7 +99,7 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     
     Uniform::OffscreenUniformBufferObject offscreenUniformBufferObject{};
 
-    offscreenUniformBufferObject.lightMVPMatrix = (sceneUniformBufferObject.lightSpaceMatrix * sceneUniformBufferObject.modelMatrix);
+    offscreenUniformBufferObject.lightSpaceMatrix = sceneUniformBufferObject.lightSpaceMatrix;
     
     memcpy(mappedOffscreenUniformBuffersMemory[currentImage], &offscreenUniformBufferObject, sizeof(Uniform::OffscreenUniformBufferObject));
 }

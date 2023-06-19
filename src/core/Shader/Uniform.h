@@ -28,10 +28,13 @@ namespace Uniform
         glm::mat4 lightSpaceMatrix;
 
         glm::vec3 viewingPosition;
+        
         // all (*)color vec4's are structered as [R, G, B, light intensity].
         alignas(16) glm::vec4 ambientLightColor;
-        glm::vec3 pointLightPosition;
-        alignas(16) glm::vec4 pointLightColor;
+
+        // TODO: implement a spotlight light-caster.
+        glm::vec4 mainLightProperties;  // used as a direction/position distinguished by the w-component(should be 0.0 if the light is directional, 1.0 if the light is a point light.
+        alignas(16) glm::vec4 mainLightColor;
     };
 
     struct SceneNormalsUniformBufferObject {
@@ -42,7 +45,7 @@ namespace Uniform
     };
 
     struct OffscreenUniformBufferObject {
-        glm::mat4 lightMVPMatrix;
+        glm::mat4 lightSpaceMatrix;
     };
 
 

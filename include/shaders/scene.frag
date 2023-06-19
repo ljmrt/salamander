@@ -8,9 +8,11 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 lightSpaceMatrix;
 
     vec3 viewingPosition;
+    
     vec4 ambientLightColor;
-    vec3 pointLightPosition;
-    vec4 pointLightColor;
+
+    vec4 mainLightProperties;
+    vec4 mainLightColor;
 } uniformBufferObject;
 
 layout(binding = 1) uniform sampler2D textureSampler;
@@ -29,23 +31,27 @@ void main()
 {
     vec3 ambientLighting = (uniformBufferObject.ambientLightColor.xyz * uniformBufferObject.ambientLightColor.w);
 
-    vec3 pointLightRayDirection = (uniformBufferObject.pointLightPosition - vsOut.fragmentPositionWorldSpace);
-    float attenuation = (1.0 / dot(pointLightRayDirection, pointLightRayDirection));
-    pointLightRayDirection = normalize(pointLightRayDirection);
+    vec3 mainLightRayDirection = (uniformBufferObject.mainLightProperties.xyz - vsOut.fragmentPositionWorldSpace);  // this is a directional light, right?
+
+    float attenuation = (1.0 / dot(mainLightRayDirection, mainLightRayDirection));
+
+    attenuation = (uniformBufferObject.mainLightProperties.w == 0.0 ? 1 : attenuation);  // selectively disable attenuation(based on directional or positional properties). TODO: is this branching?
+
+    mainLightRayDirection = normalize(mainLightRayDirection);
     
-    vec3 unpackedPointLightColor = (uniformBufferObject.pointLightColor.xyz * uniformBufferObject.pointLightColor.w * attenuation);
-    float diffuseLightValue = max(dot(normalize(vsOut.fragmentNormalWorldSpace), pointLightRayDirection), 0.0);  // we want to avoid negative values.
-    vec3 diffuseLighting = (unpackedPointLightColor * diffuseLightValue);
+    vec3 unpackedMainLightColor = (uniformBufferObject.mainLightColor.xyz * uniformBufferObject.mainLightColor.w * attenuation);
+    float diffuseLightValue = max(dot(normalize(vsOut.fragmentNormalWorldSpace), mainLightRayDirection), 0.0);  // we want to avoid negative values.
+    vec3 diffuseLighting = (unpackedMainLightColor * diffuseLightValue);
 
     float shininessValue = 16;
-    float specularExponent = 1;
+    float specularExponent = 8;
     
     vec3 viewingDirection = normalize(uniformBufferObject.viewingPosition - vsOut.fragmentPositionWorldSpace);
-    vec3 reflectionDirection = reflect(pointLightRayDirection, vsOut.fragmentNormalWorldSpace);
-    vec3 halfwayDirection = normalize(pointLightRayDirection + viewingDirection);
+    vec3 reflectionDirection = reflect(mainLightRayDirection, vsOut.fragmentNormalWorldSpace);
+    vec3 halfwayDirection = normalize(mainLightRayDirection + viewingDirection);
     float specularComponent = pow(max(dot(vsOut.fragmentNormalWorldSpace, halfwayDirection), 0.0), shininessValue);
     
-    vec3 specularLighting = specularExponent * specularComponent * unpackedPointLightColor;
+    vec3 specularLighting = specularExponent * specularComponent * unpackedMainLightColor;
 
     vec3 projectedCoordinates = (vsOut.fragmentPositionLightSpace.xyz / vsOut.fragmentPositionLightSpace.w);
     projectedCoordinates = ((projectedCoordinates * 0.5) + 0.5);  // transform coordinates from -1..1 to 0..1.
