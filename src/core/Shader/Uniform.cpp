@@ -14,6 +14,7 @@
 #include <vector>
 #include <cstring>
 #include <algorithm>
+#include <math.h>
 
 
 void Uniform::createUniformBuffers(VkDeviceSize uniformBufferObjectSize, DeviceHandler::VulkanDevices vulkanDevices, std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void *>& mappedUniformBuffersMemory)
@@ -58,19 +59,30 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     sceneUniformBufferObject.viewMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -mainCamera.zoomAmount));
     sceneUniformBufferObject.viewMatrix *= glm::mat4_cast(rotationQuaternion);
 
-    sceneUniformBufferObject.projectionMatrix = glm::perspective(glm::radians(45.0f), swapchainImageExtent.width / (float)(swapchainImageExtent.height), nearPlane, farPlane);
+    float aspectRatio = (swapchainImageExtent.width / (float)(swapchainImageExtent.height));
+
+    float cameraFOV = 45.0f;  // TODO: add this as a camera struct member variable.
+    sceneUniformBufferObject.projectionMatrix = glm::perspective(glm::radians(cameraFOV), aspectRatio, nearPlane, farPlane);
     sceneUniformBufferObject.projectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
 
     sceneUniformBufferObject.normalMatrix = glm::mat4(glm::mat3(glm::transpose(glm::inverse(sceneUniformBufferObject.modelMatrix))));
 
-    sceneUniformBufferObject.mainLightProperties = glm::vec4(-2.0f, 0.0f, -1.0f, 0.0f);
-    sceneUniformBufferObject.mainLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.75f);
+    sceneUniformBufferObject.mainLightProperties = glm::vec4(2.0f, 2.0f, 5.0f, 0.0f);
+    sceneUniformBufferObject.mainLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.55f);
+
+    // TODO: light matrices do not need to be updated every frame.
+    // TODO: proper variable names.
+    float sizePerDepth = (atan(glm::radians(cameraFOV / 2.0f) * 2.0f));
+    float distance = glm::length(glm::vec3(0, 0, 0) - mainCamera.eye);
+    float sizeX = (sizePerDepth * distance);
+    float sizeY = (sizePerDepth * distance * aspectRatio);
+    
+    glm::mat4 lightProjectionMatrix = glm::ortho(-sizeX, sizeX, -sizeY, sizeY, 0.0f, (2.0f * distance));
+    lightProjectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
     
     glm::mat4 lightViewMatrix = glm::lookAt(glm::vec3(sceneUniformBufferObject.mainLightProperties), mainCamera.center, mainCamera.up);
     
-    glm::mat4 lightProjectionMatrix = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, nearPlane, farPlane);  // we are using a directional light.
-    lightProjectionMatrix = sceneUniformBufferObject.projectionMatrix;
-    sceneUniformBufferObject.lightSpaceMatrix = (lightProjectionMatrix * lightViewMatrix * sceneUniformBufferObject.modelMatrix);
+    sceneUniformBufferObject.lightSpaceMatrix = (lightProjectionMatrix * lightViewMatrix);
 
     sceneUniformBufferObject.viewingPosition = mainCamera.eye;
     
@@ -100,6 +112,7 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     Uniform::OffscreenUniformBufferObject offscreenUniformBufferObject{};
 
     offscreenUniformBufferObject.lightSpaceMatrix = sceneUniformBufferObject.lightSpaceMatrix;
+    offscreenUniformBufferObject.modelMatrix = sceneUniformBufferObject.modelMatrix;
     
     memcpy(mappedOffscreenUniformBuffersMemory[currentImage], &offscreenUniformBufferObject, sizeof(Uniform::OffscreenUniformBufferObject));
 }

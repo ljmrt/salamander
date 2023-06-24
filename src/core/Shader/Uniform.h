@@ -46,6 +46,7 @@ namespace Uniform
 
     struct OffscreenUniformBufferObject {
         glm::mat4 lightSpaceMatrix;
+        glm::mat4 modelMatrix;
     };
 
 

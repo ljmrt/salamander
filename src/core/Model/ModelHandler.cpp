@@ -49,7 +49,7 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         std::cout << loaderErrors << std::endl;
         throwDebugException("Failed to load model/parse glTF.");
     }
-
+    
     for (tinygltf::Primitive meshPrimitive : loadedModel.meshes[0].primitives) {  // TODO: dynamic mesh selection.
         const tinygltf::Accessor& positionAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["POSITION"]];
         const tinygltf::BufferView& positionAttributeBufferView = loadedModel.bufferViews[positionAttributeAccessor.bufferView];
@@ -76,6 +76,7 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         const tinygltf::Buffer& UVCoordinateAttributeBuffer = loadedModel.buffers[UVCoordinateAttributeBufferView.buffer];
         
         if ((UVCoordinateAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && UVCoordinateAttributeAccessor.type == TINYGLTF_TYPE_VEC2) == false) {
+            std::cout << UVCoordinateAttributeAccessor.componentType << " : " << UVCoordinateAttributeAccessor.type << std::endl;
             throwDebugException("Model vertices UV coordinate data is in an incorrect component type or type.");
         }
         const float *UVCoordinateAttributes = reinterpret_cast<const float *>(&UVCoordinateAttributeBuffer.data[UVCoordinateAttributeBufferView.byteOffset + UVCoordinateAttributeAccessor.byteOffset]);
@@ -119,22 +120,24 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         this->meshVertices.insert(this->meshVertices.end(), primitiveVertices.begin(), primitiveVertices.end());
         
 
-        const tinygltf::Accessor& indicesAccessor = loadedModel.accessors[meshPrimitive.indices];
-        const tinygltf::BufferView& indicesBufferView = loadedModel.bufferViews[indicesAccessor.bufferView];
-        const tinygltf::Buffer& indicesBuffer = loadedModel.buffers[indicesBufferView.buffer];
+        if (meshPrimitive.indices != -1) {  // -1 indicates that there is no indices.
+            const tinygltf::Accessor& indicesAccessor = loadedModel.accessors[meshPrimitive.indices];
+            const tinygltf::BufferView& indicesBufferView = loadedModel.bufferViews[indicesAccessor.bufferView];
+            const tinygltf::Buffer& indicesBuffer = loadedModel.buffers[indicesBufferView.buffer];
 
-        if ((indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT && indicesAccessor.type == TINYGLTF_TYPE_SCALAR) == false) {
-            throwDebugException("Model indices data is in an incorrect component type or type.");
+            if ((indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT && indicesAccessor.type == TINYGLTF_TYPE_SCALAR) == false) {
+                throwDebugException("Model indices data is in an incorrect component type or type.");
+            }
+            const uint16_t *indices = reinterpret_cast<const uint16_t *>(&indicesBuffer.data[indicesBufferView.byteOffset + indicesAccessor.byteOffset]);
+            std::vector<uint32_t> primitiveIndices(indices, (indices + indicesAccessor.count));
+
+            this->meshIndices.insert(this->meshIndices.end(), primitiveIndices.begin(), primitiveIndices.end());
         }
-        const uint16_t *indices = reinterpret_cast<const uint16_t *>(&indicesBuffer.data[indicesBufferView.byteOffset + indicesAccessor.byteOffset]);
-        std::vector<uint32_t> primitiveIndices(indices, (indices + indicesAccessor.count));
-
-        this->meshIndices.insert(this->meshIndices.end(), primitiveIndices.begin(), primitiveIndices.end());
 
 
         const tinygltf::Material modelMaterial = loadedModel.materials[0];
         const tinygltf::TextureInfo baseColorTextureInfo = modelMaterial.pbrMetallicRoughness.baseColorTexture;
-        if (baseColorTextureInfo.index != -1) {
+        if (baseColorTextureInfo.index != -1) {  // -1 indicates there is no base color texture.
             const tinygltf::Texture baseColorTexture = loadedModel.textures[baseColorTextureInfo.index];
             const tinygltf::Image baseColorTextureImage = loadedModel.images[baseColorTexture.source];
             this->absoluteTextureImagePath = (this->absoluteModelDirectory + "/" + baseColorTextureImage.uri);
@@ -168,22 +171,46 @@ void ModelHandler::Model::normalizeNormalValues()
 void ModelHandler::Model::populateShaderBufferComponents(std::vector<ModelHandler::SceneVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
 {
     Buffer::createDataBufferComponents(vertexData.data(), (sizeof(vertexData[0]) * vertexData.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.vertexBuffer, this->shaderBufferComponents.vertexBufferMemory);
-    Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
-    shaderBufferComponents.indiceCount = static_cast<uint32_t>(this->meshIndices.size());
+
+    if (this->meshIndices.empty() == false) {
+        Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
+
+        shaderBufferComponents.verticeCount = -1;
+        shaderBufferComponents.indiceCount = static_cast<int32_t>(this->meshIndices.size());
+    } else {
+        shaderBufferComponents.verticeCount = static_cast<uint32_t>(this->meshVertices.size());
+        shaderBufferComponents.indiceCount = -1;
+    }
 }
 
 void ModelHandler::Model::populateShaderBufferComponents(std::vector<ModelHandler::SceneNormalsVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
 {
     Buffer::createDataBufferComponents(vertexData.data(), (sizeof(vertexData[0]) * vertexData.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.vertexBuffer, this->shaderBufferComponents.vertexBufferMemory);
-    Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
-    shaderBufferComponents.indiceCount = static_cast<uint32_t>(this->meshIndices.size());
+
+    if (this->meshIndices.empty() == false) {
+        Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
+
+        shaderBufferComponents.verticeCount = -1;
+        shaderBufferComponents.indiceCount = static_cast<int32_t>(this->meshIndices.size());
+    } else {
+        shaderBufferComponents.verticeCount = static_cast<uint32_t>(this->meshVertices.size());
+        shaderBufferComponents.indiceCount = -1;
+    }
 }
 
 void ModelHandler::Model::populateShaderBufferComponents(std::vector<ModelHandler::CubemapVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
 {
     Buffer::createDataBufferComponents(vertexData.data(), (sizeof(vertexData[0]) * vertexData.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.vertexBuffer, this->shaderBufferComponents.vertexBufferMemory);
-    Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
-    shaderBufferComponents.indiceCount = static_cast<uint32_t>(this->meshIndices.size());
+
+    if (this->meshIndices.empty() == false) {
+        Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
+        
+        shaderBufferComponents.verticeCount = -1;
+        shaderBufferComponents.indiceCount = static_cast<uint32_t>(this->meshIndices.size());
+    } else {
+        shaderBufferComponents.verticeCount = static_cast<uint32_t>(this->meshVertices.size());
+        shaderBufferComponents.indiceCount = -1;
+    }
 }
 
 void ModelHandler::Model::cleanupModel(bool preserveTextureDetails, VkDevice vulkanLogicalDevice)
@@ -191,8 +218,10 @@ void ModelHandler::Model::cleanupModel(bool preserveTextureDetails, VkDevice vul
     vkDestroyBuffer(vulkanLogicalDevice, this->shaderBufferComponents.vertexBuffer, nullptr);
     vkFreeMemory(vulkanLogicalDevice, this->shaderBufferComponents.vertexBufferMemory, nullptr);
 
+    if (this->meshIndices.empty() == false) {
     vkDestroyBuffer(vulkanLogicalDevice, this->shaderBufferComponents.indexBuffer, nullptr);
     vkFreeMemory(vulkanLogicalDevice, this->shaderBufferComponents.indexBufferMemory, nullptr);
+    }
 
     if (preserveTextureDetails == false) {
         this->textureDetails.cleanupTextureDetails(vulkanLogicalDevice);
