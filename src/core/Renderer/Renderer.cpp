@@ -891,7 +891,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 
     m_offscreenOperation.generateMemberComponents((displayDetails.swapchainImageExtent.width / 1), (displayDetails.swapchainImageExtent.height / 1), &RendererDetails::createOffscreenRenderPass, &RendererDetails::createOffscreenPipeline, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
 
-    m_mainModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Avocado/Avocado.gltf"));
+    m_mainModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Fox/glTF/Fox.gltf"));
     // m_mainModel.normalizeNormalValues();
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
     m_mainModel.populateShaderBufferComponents(m_mainModel.meshVertices, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);

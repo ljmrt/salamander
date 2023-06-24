@@ -34,7 +34,7 @@ void main()
     
     vec4 vertexWorldSpacePosition = (uniformBufferObject.modelMatrix * positionAttributeVec4);
     vsOut.fragmentPositionWorldSpace = vertexWorldSpacePosition.xyz;
-    vsOut.fragmentPositionLightSpace = (uniformBufferObject.lightSpaceMatrix * vec4(vsOut.fragmentPositionWorldSpace, 1.0));
+    vsOut.fragmentPositionLightSpace = (uniformBufferObject.lightSpaceMatrix * positionAttributeVec4);
     vsOut.fragmentNormalWorldSpace = normalize(vec3(vec4((mat3(uniformBufferObject.normalMatrix) * normalAttribute), 0.0)));
     
     vsOut.fragmentUVCoordinates = UVCoordinatesAttribute;

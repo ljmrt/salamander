@@ -31,11 +31,11 @@ void main()
 {
     vec3 ambientLighting = (uniformBufferObject.ambientLightColor.xyz * uniformBufferObject.ambientLightColor.w);
 
-    vec3 mainLightRayDirection = (uniformBufferObject.mainLightProperties.xyz - vsOut.fragmentPositionWorldSpace);  // this is a directional light, right?
+    vec3 mainLightRayDirection = (uniformBufferObject.mainLightProperties.xyz - (vsOut.fragmentPositionWorldSpace * uniformBufferObject.mainLightProperties.w));  // selectively change the direction if the light is point or directional.
 
     float attenuation = (1.0 / dot(mainLightRayDirection, mainLightRayDirection));
 
-    attenuation = (uniformBufferObject.mainLightProperties.w == 0.0 ? 1 : attenuation);  // selectively disable attenuation(based on directional or positional properties). TODO: is this branching?
+    attenuation = ((uniformBufferObject.mainLightProperties.w == 0.0) ? 1 : attenuation);  // selectively disable attenuation(based on directional or positional properties). TODO: is this branching?
 
     mainLightRayDirection = normalize(mainLightRayDirection);
     
@@ -44,7 +44,7 @@ void main()
     vec3 diffuseLighting = (unpackedMainLightColor * diffuseLightValue);
 
     float shininessValue = 16;
-    float specularExponent = 8;
+    float specularExponent = (2 * uniformBufferObject.mainLightProperties.w);
     
     vec3 viewingDirection = normalize(uniformBufferObject.viewingPosition - vsOut.fragmentPositionWorldSpace);
     vec3 reflectionDirection = reflect(mainLightRayDirection, vsOut.fragmentNormalWorldSpace);
@@ -58,11 +58,22 @@ void main()
     
     float closestDepthAtCoordinates = texture(shadowMapSampler, projectedCoordinates.xy).r;
     float currentDepthAtCoordinates = projectedCoordinates.z;
+    
+    float shadowBias = max((0.05 * (1.0 - dot(vsOut.fragmentNormalWorldSpace, mainLightRayDirection))), 0.005);
+    currentDepthAtCoordinates += (gl_FrontFacing ? shadowBias : 0.0);
 
-    float isObscured = closestDepthAtCoordinates < currentDepthAtCoordinates ? 1.0 : 0.0;
+    float isObscured = ((closestDepthAtCoordinates < currentDepthAtCoordinates) ? 1.0 : 0.0);
 
     vec4 completeLighting = vec4((ambientLighting + ((diffuseLighting + specularLighting) * (1.0 - isObscured))), 1.0);
 
 
     outputColor = (completeLighting * texture(textureSampler, vsOut.fragmentUVCoordinates));
+
+    // used to debug isObscured, blue if is obscured/in the shadow, yellow if not obscured/being lit.
+    // if (isObscured == 0.0) {
+    //    outputColor = vec4(1.0, 1.0, 0.0, 1.0);
+    // }
+    // if (isObscured == 1.0) {
+    //    outputColor = vec4(0.0, 0.0, 1.0, 1.0);
+    // }
 }

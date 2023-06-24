@@ -149,12 +149,17 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
 
     // draw/populate the depth map.
     vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.offscreenShaderBufferComponents.vertexBuffer, offscreenOffsets);
-    vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.offscreenOperation.pipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.offscreenOperation.pipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
     vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.offscreenOperation.pipelineComponents.pipeline);
 
-    vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.indiceCount, 1, 0, 0, 0);  // command buffer, indice count, instance count, indice index offset, indice add offset, instance index offset.
+    if ((graphicsRecordingPackage.offscreenShaderBufferComponents.indiceCount != -1) && (graphicsRecordingPackage.offscreenShaderBufferComponents.verticeCount == -1)) {
+        vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+    } else if ((graphicsRecordingPackage.offscreenShaderBufferComponents.indiceCount == -1) && (graphicsRecordingPackage.offscreenShaderBufferComponents.verticeCount != -1)) {
+        vkCmdDraw(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.verticeCount, 1, 0, 0);
+    }
 
     vkCmdEndRenderPass(graphicsRecordingPackage.graphicsCommandBuffer);
     
@@ -175,6 +180,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
 
     VkDeviceSize mainOffsets[] = {0};
 
+
     // TODO: draw after to prevent overdraw.
     // draw the cubemap.
     vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.cubemapShaderBufferComponents.vertexBuffer, mainOffsets);
@@ -187,21 +193,33 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
 
     // draw the scene.
     vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.sceneShaderBufferComponents.vertexBuffer, mainOffsets);
-    vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    // index buffer optionally binded later.
 
     vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.scenePipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.scenePipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
     vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.scenePipelineComponents.pipeline);
 
-    vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+    if ((graphicsRecordingPackage.sceneShaderBufferComponents.indiceCount != -1) && (graphicsRecordingPackage.sceneShaderBufferComponents.verticeCount == -1)) {
+        vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+    } else if ((graphicsRecordingPackage.sceneShaderBufferComponents.indiceCount == -1) && (graphicsRecordingPackage.sceneShaderBufferComponents.verticeCount != -1)) {
+        vkCmdDraw(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.verticeCount, 1, 0, 0);
+    }
 
     // draw the scene normals.
     vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.sceneNormalsShaderBufferComponents.vertexBuffer, mainOffsets);
-    vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneNormalsShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    // index buffer optionally binded later.
     
     vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.sceneNormalsPipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.sceneNormalsPipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
     vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.sceneNormalsPipelineComponents.pipeline);
 
-    vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+    if ((graphicsRecordingPackage.sceneNormalsShaderBufferComponents.indiceCount != -1) && (graphicsRecordingPackage.sceneNormalsShaderBufferComponents.verticeCount == -1)) {
+        vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneNormalsShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneNormalsShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+    } else if ((graphicsRecordingPackage.sceneNormalsShaderBufferComponents.indiceCount == -1) && (graphicsRecordingPackage.sceneNormalsShaderBufferComponents.verticeCount != -1)) {
+        vkCmdDraw(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.sceneNormalsShaderBufferComponents.verticeCount, 1, 0, 0);
+    }
     
     vkCmdEndRenderPass(graphicsRecordingPackage.graphicsCommandBuffer);
     

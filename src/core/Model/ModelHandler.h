@@ -37,10 +37,11 @@ namespace ModelHandler
     struct ShaderBufferComponents {
         VkBuffer vertexBuffer;
         VkDeviceMemory vertexBufferMemory;
+        int32_t verticeCount;  // -1 if indices are present.
         
         VkBuffer indexBuffer;
         VkDeviceMemory indexBufferMemory;
-        uint32_t indiceCount;
+        int32_t indiceCount;  // -1 if there are no indices present.
     };
 
     struct Model
@@ -48,7 +49,7 @@ namespace ModelHandler
         std::string absoluteModelDirectory;  // the absolute directory of the model.
         
         std::vector<ModelHandler::SceneVertexData> meshVertices;  // vertice compenets are normalized to a 0..1 range, expected to "reinterpet" this into the desired vertex data(see above structs).
-        std::vector<uint32_t> meshIndices;
+        std::vector<uint32_t> meshIndices;  // can be empty.
 
         glm::quat meshQuaternion = glm::identity<glm::quat>();  // the stored quaternion to rotate the mesh using.
 
