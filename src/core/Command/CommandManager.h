@@ -28,8 +28,8 @@ namespace CommandManager
         ModelHandler::ShaderBufferComponents sceneShaderBufferComponents;
         RendererDetails::PipelineComponents sceneNormalsPipelineComponents;
         ModelHandler::ShaderBufferComponents sceneNormalsShaderBufferComponents;
-        Offscreen::OffscreenOperation offscreenOperation;
-        ModelHandler::ShaderBufferComponents offscreenShaderBufferComponents;
+        Offscreen::OffscreenOperation directionalShadowOperation;
+        ModelHandler::ShaderBufferComponents directionalShadowShaderBufferComponents;
     };
     
     

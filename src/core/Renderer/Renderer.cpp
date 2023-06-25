@@ -22,20 +22,6 @@
 #include <vector>
 
 
-void RendererDetails::PipelineComponents::cleanupPipelineComponents(VkDevice vulkanLogicalDevice)
-{   
-    for (size_t i = 0; i < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; i += 1) {  // uniform buffers are the size of MAX_FRAME_IN_FLIGHT.
-        vkDestroyBuffer(vulkanLogicalDevice, this->uniformBuffers[i], nullptr);
-        vkFreeMemory(vulkanLogicalDevice, this->uniformBuffersMemory[i], nullptr);        
-    }
-    
-    vkDestroyDescriptorPool(vulkanLogicalDevice, this->descriptorPool, nullptr);
-    vkDestroyDescriptorSetLayout(vulkanLogicalDevice, this->descriptorSetLayout, nullptr);
-    
-    vkDestroyPipeline(vulkanLogicalDevice, this->pipeline, nullptr);
-    vkDestroyPipelineLayout(vulkanLogicalDevice, this->pipelineLayout, nullptr);
-}
-
 void RendererDetails::populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference, VkAttachmentDescription& colorAttachmentResolveDescription, VkAttachmentReference& colorAttachmentResolveReference)
 {
     colorAttachmentDescription.format = swapchainImageFormat;
@@ -152,7 +138,7 @@ void RendererDetails::Renderer::createMemberRenderPass(VkFormat swapchainImageFo
     }
 }
 
-void RendererDetails::createOffscreenRenderPass(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass& renderPass)
+void RendererDetails::createDirectionalShadowRenderPass(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass& renderPass)
 {
     VkAttachmentDescription depthAttachmentDescription{};
     VkAttachmentReference depthAttachmentReference{};
@@ -208,7 +194,7 @@ void RendererDetails::createOffscreenRenderPass(DeviceHandler::VulkanDevices vul
     
     size_t renderPassCreationResult = vkCreateRenderPass(vulkanDevices.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass);
     if (renderPassCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create offscreen render pass.");
+        throwDebugException("Failed to create directional shadow render pass.");
     }
 }
 
@@ -370,337 +356,162 @@ void RendererDetails::createPipelineLayout(VkDevice vulkanLogicalDevice, VkDescr
 
 void RendererDetails::Renderer::createMemberCubemapPipeline(VkSampleCountFlagBits msaaSampleCount)
 {
-    std::string vertexBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapVertex.spv");
-    std::string fragmentBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapFragment.spv");
+    Pipeline::PipelineData cubemapPipelineData;
 
-    Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.pipelineShaders.vertexShader);
-    Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.pipelineShaders.fragmentShader);
+    cubemapPipelineData.vulkanLogicalDevice = *m_vulkanLogicalDevice;
     
-    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_cubemapPipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_cubemapPipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
+    cubemapPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapVertex.spv");
+    cubemapPipelineData.geometryShaderBytecodeAbsolutePath = "*NA*";
+    cubemapPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapFragment.spv");
 
-    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::CubemapVertexData), ModelHandler::preservedCubemapBindingDescription);  // we are only passing the position attribute to the vertex shader.
-    ResourceDescriptor::fetchCubemapAttributeDescriptions(ModelHandler::preservedCubemapAttributeDescriptions);
-    VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
-    ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedCubemapAttributeDescriptions, &ModelHandler::preservedCubemapBindingDescription, vertexInputCreateInfo);
+    cubemapPipelineData.vertexDataStride = sizeof(ModelHandler::CubemapVertexData);
+    cubemapPipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchCubemapAttributeDescriptions;
 
+    cubemapPipelineData.inputAssemblyTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    cubemapPipelineData.inputAssemblyPrimitiveRestartEnable = VK_FALSE;
 
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
-    ModelHandler::populateInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, inputAssemblyCreateInfo);
-
-
-    VkPipelineViewportStateCreateInfo viewportCreateInfo{};
-    populateViewportCreateInfo(1, 1, viewportCreateInfo);
-
+    cubemapPipelineData.viewportViewportCount = 1;
+    cubemapPipelineData.viewportScissorCount = 1;
     
-    VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
-    populateRasterizationCreateInfo(VK_CULL_MODE_FRONT_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
+    cubemapPipelineData.rasterizationCullMode = VK_CULL_MODE_FRONT_BIT;
+    cubemapPipelineData.rasterizationFrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+
+    cubemapPipelineData.multisamplingRasterizationSamples = msaaSampleCount;
+    cubemapPipelineData.multisamplingMinSampleShading = 0.2f;
+
+    cubemapPipelineData.depthStencilDepthTestEnable = VK_TRUE;
+    cubemapPipelineData.depthStencilDepthWriteEnable = VK_TRUE;
+    cubemapPipelineData.depthStencilDepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
+    cubemapPipelineData.colorBlendColorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+    cubemapPipelineData.colorBlendEnable = VK_TRUE;
+
+    cubemapPipelineData.dynamicStatesDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+    cubemapPipelineData.pipelineRenderPass = m_renderPass;
 
 
-    VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
-    populateMultisamplingCreateInfo(msaaSampleCount, 0.2f, multisamplingCreateInfo);
-
-
-    VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
-    populateDepthStencilCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, depthStencilCreateInfo);
-
-
-    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-    VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
-    populateColorBlendComponents(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_TRUE, colorBlendAttachment, colorBlendCreateInfo);
-
-    std::vector<VkDynamicState> dynamicStates = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR
-    };
-    VkPipelineDynamicStateCreateInfo dynamicStatesCreateInfo{};
-    populateDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
-
-
-    RendererDetails::createPipelineLayout(*m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSetLayout, m_cubemapPipelineComponents.pipelineLayout);
-
-
-    VkGraphicsPipelineCreateInfo cubemapPipelineCreateInfo{};
-    cubemapPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    
-    cubemapPipelineCreateInfo.stageCount = 2;
-    cubemapPipelineCreateInfo.pStages = shaderStageCreateInfos;
-    
-    cubemapPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
-    cubemapPipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
-    cubemapPipelineCreateInfo.pViewportState = &viewportCreateInfo;
-    cubemapPipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
-    cubemapPipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
-    cubemapPipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
-    cubemapPipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
-    cubemapPipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
-
-    cubemapPipelineCreateInfo.layout = m_cubemapPipelineComponents.pipelineLayout;
-    cubemapPipelineCreateInfo.renderPass = m_renderPass;
-    cubemapPipelineCreateInfo.subpass = 0;
-
-    cubemapPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-    cubemapPipelineCreateInfo.basePipelineIndex = -1;
-
-    size_t cubemapPipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &cubemapPipelineCreateInfo, nullptr, &m_cubemapPipelineComponents.pipeline);
-    if (cubemapPipelineCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create cubemap graphics pipeline.");
-    }
-
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_cubemapPipelineComponents.pipelineShaders.fragmentShader.shaderModule, nullptr);
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_cubemapPipelineComponents.pipelineShaders.vertexShader.shaderModule, nullptr);
+    m_cubemapPipelineComponents.createMemberPipeline(cubemapPipelineData);
 }
 
 void RendererDetails::Renderer::createMemberScenePipeline(VkSampleCountFlagBits msaaSampleCount)
 {
-    std::string vertexBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneVertex.spv");
-    std::string fragmentBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneFragment.spv");
+    Pipeline::PipelineData scenePipelineData;
 
-    Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, m_scenePipelineComponents.pipelineShaders.vertexShader);
-    Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, m_scenePipelineComponents.pipelineShaders.fragmentShader);
+    scenePipelineData.vulkanLogicalDevice = *m_vulkanLogicalDevice;
     
-    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_scenePipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_scenePipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
+    scenePipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneVertex.spv");
+    scenePipelineData.geometryShaderBytecodeAbsolutePath = "*NA*";
+    scenePipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneFragment.spv");
+
+    scenePipelineData.vertexDataStride = sizeof(ModelHandler::SceneVertexData);
+    scenePipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchSceneAttributeDescriptions;
+
+    scenePipelineData.inputAssemblyTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    scenePipelineData.inputAssemblyPrimitiveRestartEnable = VK_FALSE;
+
+    scenePipelineData.viewportViewportCount = 1;
+    scenePipelineData.viewportScissorCount = 1;
     
+    scenePipelineData.rasterizationCullMode = VK_CULL_MODE_BACK_BIT;
+    scenePipelineData.rasterizationFrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
-    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::SceneVertexData), ModelHandler::preservedSceneBindingDescription);
-    ResourceDescriptor::fetchSceneAttributeDescriptions(ModelHandler::preservedSceneAttributeDescriptions);
-    VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
-    ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedSceneAttributeDescriptions, &ModelHandler::preservedSceneBindingDescription, vertexInputCreateInfo);
+    scenePipelineData.multisamplingRasterizationSamples = msaaSampleCount;
+    scenePipelineData.multisamplingMinSampleShading = 0.2f;
 
+    scenePipelineData.depthStencilDepthTestEnable = VK_TRUE;
+    scenePipelineData.depthStencilDepthWriteEnable = VK_TRUE;
+    scenePipelineData.depthStencilDepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
-    ModelHandler::populateInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, inputAssemblyCreateInfo);
+    scenePipelineData.colorBlendColorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+    scenePipelineData.colorBlendEnable = VK_TRUE;
 
+    scenePipelineData.dynamicStatesDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
-    VkPipelineViewportStateCreateInfo viewportCreateInfo{};
-    populateViewportCreateInfo(1, 1, viewportCreateInfo);
-
-    
-    VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
-    populateRasterizationCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
-
-
-    VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
-    populateMultisamplingCreateInfo(msaaSampleCount, 0.2f, multisamplingCreateInfo);
+    scenePipelineData.pipelineRenderPass = m_renderPass;
 
 
-    VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
-    populateDepthStencilCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, depthStencilCreateInfo);
-
-
-    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-    VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
-    populateColorBlendComponents(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_TRUE, colorBlendAttachment, colorBlendCreateInfo);
-
-    std::vector<VkDynamicState> dynamicStates = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR
-    };
-    VkPipelineDynamicStateCreateInfo dynamicStatesCreateInfo{};
-    populateDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
-
-
-    RendererDetails::createPipelineLayout(*m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSetLayout, m_scenePipelineComponents.pipelineLayout);
-
-
-    VkGraphicsPipelineCreateInfo scenePipelineCreateInfo{};
-    scenePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    
-    scenePipelineCreateInfo.stageCount = 2;
-    scenePipelineCreateInfo.pStages = shaderStageCreateInfos;
-    
-    scenePipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
-    scenePipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
-    scenePipelineCreateInfo.pViewportState = &viewportCreateInfo;
-    scenePipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
-    scenePipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
-    scenePipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
-    scenePipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
-    scenePipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
-
-    scenePipelineCreateInfo.layout = m_scenePipelineComponents.pipelineLayout;
-    scenePipelineCreateInfo.renderPass = m_renderPass;
-    scenePipelineCreateInfo.subpass = 0;
-
-    scenePipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-    scenePipelineCreateInfo.basePipelineIndex = -1;
-
-    size_t scenePipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &scenePipelineCreateInfo, nullptr, &m_scenePipelineComponents.pipeline);
-    if (scenePipelineCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create scene graphics pipeline.");
-    }
-
-
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_scenePipelineComponents.pipelineShaders.fragmentShader.shaderModule, nullptr);
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_scenePipelineComponents.pipelineShaders.vertexShader.shaderModule, nullptr);
+    m_scenePipelineComponents.createMemberPipeline(scenePipelineData);
 }
 
 void RendererDetails::Renderer::createMemberSceneNormalsPipeline(VkSampleCountFlagBits msaaSampleCount)
 {
-    std::string vertexBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsVertex.spv");
-    std::string geometryBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsGeometry.spv");
-    std::string fragmentBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsFragment.spv");
+    Pipeline::PipelineData sceneNormalsPipelineData;
 
-    Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.vertexShader);
-    Shader::createShader(geometryBytecodeFilePath, VK_SHADER_STAGE_GEOMETRY_BIT, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.geometryShader);
-    Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, *m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.fragmentShader);
+    sceneNormalsPipelineData.vulkanLogicalDevice = *m_vulkanLogicalDevice;
     
-    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {m_sceneNormalsPipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, m_sceneNormalsPipelineComponents.pipelineShaders.geometryShader.shaderStageCreateInfo, m_sceneNormalsPipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
+    sceneNormalsPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsVertex.spv");
+    sceneNormalsPipelineData.geometryShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsGeometry.spv");
+    sceneNormalsPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsFragment.spv");
+
+    sceneNormalsPipelineData.vertexDataStride = sizeof(ModelHandler::SceneNormalsVertexData);
+    sceneNormalsPipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchSceneNormalsAttributeDescriptions;
+
+    sceneNormalsPipelineData.inputAssemblyTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    sceneNormalsPipelineData.inputAssemblyPrimitiveRestartEnable = VK_FALSE;
+
+    sceneNormalsPipelineData.viewportViewportCount = 1;
+    sceneNormalsPipelineData.viewportScissorCount = 1;
     
-    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::SceneNormalsVertexData), ModelHandler::preservedSceneNormalsBindingDescription);
-    ResourceDescriptor::fetchSceneNormalsAttributeDescriptions(ModelHandler::preservedSceneNormalsAttributeDescriptions);
-    VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
-    ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedSceneNormalsAttributeDescriptions, &ModelHandler::preservedSceneNormalsBindingDescription, vertexInputCreateInfo);
+    sceneNormalsPipelineData.rasterizationCullMode = VK_CULL_MODE_BACK_BIT;
+    sceneNormalsPipelineData.rasterizationFrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+
+    sceneNormalsPipelineData.multisamplingRasterizationSamples = msaaSampleCount;
+    sceneNormalsPipelineData.multisamplingMinSampleShading = 0.2f;
+
+    sceneNormalsPipelineData.depthStencilDepthTestEnable = VK_TRUE;
+    sceneNormalsPipelineData.depthStencilDepthWriteEnable = VK_TRUE;
+    sceneNormalsPipelineData.depthStencilDepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
+    sceneNormalsPipelineData.colorBlendColorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+    sceneNormalsPipelineData.colorBlendEnable = VK_TRUE;
+
+    sceneNormalsPipelineData.dynamicStatesDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+    sceneNormalsPipelineData.pipelineRenderPass = m_renderPass;
 
 
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
-    ModelHandler::populateInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, inputAssemblyCreateInfo);
-
-
-    VkPipelineViewportStateCreateInfo viewportCreateInfo{};
-    populateViewportCreateInfo(1, 1, viewportCreateInfo);
-
-    
-    VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
-    populateRasterizationCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
-
-
-    VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
-    populateMultisamplingCreateInfo(msaaSampleCount, 0.2f, multisamplingCreateInfo);
-
-
-    VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
-    populateDepthStencilCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, depthStencilCreateInfo);
-
-
-    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-    VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
-    populateColorBlendComponents(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_TRUE, colorBlendAttachment, colorBlendCreateInfo);
-
-    std::vector<VkDynamicState> dynamicStates = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR
-    };
-    VkPipelineDynamicStateCreateInfo dynamicStatesCreateInfo{};
-    populateDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
-
-
-    RendererDetails::createPipelineLayout(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.descriptorSetLayout, m_sceneNormalsPipelineComponents.pipelineLayout);
-
-
-    VkGraphicsPipelineCreateInfo scenePipelineCreateInfo{};
-    scenePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    
-    scenePipelineCreateInfo.stageCount = 3;
-    scenePipelineCreateInfo.pStages = shaderStageCreateInfos;
-    
-    scenePipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
-    scenePipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
-    scenePipelineCreateInfo.pViewportState = &viewportCreateInfo;
-    scenePipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
-    scenePipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
-    scenePipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
-    scenePipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
-    scenePipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
-
-    scenePipelineCreateInfo.layout = m_sceneNormalsPipelineComponents.pipelineLayout;
-    scenePipelineCreateInfo.renderPass = m_renderPass;
-    scenePipelineCreateInfo.subpass = 0;
-
-    scenePipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-    scenePipelineCreateInfo.basePipelineIndex = -1;
-
-    size_t scenePipelineCreationResult = vkCreateGraphicsPipelines(*m_vulkanLogicalDevice, VK_NULL_HANDLE, 1, &scenePipelineCreateInfo, nullptr, &m_sceneNormalsPipelineComponents.pipeline);
-    if (scenePipelineCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create scene normals graphics pipeline.");
-    }
-
-
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.fragmentShader.shaderModule, nullptr);
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.geometryShader.shaderModule, nullptr);
-    vkDestroyShaderModule(*m_vulkanLogicalDevice, m_sceneNormalsPipelineComponents.pipelineShaders.vertexShader.shaderModule, nullptr);
+    m_sceneNormalsPipelineComponents.createMemberPipeline(sceneNormalsPipelineData);
 }
 
-void RendererDetails::createOffscreenPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, RendererDetails::PipelineComponents& pipelineComponents)
+void RendererDetails::createDirectionalShadowPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, RendererDetails::PipelineComponents& pipelineComponents)
 {
-    std::string vertexBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/offscreenVertex.spv");
-    std::string fragmentBytecodeFilePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/offscreenFragment.spv");
+    Pipeline::PipelineData directionalShadowPipelineData;
 
-    Shader::createShader(vertexBytecodeFilePath, VK_SHADER_STAGE_VERTEX_BIT, vulkanLogicalDevice, pipelineComponents.pipelineShaders.vertexShader);
-    Shader::createShader(fragmentBytecodeFilePath, VK_SHADER_STAGE_FRAGMENT_BIT, vulkanLogicalDevice, pipelineComponents.pipelineShaders.fragmentShader);
+    directionalShadowPipelineData.vulkanLogicalDevice = *m_vulkanLogicalDevice;
     
-    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {pipelineComponents.pipelineShaders.vertexShader.shaderStageCreateInfo, pipelineComponents.pipelineShaders.fragmentShader.shaderStageCreateInfo};
+    directionalShadowPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/directionalShadowMappingVertex.spv");
+    directionalShadowPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/directionalShadowMappingFragment.spv");
+
+    // uses the same vertex data stride and similar as the cubemap pipeline.
+    directionalShadowPipelineData.vertexDataStride = sizeof(ModelHandler::CubemapVertexData);
+    directionalShadowPipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchCubemapAttributeDescriptions;
+
+    directionalShadowPipelineData.inputAssemblyTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    directionalShadowPipelineData.inputAssemblyPrimitiveRestartEnable = VK_FALSE;
+
+    directionalShadowPipelineData.viewportViewportCount = 1;
+    directionalShadowPipelineData.viewportScissorCount = 1;
     
-    ResourceDescriptor::populateBindingDescription(sizeof(ModelHandler::CubemapVertexData), ModelHandler::preservedOffscreenBindingDescription);
-    ResourceDescriptor::fetchCubemapAttributeDescriptions(ModelHandler::preservedOffscreenAttributeDescriptions);  // uses the same attribute descriptions as the cubemap pipeline.
-    VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{};
-    ModelHandler::populateVertexInputCreateInfo(ModelHandler::preservedOffscreenAttributeDescriptions, &ModelHandler::preservedOffscreenBindingDescription, vertexInputCreateInfo);
+    directionalShadowPipelineData.rasterizationCullMode = VK_CULL_MODE_NONE_BIT;
+    directionalShadowPipelineData.rasterizationFrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
+    directionalShadowPipelineData.multisamplingRasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    directionalShadowPipelineData.multisamplingMinSampleShading = 1.0f;
 
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo{};
-    ModelHandler::populateInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE, inputAssemblyCreateInfo);
+    directionalShadowPipelineData.depthStencilDepthTestEnable = VK_TRUE;
+    directionalShadowPipelineData.depthStencilDepthWriteEnable = VK_TRUE;
+    directionalShadowPipelineData.depthStencilDepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
+    directionalShadowPipelineData.colorBlendColorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+    directionalShadowPipelineData.colorBlendEnable = VK_TRUE;
 
-    VkPipelineViewportStateCreateInfo viewportCreateInfo{};
-    RendererDetails::populateViewportCreateInfo(1, 1, viewportCreateInfo);
+    directionalShadowPipelineData.dynamicStatesDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+    directionalShadowPipelineData.pipelineRenderPass = renderPass;
 
     
-    VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
-    RendererDetails::populateRasterizationCreateInfo(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, rasterizationCreateInfo);
-
-
-    VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
-    RendererDetails::populateMultisamplingCreateInfo(VK_SAMPLE_COUNT_1_BIT, 1.0f, multisamplingCreateInfo);
-
-
-    VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
-    RendererDetails::populateDepthStencilCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL, depthStencilCreateInfo);
-
-
-    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-    VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo{};
-    RendererDetails::populateColorBlendComponents(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_TRUE, colorBlendAttachment, colorBlendCreateInfo);
-
-    std::vector<VkDynamicState> dynamicStates = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR
-    };
-    VkPipelineDynamicStateCreateInfo dynamicStatesCreateInfo{};
-    RendererDetails::populateDynamicStatesCreateInfo(dynamicStates, dynamicStatesCreateInfo);
-
-
-    RendererDetails::createPipelineLayout(vulkanLogicalDevice, pipelineComponents.descriptorSetLayout, pipelineComponents.pipelineLayout);
-
-
-    VkGraphicsPipelineCreateInfo scenePipelineCreateInfo{};
-    scenePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    
-    scenePipelineCreateInfo.stageCount = 2;
-    scenePipelineCreateInfo.pStages = shaderStageCreateInfos;
-    
-    scenePipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
-    scenePipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
-    scenePipelineCreateInfo.pViewportState = &viewportCreateInfo;
-    scenePipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
-    scenePipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
-    scenePipelineCreateInfo.pDepthStencilState = &depthStencilCreateInfo;
-    scenePipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
-    scenePipelineCreateInfo.pDynamicState = &dynamicStatesCreateInfo;
-
-    scenePipelineCreateInfo.layout = pipelineComponents.pipelineLayout;
-    scenePipelineCreateInfo.renderPass = renderPass;
-    scenePipelineCreateInfo.subpass = 0;
-
-    scenePipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
-    scenePipelineCreateInfo.basePipelineIndex = -1;
-
-    size_t scenePipelineCreationResult = vkCreateGraphicsPipelines(vulkanLogicalDevice, VK_NULL_HANDLE, 1, &scenePipelineCreateInfo, nullptr, &pipelineComponents.pipeline);
-    if (scenePipelineCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create scene normals graphics pipeline.");
-    }
-
-
-    vkDestroyShaderModule(vulkanLogicalDevice, pipelineComponents.pipelineShaders.fragmentShader.shaderModule, nullptr);
-    vkDestroyShaderModule(vulkanLogicalDevice, pipelineComponents.pipelineShaders.vertexShader.shaderModule, nullptr);
+    m_directionalShadowMappingPipelineComponents.createMemberPipeline(directionalShadowPipelineData);
 }
 
 void RendererDetails::Renderer::createMemberSynchronizationObjects()
@@ -769,13 +580,13 @@ void RendererDetails::Renderer::drawFrame(DisplayManager::DisplayDetails& displa
     graphicsRecordingPackage.sceneShaderBufferComponents = m_mainModel.shaderBufferComponents;
     graphicsRecordingPackage.sceneNormalsPipelineComponents = m_sceneNormalsPipelineComponents;
     graphicsRecordingPackage.sceneNormalsShaderBufferComponents = m_dummySceneNormalsModel.shaderBufferComponents;
-    graphicsRecordingPackage.offscreenOperation = m_offscreenOperation;
-    graphicsRecordingPackage.offscreenShaderBufferComponents = m_dummyOffscreenModel.shaderBufferComponents;
+    graphicsRecordingPackage.directionalShadowOperation = m_directionalShadowOperation;
+    graphicsRecordingPackage.directionalShadowShaderBufferComponents = m_dummyDirectionalShadowModel.shaderBufferComponents;
     
     CommandManager::recordGraphicsCommandBufferCommands(graphicsRecordingPackage);
 
     
-    Uniform::updateFrameUniformBuffers(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.swapchainImageExtent, m_scenePipelineComponents.mappedUniformBuffersMemory, m_sceneNormalsPipelineComponents.mappedUniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory, m_offscreenOperation.pipelineComponents.mappedUniformBuffersMemory);
+    Uniform::updateFrameUniformBuffers(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.swapchainImageExtent, m_scenePipelineComponents.mappedUniformBuffersMemory, m_sceneNormalsPipelineComponents.mappedUniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory, m_directionalShadowOperation.pipelineComponents.mappedUniformBuffersMemory);
 
     
     VkSubmitInfo submitInfo{};
@@ -877,11 +688,11 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     
     createMemberSceneNormalsPipeline(displayDetails.msaaSampleCount);
 
-    VkDescriptorSetLayoutBinding offscreenUniformBufferLayoutBinding{};
-    ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT), offscreenUniformBufferLayoutBinding);
+    VkDescriptorSetLayoutBinding directionalShadowUniformBufferLayoutBinding{};
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT), directionalShadowUniformBufferLayoutBinding);
     
-    std::vector<VkDescriptorSetLayoutBinding> offscreenDescriptorSetLayoutBindings = {offscreenUniformBufferLayoutBinding};
-    ResourceDescriptor::createDescriptorSetLayout(offscreenDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_offscreenOperation.pipelineComponents.descriptorSetLayout);
+    std::vector<VkDescriptorSetLayoutBinding> directionalShadowDescriptorSetLayoutBindings = {directionalShadowUniformBufferLayoutBinding};
+    ResourceDescriptor::createDescriptorSetLayout(directionalShadowDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_directionalShadowOperation.pipelineComponents.descriptorSetLayout);
     
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, displayDetails.graphicsCommandPool);
 
@@ -889,7 +700,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 
     SwapchainHandler::createSwapchainFramebuffers(displayDetails.swapchainImageViews, displayDetails.swapchainImageExtent, displayDetails.colorImageDetails.imageView, displayDetails.depthImageDetails.imageView, m_renderPass, *m_vulkanLogicalDevice, displayDetails.swapchainFramebuffers);
 
-    m_offscreenOperation.generateMemberComponents((displayDetails.swapchainImageExtent.width / 1), (displayDetails.swapchainImageExtent.height / 1), &RendererDetails::createOffscreenRenderPass, &RendererDetails::createOffscreenPipeline, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+    m_directionalShadowOperation.generateMemberComponents((displayDetails.swapchainImageExtent.width / 1), (displayDetails.swapchainImageExtent.height / 1), &RendererDetails::createDirectionalShadowRenderPass, &RendererDetails::createDirectionalShadowPipeline, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
 
     m_mainModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Fox/glTF/Fox.gltf"));
     // m_mainModel.normalizeNormalValues();
@@ -916,23 +727,23 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     }
     m_cubemapModel.populateShaderBufferComponents(cubemapVertexData, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
 
-    m_dummyOffscreenModel.meshVertices = m_mainModel.meshVertices;
-    m_dummyOffscreenModel.meshIndices = m_mainModel.meshIndices;
+    m_dummyDirectionalShadowModel.meshVertices = m_mainModel.meshVertices;
+    m_dummyDirectionalShadowModel.meshIndices = m_mainModel.meshIndices;
     
-    std::vector<ModelHandler::CubemapVertexData> offscreenVertexData;
-    offscreenVertexData.resize(m_dummyOffscreenModel.meshVertices.size());
-    for (size_t i = 0; i < m_dummyOffscreenModel.meshVertices.size(); i += 1) {
-        offscreenVertexData[i] = {m_dummyOffscreenModel.meshVertices[i].position};
+    std::vector<ModelHandler::CubemapVertexData> directionalShadowVertexData;
+    directionalShadowVertexData.resize(m_dummyDirectionalShadowModel.meshVertices.size());
+    for (size_t i = 0; i < m_dummyDirectionalShadowModel.meshVertices.size(); i += 1) {
+        directionalShadowVertexData[i] = {m_dummyDirectionalShadowModel.meshVertices[i].position};
     }
-    m_dummyOffscreenModel.populateShaderBufferComponents(offscreenVertexData, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+    m_dummyDirectionalShadowModel.populateShaderBufferComponents(directionalShadowVertexData, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
 
     Image::populateTextureDetails((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapModel.textureDetails);
 
     Uniform::createUniformBuffers(sizeof(Uniform::SceneUniformBufferObject), temporaryVulkanDevices, m_scenePipelineComponents.uniformBuffers, m_scenePipelineComponents.uniformBuffersMemory, m_scenePipelineComponents.mappedUniformBuffersMemory);
     ResourceDescriptor::createDescriptorPool(2, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_scenePipelineComponents.descriptorSetLayout, m_scenePipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
-    VkImageView sceneDescriptorSetsImageViews[2] = {m_mainModel.textureDetails.textureImageDetails.imageView, m_offscreenOperation.depthTextureDetails.textureImageDetails.imageView};
-    VkSampler sceneDescriptorSetsSamplers[2] = {m_mainModel.textureDetails.textureSampler, m_offscreenOperation.depthTextureDetails.textureSampler};
+    VkImageView sceneDescriptorSetsImageViews[2] = {m_mainModel.textureDetails.textureImageDetails.imageView, m_directionalShadowOperation.depthTextureDetails.textureImageDetails.imageView};
+    VkSampler sceneDescriptorSetsSamplers[2] = {m_mainModel.textureDetails.textureSampler, m_directionalShadowOperation.depthTextureDetails.textureSampler};
     ResourceDescriptor::populateDescriptorSets(m_scenePipelineComponents.uniformBuffers, sceneDescriptorSetsImageViews, sceneDescriptorSetsSamplers, 2, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
 
     Uniform::createUniformBuffers(sizeof(Uniform::SceneNormalsUniformBufferObject), temporaryVulkanDevices, m_sceneNormalsPipelineComponents.uniformBuffers, m_sceneNormalsPipelineComponents.uniformBuffersMemory, m_sceneNormalsPipelineComponents.mappedUniformBuffersMemory);
@@ -949,12 +760,12 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     VkSampler cubemapDescriptorSetsSamplers[1] = {m_cubemapModel.textureDetails.textureSampler};
     ResourceDescriptor::populateDescriptorSets(m_cubemapPipelineComponents.uniformBuffers, cubemapDescriptorSetsImageViews, cubemapDescriptorSetsSamplers, 1, *m_vulkanLogicalDevice, m_cubemapPipelineComponents.descriptorSets);
 
-    Uniform::createUniformBuffers(sizeof(Uniform::OffscreenUniformBufferObject), temporaryVulkanDevices, m_offscreenOperation.pipelineComponents.uniformBuffers, m_offscreenOperation.pipelineComponents.uniformBuffersMemory, m_offscreenOperation.pipelineComponents.mappedUniformBuffersMemory);
-    ResourceDescriptor::createDescriptorPool(0, *m_vulkanLogicalDevice, m_offscreenOperation.pipelineComponents.descriptorPool);
-    ResourceDescriptor::createDescriptorSets(m_offscreenOperation.pipelineComponents.descriptorSetLayout, m_offscreenOperation.pipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_offscreenOperation.pipelineComponents.descriptorSets);
-    VkImageView offscreenDescriptorSetsImageViews[1] = {0};
-    VkSampler offscreenDescriptorSetsSamplers[1] = {0};
-    ResourceDescriptor::populateDescriptorSets(m_offscreenOperation.pipelineComponents.uniformBuffers, offscreenDescriptorSetsImageViews, offscreenDescriptorSetsSamplers, 0, *m_vulkanLogicalDevice, m_offscreenOperation.pipelineComponents.descriptorSets);
+    Uniform::createUniformBuffers(sizeof(Uniform::DirectionalShadowUniformBufferObject), temporaryVulkanDevices, m_directionalShadowOperation.pipelineComponents.uniformBuffers, m_directionalShadowOperation.pipelineComponents.uniformBuffersMemory, m_directionalShadowOperation.pipelineComponents.mappedUniformBuffersMemory);
+    ResourceDescriptor::createDescriptorPool(0, *m_vulkanLogicalDevice, m_directionalShadowOperation.pipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorSets(m_directionalShadowOperation.pipelineComponents.descriptorSetLayout, m_directionalShadowOperation.pipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_directionalShadowOperation.pipelineComponents.descriptorSets);
+    VkImageView directionalShadowDescriptorSetsImageViews[1] = {0};
+    VkSampler directionalShadowDescriptorSetsSamplers[1] = {0};
+    ResourceDescriptor::populateDescriptorSets(m_directionalShadowOperation.pipelineComponents.uniformBuffers, directionalShadowDescriptorSetsImageViews, directionalShadowDescriptorSetsSamplers, 0, *m_vulkanLogicalDevice, m_directionalShadowOperation.pipelineComponents.descriptorSets);
 
     CommandManager::allocateChildCommandBuffers(displayDetails.graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, displayDetails.graphicsCommandBuffers);
 
@@ -975,7 +786,7 @@ void RendererDetails::Renderer::cleanupRenderer()
     m_mainModel.cleanupModel(false, *m_vulkanLogicalDevice);
     m_dummySceneNormalsModel.cleanupModel(true, *m_vulkanLogicalDevice);
     m_cubemapModel.cleanupModel(false, *m_vulkanLogicalDevice);
-    m_dummyOffscreenModel.cleanupModel(true, *m_vulkanLogicalDevice);
+    m_dummyDirectionalShadowModel.cleanupModel(true, *m_vulkanLogicalDevice);
     
     for (size_t i = 0; i < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; i += 1) {
         vkDestroySemaphore(*m_vulkanLogicalDevice, m_imageAvailibleSemaphores[i], nullptr);
@@ -987,7 +798,7 @@ void RendererDetails::Renderer::cleanupRenderer()
     m_scenePipelineComponents.cleanupPipelineComponents(*m_vulkanLogicalDevice);
     m_sceneNormalsPipelineComponents.cleanupPipelineComponents(*m_vulkanLogicalDevice);
     
-    m_offscreenOperation.cleanupOffscreenOperation(*m_vulkanLogicalDevice);
+    m_directionalShadowOperation.cleanupOffscreenOperation(*m_vulkanLogicalDevice);
 
     vkDestroyRenderPass(*m_vulkanLogicalDevice, m_renderPass, nullptr);
 }

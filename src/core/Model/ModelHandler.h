@@ -101,18 +101,6 @@ namespace ModelHandler
     };
 
 
-    // TODO: find a different method of preserving memory(allocate memory possibly).
-    extern std::vector<VkVertexInputAttributeDescription> preservedCubemapAttributeDescriptions;  // preserved cubemap attribute descriptions(pointer reasons).
-    extern VkVertexInputBindingDescription preservedCubemapBindingDescription;  // preserved cubemap binding description(pointer reasons).
-
-    extern std::vector<VkVertexInputAttributeDescription> preservedSceneAttributeDescriptions;  // preserved scene attribute descriptions(pointer reasons).
-    extern VkVertexInputBindingDescription preservedSceneBindingDescription;  // preserved scene binding description(pointer reasons).
-    extern std::vector<VkVertexInputAttributeDescription> preservedSceneNormalsAttributeDescriptions;  // preserved scene normals attribute descriptions(pointer reasons).
-    extern VkVertexInputBindingDescription preservedSceneNormalsBindingDescription;  // preserved scene normals binding description(pointer reasons).
-
-    extern std::vector<VkVertexInputAttributeDescription> preservedOffscreenAttributeDescriptions;
-    extern VkVertexInputBindingDescription preservedOffscreenBindingDescription;
-
     // populate a vertex input's create info.
     //
     // @param attributeDescriptions container of attribute descriptions.

@@ -42,11 +42,11 @@ namespace RendererDetails
     // @param depthAttachmentReference populated depth attachment reference.
     void populateDepthAttachmentComponents(VkSampleCountFlagBits msaaSampleCount, VkAttachmentStoreOp storeOp, uint32_t attachment, VkPhysicalDevice vulkanPhysicalDevice, VkAttachmentDescription& depthAttachmentDescription, VkAttachmentReference& depthAttachmentReference);
 
-    // create a render pass for a offscreen operation.
+    // create a render pass for the directional shadow offscreen operation.
     //
-    // @param vulkanDevices Vulkan physical and logical device to use in offscreen render pass creation.
-    // @param renderPass created offscreen render pass.
-    void createOffscreenRenderPass(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass& renderPass);
+    // @param vulkanDevices Vulkan physical and logical device to use in the directional shadow render pass creation.
+    // @param renderPass created directional shadow render pass.
+    void createDirectionalShadowRenderPass(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass& renderPass);
 
     // populate a viewport's create info.
     //
@@ -104,12 +104,12 @@ namespace RendererDetails
     // @param pipelineLayout the created pipeline layout.
     void createPipelineLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& pipelineLayout);
 
-    // create offscreen pipeline.
+    // create directional shadow pipeline.
     //
-    // @param renderPass render pass to use in offscreen pipeline creation.
-    // @param vulkanLogicalDevice Vulkan logical device to use in offscreen pipeline creation.
-    // @param pipelineComponents semi-created offscreen pipeline components(pipeline and pipeline layout).
-    void createOffscreenPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, RendererDetails::PipelineComponents& pipelineComponents);
+    // @param renderPass render pass to use in directional shadow pipeline creation.
+    // @param vulkanLogicalDevice Vulkan logical device to use in directional shadow pipeline creation.
+    // @param pipelineComponents reference to the pipeline components to use and create the pipeline in.
+    void createDirectionalShadowPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, RendererDetails::PipelineComponents& pipelineComponents);
     
     class Renderer
     {
@@ -119,7 +119,7 @@ namespace RendererDetails
         PipelineComponents m_cubemapPipelineComponents;  // the components used in the cubemap's graphics pipeline.    
         PipelineComponents m_scenePipelineComponents;  // the components used in the scene's graphics pipeline.
         PipelineComponents m_sceneNormalsPipelineComponents;  // the components used in the scene normals' graphics pipeline.
-        Offscreen::OffscreenOperation m_offscreenOperation;  // the pipeline components and similar used in the offscreen graphics pipeline.
+        Offscreen::OffscreenOperation m_directionalShadowOperation;  // the pipeline components and similar used in the directional shadow mapping offscreen operation.
 
         VkRenderPass m_renderPass;  // we only need a singular render pass.
 
@@ -133,7 +133,7 @@ namespace RendererDetails
         ModelHandler::Model m_mainModel;  // the main loaded model.
         ModelHandler::Model m_dummySceneNormalsModel;  // a "dummy" scene normals model used to populate the scene normals shader buffer components.
         ModelHandler::Model m_cubemapModel;  // the loaded model used for the cubemap.
-        ModelHandler::Model m_dummyOffscreenModel;  // a "dummy" offscreen model used to populate the offscreen shader buffer components.
+        ModelHandler::Model m_dummyDirectionalShadowModel;  // a "dummy" model used to populate the directional shadow shader buffer components.
 
 
         // create member render pass for all pipelines.
