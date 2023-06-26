@@ -6,6 +6,8 @@
 #include <core/Shader/Shader.h>
 #include <core/Shader/ResourceDescriptor.h>
 #include <core/Model/ModelHandler.h>
+#include <core/Logging/ErrorLogger.h>
+#include <core/Defaults/Defaults.h>
 
 #include <string.h>
 
@@ -13,15 +15,15 @@
 void Pipeline::PipelineComponents::createMemberPipeline(Pipeline::PipelineData& pipelineData)
 {
     std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
-    if (strcmp(pipelineData.vertexShaderBytecodeAbsolutePath, "*NA*") != 0) {  // if the vertex shader is enabled(absolute path not "*NA*").
+    if (strcmp(pipelineData.vertexShaderBytecodeAbsolutePath.c_str(), "*NA*") != 0) {  // if the vertex shader is enabled(absolute path not "*NA*").
         Shader::createShader(pipelineData.vertexShaderBytecodeAbsolutePath, VK_SHADER_STAGE_VERTEX_BIT, pipelineData.vulkanLogicalDevice, this->pipelineShaders.vertexShader);
         shaderStageCreateInfos.push_back(this->pipelineShaders.vertexShader.shaderStageCreateInfo);
     }
-    if (strcmp(pipelineData.geometryShaderBytecodeAbsolutePath, "*NA*") != 0) {  // if the geometry shader is enabled(absolute path not "*NA*").
+    if (strcmp(pipelineData.geometryShaderBytecodeAbsolutePath.c_str(), "*NA*") != 0) {  // if the geometry shader is enabled(absolute path not "*NA*").
         Shader::createShader(pipelineData.geometryShaderBytecodeAbsolutePath, VK_SHADER_STAGE_GEOMETRY_BIT, pipelineData.vulkanLogicalDevice, this->pipelineShaders.geometryShader);
         shaderStageCreateInfos.push_back(this->pipelineShaders.geometryShader.shaderStageCreateInfo);
     }
-    if (strcmp(pipelineData.fragmentShaderBytecodeAbsolutePath, "*NA*") != 0) {  // if the fragment shader is enabled(absolute path not "*NA*").
+    if (strcmp(pipelineData.fragmentShaderBytecodeAbsolutePath.c_str(), "*NA*") != 0) {  // if the fragment shader is enabled(absolute path not "*NA*").
         Shader::createShader(pipelineData.fragmentShaderBytecodeAbsolutePath, VK_SHADER_STAGE_FRAGMENT_BIT, pipelineData.vulkanLogicalDevice, this->pipelineShaders.fragmentShader);
         shaderStageCreateInfos.push_back(this->pipelineShaders.fragmentShader.shaderStageCreateInfo);
     }
@@ -30,6 +32,7 @@ void Pipeline::PipelineComponents::createMemberPipeline(Pipeline::PipelineData& 
     // allocate heap memory to preserve these components(necessary).
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;  // vector "header" is on the stack, elements are on the heap, which works for our case.
     VkVertexInputBindingDescription* bindingDescriptionPointer = new VkVertexInputBindingDescription;
+    Defaults::applicationCleanup.vertexInputBindingDescriptionsMemory.push_back(bindingDescriptionPointer);
     
     ResourceDescriptor::populateBindingDescription(pipelineData.vertexDataStride, *bindingDescriptionPointer);
     pipelineData.fetchAttributeDescriptions(attributeDescriptions);  // use the custom attribute descriptions fetch function.
@@ -50,8 +53,8 @@ void Pipeline::PipelineComponents::createMemberPipeline(Pipeline::PipelineData& 
     RendererDetails::populateRasterizationCreateInfo(pipelineData.rasterizationCullMode, pipelineData.rasterizationFrontFace, rasterizationCreateInfo);
 
 
-    VkPipelineMultisamplingStateCreateInfo multisamplingCreateInfo{};
-    RendererDetails::populateMultisamplingCreateInfo(pipelineData.multisamplingRasterizationSamples, multisamplingMinSampleShading, multisamplingCreateInfo);
+    VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
+    RendererDetails::populateMultisamplingCreateInfo(pipelineData.multisamplingRasterizationSamples, pipelineData.multisamplingMinSampleShading, multisamplingCreateInfo);
 
 
     VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo{};
@@ -62,7 +65,7 @@ void Pipeline::PipelineComponents::createMemberPipeline(Pipeline::PipelineData& 
     RendererDetails::populateColorBlendComponents(pipelineData.colorBlendColorWriteMask, pipelineData.colorBlendBlendEnable, colorBlendAttachment, colorBlendCreateInfo);
 
 
-    VkPipelineDynamicStatesCreateInfo dynamicStatesCreateInfo{};
+    VkPipelineDynamicStateCreateInfo dynamicStatesCreateInfo{};
     RendererDetails::populateDynamicStatesCreateInfo(pipelineData.dynamicStatesDynamicStates, dynamicStatesCreateInfo);
 
 
@@ -96,13 +99,13 @@ void Pipeline::PipelineComponents::createMemberPipeline(Pipeline::PipelineData& 
         throwDebugException("Failed to create a graphics pipeline.");
     }
 
-    if (strcmp(pipelineData.vertexShaderBytecodeAbsolutePath, "*NA*") != 0) {  // if the vertex shader is enabled(absolute path not "*NA*").
+    if (strcmp(pipelineData.vertexShaderBytecodeAbsolutePath.c_str(), "*NA*") != 0) {  // if the vertex shader is enabled(absolute path not "*NA*").
         vkDestroyShaderModule(pipelineData.vulkanLogicalDevice, this->pipelineShaders.fragmentShader.shaderModule, nullptr);
     }
-    if (strcmp(pipelineData.geometryShaderBytecodeAbsolutePath, "*NA*") != 0) {  // if the geometry shader is enabled(absolute path not "*NA*").
+    if (strcmp(pipelineData.geometryShaderBytecodeAbsolutePath.c_str(), "*NA*") != 0) {  // if the geometry shader is enabled(absolute path not "*NA*").
         vkDestroyShaderModule(pipelineData.vulkanLogicalDevice, this->pipelineShaders.geometryShader.shaderModule, nullptr);
     }
-    if (strcmp(pipelineData.fragmentShaderBytecodeAbsolutePath, "*NA*") != 0) {  // if the fragment shader is enabled(absolute path not "*NA*").
+    if (strcmp(pipelineData.fragmentShaderBytecodeAbsolutePath.c_str(), "*NA*") != 0) {  // if the fragment shader is enabled(absolute path not "*NA*").
         vkDestroyShaderModule(pipelineData.vulkanLogicalDevice, this->pipelineShaders.vertexShader.shaderModule, nullptr);
     }
 }

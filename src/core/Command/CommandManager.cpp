@@ -131,34 +131,34 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
 
     
     VkRenderPassBeginInfo offscreenRenderPassBeginInfo{};
-    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.offscreenOperation.renderPass, graphicsRecordingPackage.offscreenOperation.framebuffers[graphicsRecordingPackage.currentFrame], graphicsRecordingPackage.offscreenOperation.offscreenExtent, static_cast<uint32_t>(offscreenAttachmentClearValues.size()), offscreenAttachmentClearValues.data(), offscreenRenderPassBeginInfo);
+    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.directionalShadowOperation.renderPass, graphicsRecordingPackage.directionalShadowOperation.framebuffers[graphicsRecordingPackage.currentFrame], graphicsRecordingPackage.directionalShadowOperation.offscreenExtent, static_cast<uint32_t>(offscreenAttachmentClearValues.size()), offscreenAttachmentClearValues.data(), offscreenRenderPassBeginInfo);
 
     vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &offscreenRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     // TODO: is this necessary for an offsceen operation?
     // set our dynamic pipeline states.
     VkViewport offscreenDynamicViewport{};
-    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.offscreenOperation.offscreenExtent.width), static_cast<float>(graphicsRecordingPackage.offscreenOperation.offscreenExtent.height), 0.0f, 1.0f, offscreenDynamicViewport);
+    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.directionalShadowOperation.offscreenExtent.width), static_cast<float>(graphicsRecordingPackage.directionalShadowOperation.offscreenExtent.height), 0.0f, 1.0f, offscreenDynamicViewport);
     vkCmdSetViewport(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &offscreenDynamicViewport);
 
     VkRect2D offscreenDynamicScissor{};
-    CommandManager::populateRect2DInfo(graphicsRecordingPackage.offscreenOperation.offscreenExtent, offscreenDynamicScissor);
+    CommandManager::populateRect2DInfo(graphicsRecordingPackage.directionalShadowOperation.offscreenExtent, offscreenDynamicScissor);
     vkCmdSetScissor(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &offscreenDynamicScissor);
 
     VkDeviceSize offscreenOffsets[] = {0};
 
     // draw/populate the depth map.
-    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.offscreenShaderBufferComponents.vertexBuffer, offscreenOffsets);
+    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.directionalShadowShaderBufferComponents.vertexBuffer, offscreenOffsets);
 
-    vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.offscreenOperation.pipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.offscreenOperation.pipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
-    vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.offscreenOperation.pipelineComponents.pipeline);
+    vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.directionalShadowOperation.pipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.directionalShadowOperation.pipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
+    vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.directionalShadowOperation.pipelineComponents.pipeline);
 
-    if ((graphicsRecordingPackage.offscreenShaderBufferComponents.indiceCount != -1) && (graphicsRecordingPackage.offscreenShaderBufferComponents.verticeCount == -1)) {
-        vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    if ((graphicsRecordingPackage.directionalShadowShaderBufferComponents.indiceCount != -1) && (graphicsRecordingPackage.directionalShadowShaderBufferComponents.verticeCount == -1)) {
+        vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.directionalShadowShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.indiceCount, 1, 0, 0, 0);
-    } else if ((graphicsRecordingPackage.offscreenShaderBufferComponents.indiceCount == -1) && (graphicsRecordingPackage.offscreenShaderBufferComponents.verticeCount != -1)) {
-        vkCmdDraw(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.offscreenShaderBufferComponents.verticeCount, 1, 0, 0);
+        vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.directionalShadowShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+    } else if ((graphicsRecordingPackage.directionalShadowShaderBufferComponents.indiceCount == -1) && (graphicsRecordingPackage.directionalShadowShaderBufferComponents.verticeCount != -1)) {
+        vkCmdDraw(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.directionalShadowShaderBufferComponents.verticeCount, 1, 0, 0);
     }
 
     vkCmdEndRenderPass(graphicsRecordingPackage.graphicsCommandBuffer);

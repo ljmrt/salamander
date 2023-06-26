@@ -22,11 +22,11 @@ namespace CommandManager
         
         uint32_t currentFrame;
         
-        RendererDetails::PipelineComponents cubemapPipelineComponents;
+        Pipeline::PipelineComponents cubemapPipelineComponents;
         ModelHandler::ShaderBufferComponents cubemapShaderBufferComponents;
-        RendererDetails::PipelineComponents scenePipelineComponents;
+        Pipeline::PipelineComponents scenePipelineComponents;
         ModelHandler::ShaderBufferComponents sceneShaderBufferComponents;
-        RendererDetails::PipelineComponents sceneNormalsPipelineComponents;
+        Pipeline::PipelineComponents sceneNormalsPipelineComponents;
         ModelHandler::ShaderBufferComponents sceneNormalsShaderBufferComponents;
         Offscreen::OffscreenOperation directionalShadowOperation;
         ModelHandler::ShaderBufferComponents directionalShadowShaderBufferComponents;

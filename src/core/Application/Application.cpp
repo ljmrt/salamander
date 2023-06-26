@@ -29,6 +29,11 @@ void Application::terminate()
     m_renderer.cleanupRenderer();
     m_instance.cleanupInstance(m_displayDetails);
     DisplayManager::cleanupGLFW(m_displayDetails.glfwWindow);
+
+    // cleanup variables specified in Defaults::ApplicationCleanup.
+    for (VkVertexInputBindingDescription *bindingDescriptionPointer : Defaults::applicationCleanup.vertexInputBindingDescriptionsMemory) {
+        delete bindingDescriptionPointer;
+    }
 }
 
 void Application::launch()

@@ -5,7 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <core/Renderer/PipelineComponents.h>
+#include <core/Renderer/Pipeline.h>
 #include <core/Shader/Image.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 
@@ -20,7 +20,7 @@ namespace Offscreen
 
         Image::TextureDetails depthTextureDetails;  // framebuffer depth attachment.
 
-        RendererDetails::PipelineComponents pipelineComponents;
+        Pipeline::PipelineComponents pipelineComponents;
         VkRenderPass renderPass;
 
 
@@ -33,7 +33,7 @@ namespace Offscreen
         // @param graphicsCommandPool the command pool used for graphics operations.
         // @param graphicsQueue the queue used for graphics commands.
         // @param vulkanDevices Vulkan physical and logical device to use in member components generation.
-        void generateMemberComponents(int32_t offscreenWidth, int32_t offscreenHeight, void (*createSpecializedRenderPass)(DeviceHandler::VulkanDevices, VkRenderPass&), void (*createSpecializedPipeline)(VkRenderPass, VkDevice, RendererDetails::PipelineComponents&), VkCommandPool graphicsCommandPool, VkQueue graphicsQueue, DeviceHandler::VulkanDevices vulkanDevices);
+        void generateMemberComponents(int32_t offscreenWidth, int32_t offscreenHeight, void (*createSpecializedRenderPass)(DeviceHandler::VulkanDevices, VkRenderPass&), void (*createSpecializedPipeline)(VkRenderPass, VkDevice, Pipeline::PipelineComponents&), VkCommandPool graphicsCommandPool, VkQueue graphicsQueue, DeviceHandler::VulkanDevices vulkanDevices);
 
         // cleanup the offscreen operation.
         //

@@ -360,9 +360,9 @@ void RendererDetails::Renderer::createMemberCubemapPipeline(VkSampleCountFlagBit
 
     cubemapPipelineData.vulkanLogicalDevice = *m_vulkanLogicalDevice;
     
-    cubemapPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapVertex.spv");
+    cubemapPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapVertex.spv");
     cubemapPipelineData.geometryShaderBytecodeAbsolutePath = "*NA*";
-    cubemapPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapFragment.spv");
+    cubemapPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/cubemapFragment.spv");
 
     cubemapPipelineData.vertexDataStride = sizeof(ModelHandler::CubemapVertexData);
     cubemapPipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchCubemapAttributeDescriptions;
@@ -384,7 +384,7 @@ void RendererDetails::Renderer::createMemberCubemapPipeline(VkSampleCountFlagBit
     cubemapPipelineData.depthStencilDepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
     cubemapPipelineData.colorBlendColorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-    cubemapPipelineData.colorBlendEnable = VK_TRUE;
+    cubemapPipelineData.colorBlendBlendEnable = VK_TRUE;
 
     cubemapPipelineData.dynamicStatesDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
@@ -400,9 +400,9 @@ void RendererDetails::Renderer::createMemberScenePipeline(VkSampleCountFlagBits 
 
     scenePipelineData.vulkanLogicalDevice = *m_vulkanLogicalDevice;
     
-    scenePipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneVertex.spv");
+    scenePipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneVertex.spv");
     scenePipelineData.geometryShaderBytecodeAbsolutePath = "*NA*";
-    scenePipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneFragment.spv");
+    scenePipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneFragment.spv");
 
     scenePipelineData.vertexDataStride = sizeof(ModelHandler::SceneVertexData);
     scenePipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchSceneAttributeDescriptions;
@@ -424,7 +424,7 @@ void RendererDetails::Renderer::createMemberScenePipeline(VkSampleCountFlagBits 
     scenePipelineData.depthStencilDepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
     scenePipelineData.colorBlendColorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-    scenePipelineData.colorBlendEnable = VK_TRUE;
+    scenePipelineData.colorBlendBlendEnable = VK_TRUE;
 
     scenePipelineData.dynamicStatesDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
@@ -440,9 +440,9 @@ void RendererDetails::Renderer::createMemberSceneNormalsPipeline(VkSampleCountFl
 
     sceneNormalsPipelineData.vulkanLogicalDevice = *m_vulkanLogicalDevice;
     
-    sceneNormalsPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsVertex.spv");
-    sceneNormalsPipelineData.geometryShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsGeometry.spv");
-    sceneNormalsPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsFragment.spv");
+    sceneNormalsPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsVertex.spv");
+    sceneNormalsPipelineData.geometryShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsGeometry.spv");
+    sceneNormalsPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/sceneNormalsFragment.spv");
 
     sceneNormalsPipelineData.vertexDataStride = sizeof(ModelHandler::SceneNormalsVertexData);
     sceneNormalsPipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchSceneNormalsAttributeDescriptions;
@@ -464,7 +464,7 @@ void RendererDetails::Renderer::createMemberSceneNormalsPipeline(VkSampleCountFl
     sceneNormalsPipelineData.depthStencilDepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
     sceneNormalsPipelineData.colorBlendColorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-    sceneNormalsPipelineData.colorBlendEnable = VK_TRUE;
+    sceneNormalsPipelineData.colorBlendBlendEnable = VK_TRUE;
 
     sceneNormalsPipelineData.dynamicStatesDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
@@ -474,14 +474,15 @@ void RendererDetails::Renderer::createMemberSceneNormalsPipeline(VkSampleCountFl
     m_sceneNormalsPipelineComponents.createMemberPipeline(sceneNormalsPipelineData);
 }
 
-void RendererDetails::createDirectionalShadowPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, RendererDetails::PipelineComponents& pipelineComponents)
+void RendererDetails::createDirectionalShadowPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, Pipeline::PipelineComponents& pipelineComponents)
 {
     Pipeline::PipelineData directionalShadowPipelineData;
 
-    directionalShadowPipelineData.vulkanLogicalDevice = *m_vulkanLogicalDevice;
+    directionalShadowPipelineData.vulkanLogicalDevice = vulkanLogicalDevice;
     
-    directionalShadowPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/directionalShadowMappingVertex.spv");
-    directionalShadowPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/directionalShadowMappingFragment.spv");
+    directionalShadowPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/directionalShadowVertex.spv");
+    directionalShadowPipelineData.geometryShaderBytecodeAbsolutePath = "*NA*";
+    directionalShadowPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/directionalShadowFragment.spv");
 
     // uses the same vertex data stride and similar as the cubemap pipeline.
     directionalShadowPipelineData.vertexDataStride = sizeof(ModelHandler::CubemapVertexData);
@@ -493,7 +494,7 @@ void RendererDetails::createDirectionalShadowPipeline(VkRenderPass renderPass, V
     directionalShadowPipelineData.viewportViewportCount = 1;
     directionalShadowPipelineData.viewportScissorCount = 1;
     
-    directionalShadowPipelineData.rasterizationCullMode = VK_CULL_MODE_NONE_BIT;
+    directionalShadowPipelineData.rasterizationCullMode = VK_CULL_MODE_NONE;
     directionalShadowPipelineData.rasterizationFrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
     directionalShadowPipelineData.multisamplingRasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -504,14 +505,14 @@ void RendererDetails::createDirectionalShadowPipeline(VkRenderPass renderPass, V
     directionalShadowPipelineData.depthStencilDepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 
     directionalShadowPipelineData.colorBlendColorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
-    directionalShadowPipelineData.colorBlendEnable = VK_TRUE;
+    directionalShadowPipelineData.colorBlendBlendEnable = VK_TRUE;
 
     directionalShadowPipelineData.dynamicStatesDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
     directionalShadowPipelineData.pipelineRenderPass = renderPass;
 
     
-    m_directionalShadowMappingPipelineComponents.createMemberPipeline(directionalShadowPipelineData);
+    pipelineComponents.createMemberPipeline(directionalShadowPipelineData);
 }
 
 void RendererDetails::Renderer::createMemberSynchronizationObjects()
@@ -702,7 +703,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 
     m_directionalShadowOperation.generateMemberComponents((displayDetails.swapchainImageExtent.width / 1), (displayDetails.swapchainImageExtent.height / 1), &RendererDetails::createDirectionalShadowRenderPass, &RendererDetails::createDirectionalShadowPipeline, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
 
-    m_mainModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Fox/glTF/Fox.gltf"));
+    m_mainModel.loadModelFromAbsolutePath((Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Fox/glTF/Fox.gltf"));
     // m_mainModel.normalizeNormalValues();
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
     m_mainModel.populateShaderBufferComponents(m_mainModel.meshVertices, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
@@ -718,7 +719,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     }
     m_dummySceneNormalsModel.populateShaderBufferComponents(sceneNormalsVertexData, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
 
-    m_cubemapModel.loadModelFromAbsolutePath((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Cube/Cube.gltf"));
+    m_cubemapModel.loadModelFromAbsolutePath((Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Cube/Cube.gltf"));
     
     std::vector<ModelHandler::CubemapVertexData> cubemapVertexData;
     cubemapVertexData.resize(m_cubemapModel.meshVertices.size());
@@ -737,7 +738,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     }
     m_dummyDirectionalShadowModel.populateShaderBufferComponents(directionalShadowVertexData, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
 
-    Image::populateTextureDetails((Defaults::miscDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapModel.textureDetails);
+    Image::populateTextureDetails((Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapModel.textureDetails);
 
     Uniform::createUniformBuffers(sizeof(Uniform::SceneUniformBufferObject), temporaryVulkanDevices, m_scenePipelineComponents.uniformBuffers, m_scenePipelineComponents.uniformBuffersMemory, m_scenePipelineComponents.mappedUniformBuffersMemory);
     ResourceDescriptor::createDescriptorPool(2, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);

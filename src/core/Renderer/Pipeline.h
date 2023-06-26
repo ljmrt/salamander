@@ -8,12 +8,13 @@
 #include <core/Shader/Shader.h>
 
 #include <vector>
+#include <functional>
 
 
 namespace Pipeline
 {
     struct PipelineData {  // all the data necessary for a pipeline creation(as well as pipeline layout and pipeline shaders).
-        VkDevice vulkanLogicalDevice
+        VkDevice vulkanLogicalDevice;
 
         // shader data.
         // set any shader bytecode paths as *NA* to disable the shader.

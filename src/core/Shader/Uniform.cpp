@@ -30,7 +30,7 @@ void Uniform::createUniformBuffers(VkDeviceSize uniformBufferObjectSize, DeviceH
     }
 }
 
-void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory, std::vector<void *>& mappedOffscreenUniformBuffersMemory)
+void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory, std::vector<void *>& mappedDirectionalShadowUniformBuffersMemory)
 {
     const float nearPlane = 0.1f;
     const float farPlane = 256.0f;
@@ -109,10 +109,10 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     memcpy(mappedCubemapUniformBuffersMemory[currentImage], &cubemapUniformBufferObject, sizeof(Uniform::CubemapUniformBufferObject));
 
     
-    Uniform::OffscreenUniformBufferObject offscreenUniformBufferObject{};
+    Uniform::DirectionalShadowUniformBufferObject directionalShadowUniformBufferObject{};
 
-    offscreenUniformBufferObject.lightSpaceMatrix = sceneUniformBufferObject.lightSpaceMatrix;
-    offscreenUniformBufferObject.modelMatrix = sceneUniformBufferObject.modelMatrix;
+    directionalShadowUniformBufferObject.lightSpaceMatrix = sceneUniformBufferObject.lightSpaceMatrix;
+    directionalShadowUniformBufferObject.modelMatrix = sceneUniformBufferObject.modelMatrix;
     
-    memcpy(mappedOffscreenUniformBuffersMemory[currentImage], &offscreenUniformBufferObject, sizeof(Uniform::OffscreenUniformBufferObject));
+    memcpy(mappedDirectionalShadowUniformBuffersMemory[currentImage], &directionalShadowUniformBufferObject, sizeof(Uniform::DirectionalShadowUniformBufferObject));
 }

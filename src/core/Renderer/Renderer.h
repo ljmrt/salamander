@@ -5,7 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <core/Renderer/PipelineComponents.h>
+#include <core/Renderer/Pipeline.h>
 #include <core/Renderer/Offscreen.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Shader/Shader.h>
@@ -109,16 +109,16 @@ namespace RendererDetails
     // @param renderPass render pass to use in directional shadow pipeline creation.
     // @param vulkanLogicalDevice Vulkan logical device to use in directional shadow pipeline creation.
     // @param pipelineComponents reference to the pipeline components to use and create the pipeline in.
-    void createDirectionalShadowPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, RendererDetails::PipelineComponents& pipelineComponents);
+    void createDirectionalShadowPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, Pipeline::PipelineComponents& pipelineComponents);
     
     class Renderer
     {
     private:
         VkDevice *m_vulkanLogicalDevice;  // pointer to this application's Vulkan instance.
     
-        PipelineComponents m_cubemapPipelineComponents;  // the components used in the cubemap's graphics pipeline.    
-        PipelineComponents m_scenePipelineComponents;  // the components used in the scene's graphics pipeline.
-        PipelineComponents m_sceneNormalsPipelineComponents;  // the components used in the scene normals' graphics pipeline.
+        Pipeline::PipelineComponents m_cubemapPipelineComponents;  // the components used in the cubemap's graphics pipeline.    
+        Pipeline::PipelineComponents m_scenePipelineComponents;  // the components used in the scene's graphics pipeline.
+        Pipeline::PipelineComponents m_sceneNormalsPipelineComponents;  // the components used in the scene normals' graphics pipeline.
         Offscreen::OffscreenOperation m_directionalShadowOperation;  // the pipeline components and similar used in the directional shadow mapping offscreen operation.
 
         VkRenderPass m_renderPass;  // we only need a singular render pass.
