@@ -67,8 +67,11 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
 
     sceneUniformBufferObject.normalMatrix = glm::mat4(glm::mat3(glm::transpose(glm::inverse(sceneUniformBufferObject.modelMatrix))));
 
-    sceneUniformBufferObject.mainLightProperties = glm::vec4(2.0f, 2.0f, 5.0f, 0.0f);
-    sceneUniformBufferObject.mainLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.55f);
+    Uniform::SceneLight directionalLight;
+    directionalLight.lightProperties = glm::vec4(2.0f, 2.0f, 5.0f, 0.0f);
+    directionalLight.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.55f);
+
+    sceneUniformBufferObject.sceneLights.push_back(directionalLight);
 
     // TODO: light matrices do not need to be updated every frame.
     // TODO: proper variable names.
@@ -80,7 +83,7 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     glm::mat4 lightProjectionMatrix = glm::ortho(-sizeX, sizeX, -sizeY, sizeY, 0.0f, (2.0f * distance));
     lightProjectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
     
-    glm::mat4 lightViewMatrix = glm::lookAt(glm::vec3(sceneUniformBufferObject.mainLightProperties), mainCamera.center, mainCamera.up);
+    glm::mat4 lightViewMatrix = glm::lookAt(glm::vec3(directionalLight.lightProperties), mainCamera.center, mainCamera.up);
     
     sceneUniformBufferObject.lightSpaceMatrix = (lightProjectionMatrix * lightViewMatrix);
 

@@ -78,16 +78,41 @@ namespace ResourceDescriptor
     // @param descriptorSets created descriptorSets.
     void createDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
 
-    // TODO: find a easier/less complicated way of specifying descriptor set data(combined samplers, etc.).
-    // populate descriptor sets.
+    // populate a write descriptor set struct.
+    //
+    // @param dstSet see VkWriteDescriptorSet documentation.
+    // @param dstBinding see VkWriteDescriptorSet documentation.
+    // @param descriptorType see VkWriteDescriptorSet documentation.
+    // @param imageInfo see VkWriteDescriptorSet documentation.
+    // @param bufferInfo see VkWriteDescriptorSet documentation.
+    // @param writeDescriptorSet populated write descriptor set.
+    void populateWriteDescriptorSet(VkDescriptorSet dstSet, uint32_t dstBinding, VkDescriptorType descriptorType, const VkDescriptorImageInfo *imageInfo, const VkDescriptorBufferInfo *bufferInfo, VkWriteDescriptorSet& writeDescriptorSet);
+
+    // populate a descriptor buffer info struct.
+    //
+    // @param buffer see VkDescriptorBufferInfo documentation.
+    // @param offset see VkDescriptorBufferInfo documentation.
+    // @param range see VkDescriptorBufferInfo documentation.
+    // @param descriptorBufferInfo populated descriptor buffer info.
+    void populateDescriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range, VkDescriptorBufferInfo& descriptorBufferInfo);
+
+    // populate a descriptor image info struct.
+    //
+    // @param sampler see VkDescriptorImageInfo documentation.
+    // @param imageView see VkDescriptorImageInfo documentation.
+    // @param imageLayout see VkDescriptorImageInfo documentation.
+    // @param descriptorImageInfo populated descriptor image info.
+    void populateDescriptorImageInfo(VkSampler sampler, VkImageView imageView, VkImageLayout imageLayout, VkDescriptorImageInfo& descriptorImageInfo);
+    
+    // populate the supplied descriptor sets.
+    // by default, a uniform buffer descriptor set with a binding of 0 is provided.
+    // all provided write descriptor sets will have their dstSet accordingly.
     //
     // @param uniformBuffers uniform buffers to populate the descriptor sets with.
-    // @param textureImageViews image views to use in descriptor sets population.
-    // @param combinedSamplers samplers to use in descriptor sets population.
-    // @param combinedSamplerCount the amount of combinded samplers that were provided.
+    // @param additionalWriteDescriptorSets additional write descriptor sets in addition to the default uniform buffer write descriptor set.
     // @param vulkanLogicalDevice Vulkan logical device to use in descriptor sets population.
     // @param descriptorSets populated descriptor sets.
-    void populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageViews[], VkSampler combinedSamplers[], uint32_t combinedSamplerCount, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
+    void populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, std::vector<VkWriteDescriptorSet>& additionalWriteDescriptorSets, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets);
 }
 
 

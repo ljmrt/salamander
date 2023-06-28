@@ -120,6 +120,7 @@ namespace RendererDetails
         Pipeline::PipelineComponents m_scenePipelineComponents;  // the components used in the scene's graphics pipeline.
         Pipeline::PipelineComponents m_sceneNormalsPipelineComponents;  // the components used in the scene normals' graphics pipeline.
         Offscreen::OffscreenOperation m_directionalShadowOperation;  // the pipeline components and similar used in the directional shadow mapping offscreen operation.
+        Offscreen::OffscreenOperation m_pointShadowOperation;  // the pipeline components and similar used in the point shadow mapping offscreen operation.
 
         VkRenderPass m_renderPass;  // we only need a singular render pass.
 

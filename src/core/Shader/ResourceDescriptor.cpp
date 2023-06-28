@@ -143,9 +143,42 @@ void ResourceDescriptor::createDescriptorSets(VkDescriptorSetLayout descriptorSe
     }
 }
 
-void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, VkImageView textureImageViews[], VkSampler combinedSamplers[], uint32_t combinedSamplerCount, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets)
+void ResourceDescriptor::populateWriteDescriptorSet(VkDescriptorSet dstSet, uint32_t dstBinding, VkDescriptorType descriptorType, const VkDescriptorImageInfo *imageInfo, const VkDescriptorBufferInfo *bufferInfo, VkWriteDescriptorSet& writeDescriptorSet)
+{
+    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+
+    writeDescriptorSet.dstSet = dstSet;
+    writeDescriptorSet.dstBinding = dstBinding;
+    writeDescriptorSet.dstArrayElement = 0;
+
+    writeDescriptorSet.descriptorType = descriptorType;
+    writeDescriptorSet.descriptorCount = 1;
+
+    writeDescriptorSet.pImageInfo = imageInfo;
+    writeDescriptorSet.pBufferInfo = bufferInfo;
+    writeDescriptorSet.pTexelBufferView = nullptr;
+}
+
+void ResourceDescriptor::populateDescriptorBufferInfo(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range, VkDescriptorBufferInfo& descriptorBufferInfo)
+{
+    descriptorBufferInfo.buffer = buffer;
+    descriptorBufferInfo.offset = offset;
+    descriptorBufferInfo.range = range;
+}
+
+void ResourceDescriptor::populateDescriptorImageInfo(VkSampler sampler, VkImageView imageView, VkImageLayout imageLayout, VkDescriptorImageInfo& descriptorImageInfo)
+{
+    descriptorImageInfo.sampler = sampler;
+    descriptorImageInfo.imageView = imageView;
+    descriptorImageInfo.imageLayout = imageLayout;
+}
+
+void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBuffers, std::vector<VkWriteDescriptorSet>& additionalWriteDescriptorSets, VkDevice vulkanLogicalDevice, std::vector<VkDescriptorSet>& descriptorSets)
 {
     for (size_t i = 0; i < descriptorSets.size(); i += 1) {
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+        
+
         VkDescriptorBufferInfo descriptorBufferInfo{};
 
         descriptorBufferInfo.buffer = uniformBuffers[i];
@@ -153,86 +186,17 @@ void ResourceDescriptor::populateDescriptorSets(std::vector<VkBuffer>& uniformBu
         descriptorBufferInfo.offset = 0;
         descriptorBufferInfo.range = VK_WHOLE_SIZE;  // we're overwriting the entire buffer.
 
-
-        VkDescriptorImageInfo descriptorImageInfo{};
-
-        descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        descriptorImageInfo.imageView = textureImageViews[0];
-
-        VkDescriptorImageInfo additionalDescriptorImageInfo{};
-        if (combinedSamplerCount > 0) {
-            descriptorImageInfo.sampler = combinedSamplers[0];
-
-            if (combinedSamplerCount == 2) {
-                additionalDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;  // this depth attachment is used as a depth attachment(writing) and a shader-accessible image(reading).
-                additionalDescriptorImageInfo.imageView = textureImageViews[1];
-
-                additionalDescriptorImageInfo.sampler = combinedSamplers[1];
-            }
-        }
-
-
         VkWriteDescriptorSet uniformBufferWriteDescriptorSet{};
-        uniformBufferWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        ResourceDescriptor::populateWriteDescriptorSet(descriptorSets[i], 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, nullptr, &descriptorBufferInfo, uniformBufferWriteDescriptorSet);
+        writeDescriptorSets.push_back(uniformBufferWriteDescriptorSet);
 
-        uniformBufferWriteDescriptorSet.dstSet = descriptorSets[i];
-        uniformBufferWriteDescriptorSet.dstBinding = 0;  // the uniform buffer binding index.
-        uniformBufferWriteDescriptorSet.dstArrayElement = 0;
-
-        uniformBufferWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uniformBufferWriteDescriptorSet.descriptorCount = 1;
-
-        uniformBufferWriteDescriptorSet.pBufferInfo = &descriptorBufferInfo;
-        uniformBufferWriteDescriptorSet.pImageInfo = nullptr;
-        uniformBufferWriteDescriptorSet.pTexelBufferView = nullptr;
-
-        VkWriteDescriptorSet writeDescriptorSets[3];  // bad hack, but allocate the highest used size.
-        uint32_t writeDescriptorSetsSize = -1;
-
-        if (combinedSamplerCount > 0) {
-            VkWriteDescriptorSet combinedSamplerWriteDescriptorSet{};
-            combinedSamplerWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-
-            combinedSamplerWriteDescriptorSet.dstSet = descriptorSets[i];
-            combinedSamplerWriteDescriptorSet.dstBinding = 1;  // the combined image sampler binding index.
-            combinedSamplerWriteDescriptorSet.dstArrayElement = 0;
-
-            combinedSamplerWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            combinedSamplerWriteDescriptorSet.descriptorCount = 1;
-
-            combinedSamplerWriteDescriptorSet.pBufferInfo = nullptr;
-            combinedSamplerWriteDescriptorSet.pImageInfo = &descriptorImageInfo;
-            combinedSamplerWriteDescriptorSet.pTexelBufferView = nullptr;
-
-            writeDescriptorSets[0] = uniformBufferWriteDescriptorSet;
-            writeDescriptorSets[1] = combinedSamplerWriteDescriptorSet;
-
-            if (combinedSamplerCount == 2) {
-                VkWriteDescriptorSet combinedSampler2WriteDescriptorSet{};
-                combinedSampler2WriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-
-                combinedSampler2WriteDescriptorSet.dstSet = descriptorSets[i];
-                combinedSampler2WriteDescriptorSet.dstBinding = 2;  // the combined image sampler binding index.
-                combinedSampler2WriteDescriptorSet.dstArrayElement = 0;
-
-                combinedSampler2WriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                combinedSampler2WriteDescriptorSet.descriptorCount = 1;
-
-                combinedSampler2WriteDescriptorSet.pBufferInfo = nullptr;
-                combinedSampler2WriteDescriptorSet.pImageInfo = &additionalDescriptorImageInfo;
-                combinedSampler2WriteDescriptorSet.pTexelBufferView = nullptr;
-
-                writeDescriptorSets[2] = combinedSampler2WriteDescriptorSet;
-                writeDescriptorSetsSize = 3;
-            } else {
-                writeDescriptorSetsSize = 2;
-            }
-            
-        } else {
-            writeDescriptorSets[0] = uniformBufferWriteDescriptorSet;
-            writeDescriptorSetsSize = 1;
+        
+        for (VkWriteDescriptorSet additionalWriteDescriptorSet : additionalWriteDescriptorSets) {
+            additionalWriteDescriptorSet.dstSet = descriptorSets[i];
+            writeDescriptorSets.push_back(additionalWriteDescriptorSet);
         }
+        
 
-        vkUpdateDescriptorSets(vulkanLogicalDevice, writeDescriptorSetsSize, writeDescriptorSets, 0, nullptr);  // populate/update the descriptor set.
+        vkUpdateDescriptorSets(vulkanLogicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);  // populate/update the descriptor set.
     }
 }

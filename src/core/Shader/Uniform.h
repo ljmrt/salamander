@@ -15,6 +15,11 @@
 
 namespace Uniform
 {
+    struct SceneLight {
+        uint32_t lightID;  // 0: directional, 1: point, 2: spotlight(not implemented, yet).
+        glm::vec4 lightProperties;  // used as a direction/position distinguished by the light ID.
+        glm::vec4 lightColor;  // structured as [R, G, B, light intensity].
+    };
     struct CubemapUniformBufferObject {  // identical to the cubemap shader structs.
         glm::mat4 projectionMatrix;  // identical to scene uniform buffer object projection matrix.
         glm::mat4 viewMatrix;  // identical to scene uniform buffer object view matrix.
@@ -29,12 +34,11 @@ namespace Uniform
 
         glm::vec3 viewingPosition;
         
-        // all (*)color vec4's are structered as [R, G, B, light intensity].
-        alignas(16) glm::vec4 ambientLightColor;
+        alignas(16) glm::vec4 ambientLightColor;  // structered as [R, G, B, light intensity].
 
         // TODO: implement a spotlight light-caster.
-        glm::vec4 mainLightProperties;  // used as a direction/position distinguished by the w-component(should be 0.0 if the light is directional, 1.0 if the light is a point light.
-        alignas(16) glm::vec4 mainLightColor;
+        std::vector<Uniform::SceneLight> sceneLights;
+        uint32_t sceneLightCount;
     };
 
     struct SceneNormalsUniformBufferObject {
@@ -47,6 +51,12 @@ namespace Uniform
     struct DirectionalShadowUniformBufferObject {
         glm::mat4 lightSpaceMatrix;
         glm::mat4 modelMatrix;
+    };
+
+    struct PointShadowUniformBufferObject {
+        glm::mat4 modelMatrix;
+        std::vector<glm::mat4> shadowTransforms;
+        
     };
 
 

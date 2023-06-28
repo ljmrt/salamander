@@ -28,12 +28,13 @@ namespace Offscreen
         //
         // @param offscreenWidth the width of the offscreen "image".
         // @param offscreenHeight the height of the offscreen "image".
+        // @param layerCount the amount of layers in the depth image.
         // @param createSpecializedRenderPass a passed in reference to a function used for creating the operation's render pass.
         // @param createSpecializedPipeline a passed in reference to a function used for creating the operation's pipeline.
         // @param graphicsCommandPool the command pool used for graphics operations.
         // @param graphicsQueue the queue used for graphics commands.
         // @param vulkanDevices Vulkan physical and logical device to use in member components generation.
-        void generateMemberComponents(int32_t offscreenWidth, int32_t offscreenHeight, void (*createSpecializedRenderPass)(DeviceHandler::VulkanDevices, VkRenderPass&), void (*createSpecializedPipeline)(VkRenderPass, VkDevice, Pipeline::PipelineComponents&), VkCommandPool graphicsCommandPool, VkQueue graphicsQueue, DeviceHandler::VulkanDevices vulkanDevices);
+        void generateMemberComponents(int32_t offscreenWidth, int32_t offscreenHeight, uint32_t layerCount, void (*createSpecializedRenderPass)(DeviceHandler::VulkanDevices, VkRenderPass&), void (*createSpecializedPipeline)(VkRenderPass, VkDevice, Pipeline::PipelineComponents&), VkCommandPool graphicsCommandPool, VkQueue graphicsQueue, DeviceHandler::VulkanDevices vulkanDevices);
 
         // cleanup the offscreen operation.
         //

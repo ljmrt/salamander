@@ -1,5 +1,11 @@
 #version 450
 
+struct SceneLight {
+    uint lightID;
+    vec4 lightProperties;
+    vec4 lightColor;
+};
+
 layout(binding = 0) uniform UniformBufferObject {
     mat4 projectionMatrix;
     mat4 viewMatrix;
@@ -11,8 +17,8 @@ layout(binding = 0) uniform UniformBufferObject {
     
     vec4 ambientLightColor;
 
-    vec4 mainLightProperties;
-    vec4 mainLightColor;
+    SceneLight sceneLights[];
+    uint sceneLightCount;
 } uniformBufferObject;
 
 // TODO: can we make this a struct(VS_IN)?

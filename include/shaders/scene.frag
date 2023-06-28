@@ -1,5 +1,11 @@
 #version 450
 
+struct SceneLight {
+    uint lightID;
+    vec4 lightProperties;
+    vec4 lightColor;
+};
+
 layout(binding = 0) uniform UniformBufferObject {
     mat4 projectionMatrix;
     mat4 viewMatrix;
@@ -11,12 +17,13 @@ layout(binding = 0) uniform UniformBufferObject {
     
     vec4 ambientLightColor;
 
-    vec4 mainLightProperties;
-    vec4 mainLightColor;
+    SceneLight sceneLights[128];
+    uint sceneLightCount;
 } uniformBufferObject;
 
 layout(binding = 1) uniform sampler2D textureSampler;
-layout(binding = 2) uniform sampler2D shadowMapSampler;
+layout(binding = 2) uniform sampler2D directionalShadowSampler;
+layout(binding = 3) uniform samplerCube pointShadowSampler;
 
 layout(location = 0) in VS_OUT {
    vec3 fragmentPositionWorldSpace;
@@ -27,53 +34,76 @@ layout(location = 0) in VS_OUT {
 
 layout(location = 0) out vec4 outputColor;
 
+vec3 calculateSceneLightImpact(SceneLight sceneLight, vec3 fragmentPosition, vec3 fragmentNormal, vec3 viewingDirection, vec3 ambientLighting);
+float calculateDirectionalShadowObscurity(vec4 fragmentPositionLightSpace, float shadowBias);
+float calculatePointShadowObscurity(vec3 fragmentPosition, SceneLight sceneLight, float shadowBias);
+
 void main()
 {
+    outputColor = vec4(0.0, 0.0, 0.0, 1.0);
+
     vec3 ambientLighting = (uniformBufferObject.ambientLightColor.xyz * uniformBufferObject.ambientLightColor.w);
 
-    vec3 mainLightRayDirection = (uniformBufferObject.mainLightProperties.xyz - (vsOut.fragmentPositionWorldSpace * uniformBufferObject.mainLightProperties.w));  // selectively change the direction if the light is point or directional.
+    vec3 viewingDirection = normalize(uniformBufferObject.viewingPosition - vsOut.fragmentPositionWorldSpace);
+    for (int i = 0; i < uniformBufferObject.sceneLightCount; i++) {
+        outputColor += vec4(calculateSceneLightImpact(uniformBufferObject.sceneLights[i], vsOut.fragmentPositionWorldSpace, vsOut.fragmentNormalWorldSpace, viewingDirection, ambientLighting), 0.0);
+    }
 
-    float attenuation = (1.0 / dot(mainLightRayDirection, mainLightRayDirection));
+    outputColor *= texture(textureSampler, vsOut.fragmentUVCoordinates);
+}
 
-    attenuation = ((uniformBufferObject.mainLightProperties.w == 0.0) ? 1 : attenuation);  // selectively disable attenuation(based on directional or positional properties). TODO: is this branching?
+vec3 calculateSceneLightImpact(SceneLight sceneLight, vec3 fragmentPosition, vec3 fragmentNormal, vec3 viewingDirection, vec3 ambientLighting)
+{
+    vec3 lightRayDirection = (sceneLight.lightProperties.xyz - (fragmentPosition * sceneLight.lightProperties.w));  // selectively change the direction if the light is point or directional.
 
-    mainLightRayDirection = normalize(mainLightRayDirection);
-    
-    vec3 unpackedMainLightColor = (uniformBufferObject.mainLightColor.xyz * uniformBufferObject.mainLightColor.w * attenuation);
-    float diffuseLightValue = max(dot(normalize(vsOut.fragmentNormalWorldSpace), mainLightRayDirection), 0.0);  // we want to avoid negative values.
-    vec3 diffuseLighting = (unpackedMainLightColor * diffuseLightValue);
+    float attenuation = (1.0 / dot(lightRayDirection, lightRayDirection));
+    attenuation = (sceneLight.lightID == 1 ? attenuation : 1);  // selectively disable attenuation depending on the light type.
+
+    lightRayDirection = normalize(lightRayDirection);
+
+    vec3 unpackedLightColor = (sceneLight.lightColor.xyz * sceneLight.lightColor.w * attenuation);  // packed as RGB color, and the intensity as the A-channel.
+
+
+    float diffuseLightValue = max(dot(normalize(fragmentNormal), lightRayDirection), 0.0);  // we want to avoid negative values.
+    vec3 diffuseLighting = (unpackedLightColor * diffuseLightValue);
+
 
     float shininessValue = 16;
-    float specularExponent = (2 * uniformBufferObject.mainLightProperties.w);
-    
-    vec3 viewingDirection = normalize(uniformBufferObject.viewingPosition - vsOut.fragmentPositionWorldSpace);
-    vec3 reflectionDirection = reflect(mainLightRayDirection, vsOut.fragmentNormalWorldSpace);
-    vec3 halfwayDirection = normalize(mainLightRayDirection + viewingDirection);
-    float specularComponent = pow(max(dot(vsOut.fragmentNormalWorldSpace, halfwayDirection), 0.0), shininessValue);
-    
-    vec3 specularLighting = specularExponent * specularComponent * unpackedMainLightColor;
+    float specularExponent = (sceneLight.lightID == 1 ? 2 : 0);  // selectively disable specular lighting depending on the light type.
 
-    vec3 projectedCoordinates = (vsOut.fragmentPositionLightSpace.xyz / vsOut.fragmentPositionLightSpace.w);
+    vec3 reflectionDirection = reflect(lightRayDirection, fragmentNormal);
+    vec3 halfwayDirection = normalize(lightRayDirection + viewingDirection);
+    float specularComponent = pow(max(dot(fragmentNormal, halfwayDirection), 0.0), shininessValue);
+    
+    vec3 specularLighting = specularExponent * specularComponent * unpackedLightColor;
+
+    float shadowBias = max((0.05 * (1.0 - dot(fragmentNormal, lightRayDirection))), 0.005);
+    float isObscured = (sceneLight.lightID == 1 ? calculatePointShadowObscurity(fragmentPosition, sceneLight, shadowBias) : calculateDirectionalShadowObscurity(vsOut.fragmentPositionLightSpace, shadowBias));
+
+    return vec3((ambientLighting + ((diffuseLighting + specularLighting) * (1.0 - isObscured))));
+}
+
+float calculateDirectionalShadowObscurity(vec4 fragmentPositionLightSpace, float shadowBias)
+{
+    vec3 projectedCoordinates = (fragmentPositionLightSpace.xyz / fragmentPositionLightSpace.w);
     projectedCoordinates = ((projectedCoordinates * 0.5) + 0.5);  // transform coordinates from -1..1 to 0..1.
-    
-    float closestDepthAtCoordinates = texture(shadowMapSampler, projectedCoordinates.xy).r;
+
+    float closestDepthAtCoordinates = texture(directionalShadowSampler, projectedCoordinates.xy).r;
     float currentDepthAtCoordinates = projectedCoordinates.z;
-    
-    float shadowBias = max((0.05 * (1.0 - dot(vsOut.fragmentNormalWorldSpace, mainLightRayDirection))), 0.005);
-    currentDepthAtCoordinates += (gl_FrontFacing ? shadowBias : 0.0);
 
-    float isObscured = ((closestDepthAtCoordinates < currentDepthAtCoordinates) ? 1.0 : 0.0);
+    currentDepthAtCoordinates -= (gl_FrontFacing ? shadowBias : 0.0);
 
-    vec4 completeLighting = vec4((ambientLighting + ((diffuseLighting + specularLighting) * (1.0 - isObscured))), 1.0);
+    return ((closestDepthAtCoordinates < currentDepthAtCoordinates) ? 1.0 : 0.0);
+}
 
+float calculatePointShadowObscurity(vec3 fragmentPosition, SceneLight sceneLight, float shadowBias)
+{
+    vec3 shadowSampleDirection = (fragmentPosition - sceneLight.lightProperties.xyz);
 
-    outputColor = (completeLighting * texture(textureSampler, vsOut.fragmentUVCoordinates));
+    float closestDepthAtCoordinates = texture(pointShadowSampler, shadowSampleDirection).r;
+    float currentDepthAtCoordinates = length(shadowSampleDirection);
 
-    // used to debug isObscured, blue if is obscured/in the shadow, yellow if not obscured/being lit.
-    // if (isObscured == 0.0) {
-    //    outputColor = vec4(1.0, 1.0, 0.0, 1.0);
-    // }
-    // if (isObscured == 1.0) {
-    //    outputColor = vec4(0.0, 0.0, 1.0, 1.0);
-    // }
+    currentDepthAtCoordinates -= (gl_FrontFacing ? shadowBias : 0.0);
+
+    return ((closestDepthAtCoordinates < currentDepthAtCoordinates) ? 1.0 : 0.0);
 }

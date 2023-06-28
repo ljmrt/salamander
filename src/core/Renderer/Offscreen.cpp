@@ -11,13 +11,13 @@
 #include <array>
 
 
-void Offscreen::OffscreenOperation::generateMemberComponents(int32_t offscreenWidth, int32_t offscreenHeight, void (*createSpecializedRenderPass)(DeviceHandler::VulkanDevices, VkRenderPass&), void (*createSpecializedPipeline)(VkRenderPass, VkDevice, Pipeline::PipelineComponents&), VkCommandPool graphicsCommandPool, VkQueue graphicsQueue, DeviceHandler::VulkanDevices vulkanDevices)
+void Offscreen::OffscreenOperation::generateMemberComponents(int32_t offscreenWidth, int32_t offscreenHeight, uint32_t layerCount, void (*createSpecializedRenderPass)(DeviceHandler::VulkanDevices, VkRenderPass&), void (*createSpecializedPipeline)(VkRenderPass, VkDevice, Pipeline::PipelineComponents&), VkCommandPool graphicsCommandPool, VkQueue graphicsQueue, DeviceHandler::VulkanDevices vulkanDevices)
 {
     this->offscreenExtent.width = offscreenWidth;
-    this->offscreenExtent.height = offscreenHeight;
+    this->offscreenExtent.height = offscreenWidth;  // must be equal for cubemap depth map/point shadow mapping.
 
     
-    Depth::populateDepthImageDetails(this->offscreenExtent, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT, graphicsCommandPool, graphicsQueue, vulkanDevices, this->depthTextureDetails.textureImageDetails);
+    Depth::populateDepthImageDetails(this->offscreenExtent, VK_SAMPLE_COUNT_1_BIT, 1, VK_IMAGE_USAGE_SAMPLED_BIT, graphicsCommandPool, graphicsQueue, vulkanDevices, this->depthTextureDetails.textureImageDetails);
     Image::createTextureSampler(vulkanDevices, 1, this->depthTextureDetails.textureSampler);
 
 
