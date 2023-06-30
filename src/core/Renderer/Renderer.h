@@ -135,6 +135,7 @@ namespace RendererDetails
         ModelHandler::Model m_dummySceneNormalsModel;  // a "dummy" scene normals model used to populate the scene normals shader buffer components.
         ModelHandler::Model m_cubemapModel;  // the loaded model used for the cubemap.
         ModelHandler::Model m_dummyDirectionalShadowModel;  // a "dummy" model used to populate the directional shadow shader buffer components.
+        ModelHandler::Model m_dummyPointShadowModel;  // a "dummy" model used to populate the point shadow shader buffer components.
 
 
         // create member render pass for all pipelines.

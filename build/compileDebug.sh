@@ -26,6 +26,12 @@ glslc ../include/shaders/directionalShadow.vert -o directionalShadowVertex.spv
 glslc ../include/shaders/directionalShadow.frag -o directionalShadowFragment.spv
 echo "../include/shaders/directionalShadow.vert --> directionalShadowVertex.spv"
 echo "../include/shaders/directionalShadow.frag --> directionalShadowFragment.spv"
+glslc ../include/shaders/pointShadow.vert -o pointShadowVertex.spv
+glslc ../include/shaders/pointShadow.vert -o pointShadowGeometry.spv
+glslc ../include/shaders/pointShadow.frag -o pointShadowFragment.spv
+echo "../include/shaders/pointShadow.vert --> pointShadowVertex.spv"
+echo "../include/shaders/pointShadow.vert --> pointShadowGeometry.spv"
+echo "../include/shaders/pointShadow.frag --> pointShadowFragment.spv"
 echo
 echo
 cmake -DCMAKE_BUILD_TYPE=Debug .. &&

@@ -54,9 +54,23 @@ namespace Uniform
     };
 
     struct PointShadowUniformBufferObject {
-        glm::mat4 modelMatrix;
-        std::vector<glm::mat4> shadowTransforms;
-        
+        glm::mat4 shadowTransforms[6];  // "shadow transforms" for all the 6 faces of a cubemap.
+        glm::mat4 modelMatrix;        
+    };
+    
+    struct UniformBuffersUpdatePackage {
+        Camera::ArcballCamera& mainCamera;  // the scene's main camera.
+        glm::quat mainMeshQuaternion;  // the main mesh's provided optional quaternion.
+
+        VkExtent2D swapchainImageExtent;  // Vulkan swapchain image extent.        
+        GLFWwindow *glfwWindow;  // GLFW window to use in frame uniform buffer updating.
+
+        // uniform buffer at the index of the current frame.
+        void *mappedSceneUniformBufferMemory;  // mapped scene uniform buffer memory.
+        void *mappedSceneNormalsUniformBufferMemory;  // mapped scene normals uniform buffer memory.
+        void *mappedCubemapUniformBufferMemory;  // mapped cubemap uniform buffer memory.
+        void *mappedDirectionalShadowUniformBufferMemory;  // mapped directional shadow uniform buffer memory.
+        void *mappedPointShadowUniformBufferMemory;  // mapped point shadow uniform buffer memory.
     };
 
 
@@ -69,18 +83,10 @@ namespace Uniform
     // @param mappedUniformBuffersMemory mapped uniform buffers memory.
     void createUniformBuffers(VkDeviceSize uniformBufferObjectSize, DeviceHandler::VulkanDevices vulkanDevices, std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory, std::vector<void *>& mappedUniformBuffersMemory);
 
-    // update the passed frame's uniform buffers.
+    // update the frame's uniform buffers.
     //
-    // @param mainCamera the scene's main camera.
-    // @param meshQuaternion a quaternion to rotate the mesh.
-    // @param currentImage current image/frame.
-    // @param glfwWindow GLFW window to use in frame uniform buffer updating.
-    // @param swapchainImageExtent Vulkan swapchain image extent.
-    // @param mappedSceneUniformBuffersMemory mapped scene uniform buffers memory.
-    // @param mappedSceneNormalsUniformBuffersMemory mapped scene normals uniform buffers memory.
-    // @param mappedCubemapUniformBuffersMemory mapped cubemap uniform buffers memory.
-    // @param mappedDirectionalShadowUniformBuffersMemory mapped offscreen uniform buffers memory.
-    void updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory, std::vector<void *>& mappedDirectionalShadowUniformBuffersMemory);
+    // @param uniformBuffersUpdatePackage the uniform buffers update data to use in this function.
+    void updateFrameUniformBuffers(Uniform::UniformBuffersUpdatePackage& uniformBuffersUpdatePackage);
 }
 
 

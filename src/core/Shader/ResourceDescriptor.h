@@ -41,6 +41,11 @@ namespace ResourceDescriptor
     // @param attributeDescriptions fetched attribute descriptions.
     void fetchSceneNormalsAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
 
+    // fetch the attribute descriptions used for the shadow vertex attributes.
+    //
+    // @param attributeDescriptions fetched attribute descriptions.
+    void fetchShadowAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions);
+
     // populate a descriptor set layout binding.
     //
     // @param binding see VkDescriptorSetLayoutBinding documentation.

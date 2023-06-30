@@ -138,7 +138,7 @@ void RendererDetails::Renderer::createMemberRenderPass(VkFormat swapchainImageFo
     }
 }
 
-void RendererDetails::createDirectionalShadowRenderPass(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass& renderPass)
+void RendererDetails::createShadowRenderPass(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass& renderPass)
 {
     VkAttachmentDescription depthAttachmentDescription{};
     VkAttachmentReference depthAttachmentReference{};
@@ -194,7 +194,7 @@ void RendererDetails::createDirectionalShadowRenderPass(DeviceHandler::VulkanDev
     
     size_t renderPassCreationResult = vkCreateRenderPass(vulkanDevices.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass);
     if (renderPassCreationResult != VK_SUCCESS) {
-        throwDebugException("Failed to create directional shadow render pass.");
+        throwDebugException("Failed to create shadow render pass.");
     }
 }
 
@@ -485,8 +485,8 @@ void RendererDetails::createDirectionalShadowPipeline(VkRenderPass renderPass, V
     directionalShadowPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/directionalShadowFragment.spv");
 
     // uses the same vertex data stride and similar as the cubemap pipeline.
-    directionalShadowPipelineData.vertexDataStride = sizeof(ModelHandler::CubemapVertexData);
-    directionalShadowPipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchCubemapAttributeDescriptions;
+    directionalShadowPipelineData.vertexDataStride = sizeof(ModelHandler::DirectionalShadowVertexData);
+    directionalShadowPipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchShadowAttributeDescriptions;
 
     directionalShadowPipelineData.inputAssemblyTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     directionalShadowPipelineData.inputAssemblyPrimitiveRestartEnable = VK_FALSE;
@@ -513,6 +513,47 @@ void RendererDetails::createDirectionalShadowPipeline(VkRenderPass renderPass, V
 
     
     pipelineComponents.createMemberPipeline(directionalShadowPipelineData);
+}
+
+void RendererDetails::createPointShadowPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, Pipeline::PipelineComponents& pipelineComponents)
+{
+    Pipeline::PipelineData pointShadowPipelineData;
+
+    pointShadowPipelineData.vulkanLogicalDevice = vulkanLogicalDevice;
+    
+    pointShadowPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/pointShadowVertex.spv");
+    pointShadowPipelineData.geometryShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/pointShadowGeometry.spv");
+    pointShadowPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/pointShadowFragment.spv");
+
+    // uses the same vertex data stride and similar as the cubemap pipeline.
+    pointShadowPipelineData.vertexDataStride = sizeof(ModelHandler::PointShadowVertexData);
+    pointShadowPipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchShadowAttributeDescriptions;
+
+    pointShadowPipelineData.inputAssemblyTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    pointShadowPipelineData.inputAssemblyPrimitiveRestartEnable = VK_FALSE;
+
+    pointShadowPipelineData.viewportViewportCount = 1;
+    pointShadowPipelineData.viewportScissorCount = 1;
+    
+    pointShadowPipelineData.rasterizationCullMode = VK_CULL_MODE_NONE;
+    pointShadowPipelineData.rasterizationFrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+
+    pointShadowPipelineData.multisamplingRasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    pointShadowPipelineData.multisamplingMinSampleShading = 1.0f;
+
+    pointShadowPipelineData.depthStencilDepthTestEnable = VK_TRUE;
+    pointShadowPipelineData.depthStencilDepthWriteEnable = VK_TRUE;
+    pointShadowPipelineData.depthStencilDepthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
+    pointShadowPipelineData.colorBlendColorWriteMask = (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+    pointShadowPipelineData.colorBlendBlendEnable = VK_TRUE;
+
+    pointShadowPipelineData.dynamicStatesDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+    pointShadowPipelineData.pipelineRenderPass = renderPass;
+
+    
+    pipelineComponents.createMemberPipeline(pointShadowPipelineData);
 }
 
 void RendererDetails::Renderer::createMemberSynchronizationObjects()
@@ -583,11 +624,26 @@ void RendererDetails::Renderer::drawFrame(DisplayManager::DisplayDetails& displa
     graphicsRecordingPackage.sceneNormalsShaderBufferComponents = m_dummySceneNormalsModel.shaderBufferComponents;
     graphicsRecordingPackage.directionalShadowOperation = m_directionalShadowOperation;
     graphicsRecordingPackage.directionalShadowShaderBufferComponents = m_dummyDirectionalShadowModel.shaderBufferComponents;
+    graphicsRecordingPackage.pointShadowOperation = m_pointShadowOperation;
+    graphicsRecordingPackage.pointShadowShaderBufferComponents = m_dummyPointShadowModel.shaderBufferComponents;
     
     CommandManager::recordGraphicsCommandBufferCommands(graphicsRecordingPackage);
 
+
+    Uniform::UniformBuffersUpdatePackage uniformBuffersUpdatePackage{};
+    uniformBuffersUpdatePackage.mainCamera = m_mainCamera;
+    uniformBuffersUpdatePackage.mainMeshQuaternion = m_mainModel.meshQuaternion;
     
-    Uniform::updateFrameUniformBuffers(m_mainCamera, m_mainModel.meshQuaternion, m_currentFrame, displayDetails.glfwWindow, displayDetails.swapchainImageExtent, m_scenePipelineComponents.mappedUniformBuffersMemory, m_sceneNormalsPipelineComponents.mappedUniformBuffersMemory, m_cubemapPipelineComponents.mappedUniformBuffersMemory, m_directionalShadowOperation.pipelineComponents.mappedUniformBuffersMemory);
+    uniformBuffersUpdatePackage.swapchainImageExtent = displayDetails.swapchainImageExtent;
+    uniformBuffersUpdatePackage.glfwWindow = displayDetails.glfwWindow;
+
+    uniformBuffersUpdatePackage.mappedSceneUniformBufferMemory = m_scenePipelineComponents.mappedUniformBuffersMemory[m_currentFrame];
+    uniformBuffersUpdatePackage.mappedSceneNormalsUniformBufferMemory = m_sceneNormalsPipelineComponents.mappedUniformBuffersMemory[m_currentFrame];
+    uniformBuffersUpdatePackage.mappedCubemapUniformBufferMemory = m_cubemapPipelineComponents.mappedUniformBuffersMemory[m_currentFrame];
+    uniformBuffersUpdatePackage.mappedDirectionalShadowUniformBufferMemory = m_directionalShadowOperation.pipelineComponents.mappedUniformBuffersMemory[m_currentFrame];
+    uniformBuffersUpdatePackage.mappedPointShadowUniformBufferMemory = m_pointShadowOperation.pipelineComponents.mappedUniformBuffersMemory[m_currentFrame];
+    
+    Uniform::updateFrameUniformBuffers(uniformBuffersUpdatePackage);
 
     
     VkSubmitInfo submitInfo{};
@@ -704,7 +760,9 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 
     SwapchainHandler::createSwapchainFramebuffers(displayDetails.swapchainImageViews, displayDetails.swapchainImageExtent, displayDetails.colorImageDetails.imageView, displayDetails.depthImageDetails.imageView, m_renderPass, *m_vulkanLogicalDevice, displayDetails.swapchainFramebuffers);
 
-    m_directionalShadowOperation.generateMemberComponents((displayDetails.swapchainImageExtent.width / 1), (displayDetails.swapchainImageExtent.height / 1), 1, &RendererDetails::createDirectionalShadowRenderPass, &RendererDetails::createDirectionalShadowPipeline, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+    m_directionalShadowOperation.generateMemberComponents((displayDetails.swapchainImageExtent.width / 1), (displayDetails.swapchainImageExtent.height / 1), 1, &RendererDetails::createShadowRenderPass, &RendererDetails::createDirectionalShadowPipeline, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+
+    m_pointShadowOperation.generateMemberComponents((displayDetails.swapchainImageExtent.width / 1), (displayDetails.swapchainImageExtent.height / 1), 6, &RendererDetails::createShadowRenderPass, &RendererDetails::createPointShadowPipeline, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
 
     m_mainModel.loadModelFromAbsolutePath((Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Fox/glTF/Fox.gltf"));
     // m_mainModel.normalizeNormalValues();
@@ -733,13 +791,18 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 
     m_dummyDirectionalShadowModel.meshVertices = m_mainModel.meshVertices;
     m_dummyDirectionalShadowModel.meshIndices = m_mainModel.meshIndices;
+
+    m_dummyPointShadowModel.meshVertices = m_mainModel.meshVertices;
+    m_dummyPointShadowModel.meshIndices = m_mainModel.meshIndices;
     
-    std::vector<ModelHandler::CubemapVertexData> directionalShadowVertexData;
-    directionalShadowVertexData.resize(m_dummyDirectionalShadowModel.meshVertices.size());
+    std::vector<ModelHandler::ShadowVertexData> shadowVertexData;  // both the directional and point shadow operation use the same vertex data.
+    shadowVertexData.resize(m_dummyDirectionalShadowModel.meshVertices.size());
     for (size_t i = 0; i < m_dummyDirectionalShadowModel.meshVertices.size(); i += 1) {
-        directionalShadowVertexData[i] = {m_dummyDirectionalShadowModel.meshVertices[i].position};
+        shadowVertexData[i] = {m_dummyDirectionalShadowModel.meshVertices[i].position};
     }
-    m_dummyDirectionalShadowModel.populateShaderBufferComponents(directionalShadowVertexData, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+    m_dummyDirectionalShadowModel.populateShaderBufferComponents(shadowVertexData, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
+
+    m_dummyPointShadowModel.populateShaderBufferComponents(shadowVertexData, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
 
     Image::populateTextureDetails((Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapModel.textureDetails);
 

@@ -17,7 +17,7 @@ void Offscreen::OffscreenOperation::generateMemberComponents(int32_t offscreenWi
     this->offscreenExtent.height = offscreenWidth;  // must be equal for cubemap depth map/point shadow mapping.
 
     
-    Depth::populateDepthImageDetails(this->offscreenExtent, VK_SAMPLE_COUNT_1_BIT, 1, VK_IMAGE_USAGE_SAMPLED_BIT, graphicsCommandPool, graphicsQueue, vulkanDevices, this->depthTextureDetails.textureImageDetails);
+    Depth::populateDepthImageDetails(this->offscreenExtent, VK_SAMPLE_COUNT_1_BIT, layerCount, VK_IMAGE_USAGE_SAMPLED_BIT, graphicsCommandPool, graphicsQueue, vulkanDevices, this->depthTextureDetails.textureImageDetails);
     Image::createTextureSampler(vulkanDevices, 1, this->depthTextureDetails.textureSampler);
 
 

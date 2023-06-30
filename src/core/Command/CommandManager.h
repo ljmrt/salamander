@@ -30,6 +30,8 @@ namespace CommandManager
         ModelHandler::ShaderBufferComponents sceneNormalsShaderBufferComponents;
         Offscreen::OffscreenOperation directionalShadowOperation;
         ModelHandler::ShaderBufferComponents directionalShadowShaderBufferComponents;
+        Offscreen::OffscreenOperation pointShadowOperation;
+        ModelHandler::ShaderBufferComponents pointShadowShaderBufferComponents;
     };
     
     

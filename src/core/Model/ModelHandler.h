@@ -34,6 +34,10 @@ namespace ModelHandler
         glm::vec3 normal;
     };
 
+    struct ShadowVertexData {
+        glm::vec3 position;
+    };
+
     struct ShaderBufferComponents {
         VkBuffer vertexBuffer;
         VkDeviceMemory vertexBufferMemory;

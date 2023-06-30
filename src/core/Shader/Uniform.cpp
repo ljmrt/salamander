@@ -30,7 +30,7 @@ void Uniform::createUniformBuffers(VkDeviceSize uniformBufferObjectSize, DeviceH
     }
 }
 
-void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::quat meshQuaternion, uint32_t currentImage, GLFWwindow *glfwWindow, VkExtent2D swapchainImageExtent, std::vector<void *>& mappedSceneUniformBuffersMemory, std::vector<void *>& mappedSceneNormalsUniformBuffersMemory, std::vector<void *>& mappedCubemapUniformBuffersMemory, std::vector<void *>& mappedDirectionalShadowUniformBuffersMemory)
+void Uniform::updateFrameUniformBuffers(Uniform::UniformBuffersUpdatePackage& uniformBuffersUpdatePackage)
 {
     const float nearPlane = 0.1f;
     const float farPlane = 256.0f;
@@ -39,27 +39,27 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     Uniform::SceneUniformBufferObject sceneUniformBufferObject{};
 
     sceneUniformBufferObject.modelMatrix = glm::mat4(1.0f);  // glm::rotate(glm::mat4(1.0f), passedTime * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));  // rotate around the y-axis over time.
-    sceneUniformBufferObject.modelMatrix *= glm::mat4_cast(meshQuaternion);
+    sceneUniformBufferObject.modelMatrix *= glm::mat4_cast(uniformBuffersUpdatePackage.meshQuaternion);
     sceneUniformBufferObject.modelMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
     sceneUniformBufferObject.modelMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, -0.5f));  // centers the object as we normalized the vertice position coordinates to 0..1.
 
-    glm::quat rotationQuaternion = mainCamera.baseQuaternion;
-    if (mainCamera.arcballEnabled == true) {
+    glm::quat rotationQuaternion = uniformBuffersUpdatePackage.mainCamera.baseQuaternion;
+    if (uniformBuffersUpdatePackage.mainCamera.arcballEnabled == true) {
         float NDCX;
         float NDCY;
-        Camera::glfwGetCursorNDCPosition(glfwWindow, swapchainImageExtent, NDCX, NDCY);
+        Camera::glfwGetCursorNDCPosition(uniformBuffersUpdatePackage.glfwWindow, uniformBuffersUpdatePackage.swapchainImageExtent, NDCX, NDCY);
         
         glm::vec3 currentPoint = Camera::NDCPointOnSphere(NDCX, NDCY);
-        glm::quat dragQuaternion = glm::quat(glm::dot(mainCamera.initialPoint, currentPoint), glm::cross(mainCamera.initialPoint, currentPoint));  // glm::quat's are stored as [w, x, y, z].
-        mainCamera.volatileQuaternion = dragQuaternion * mainCamera.baseQuaternion;
-        rotationQuaternion = mainCamera.volatileQuaternion;
+        glm::quat dragQuaternion = glm::quat(glm::dot(uniformBuffersUpdatePackage.mainCamera.initialPoint, currentPoint), glm::cross(uniformBuffersUpdatePackage.mainCamera.initialPoint, currentPoint));  // glm::quat's are stored as [w, x, y, z].
+        uniformBuffersUpdatePackage.mainCamera.volatileQuaternion = dragQuaternion * uniformBuffersUpdatePackage.mainCamera.baseQuaternion;
+        rotationQuaternion = uniformBuffersUpdatePackage.mainCamera.volatileQuaternion;
     }
 
-    sceneUniformBufferObject.viewMatrix = glm::lookAt(mainCamera.eye, mainCamera.center, mainCamera.up);  // look at the geometry head-on 3 units backwards from it's center.
-    sceneUniformBufferObject.viewMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -mainCamera.zoomAmount));
-    sceneUniformBufferObject.viewMatrix *= glm::mat4_cast(rotationQuaternion);
+    sceneUniformBufferObject.viewMatrix = glm::lookAt(uniformBuffersUpdatePackage.mainCamera.eye, uniformBuffersUpdatePackage.mainCamera.center, uniformBuffersUpdatePackage.mainCamera.up);  // look at the geometry head-on 3 units backwards from it's center.
+    sceneUniformBufferObject.viewMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -uniformBuffersUpdatePackage.mainCamera.zoomAmount));
+    sceneUniformBufferObject.viewMatrix *= glm::mat4_cast(uniformBuffersUpdatePackage.rotationQuaternion);
 
-    float aspectRatio = (swapchainImageExtent.width / (float)(swapchainImageExtent.height));
+    float aspectRatio = (uniformBuffersUpdatePackage.swapchainImageExtent.width / (float)(uniformBuffersUpdatePackage.swapchainImageExtent.height));
 
     float cameraFOV = 45.0f;  // TODO: add this as a camera struct member variable.
     sceneUniformBufferObject.projectionMatrix = glm::perspective(glm::radians(cameraFOV), aspectRatio, nearPlane, farPlane);
@@ -68,15 +68,23 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     sceneUniformBufferObject.normalMatrix = glm::mat4(glm::mat3(glm::transpose(glm::inverse(sceneUniformBufferObject.modelMatrix))));
 
     Uniform::SceneLight directionalLight;
+    directionalLight.lightID = 0;  // directional light.
     directionalLight.lightProperties = glm::vec4(2.0f, 2.0f, 5.0f, 0.0f);
     directionalLight.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.55f);
+
+    sceneUniformBufferObject.sceneLights.push_back(directionalLight);
+
+    Uniform::SceneLight pointLight;
+    directionalLight.lightID = 1;  // point light.
+    directionalLight.lightProperties = glm::vec4(-2.0f, -2.0f, 0.0f, 1.0f);
+    directionalLight.lightColor = glm::vec4(1.0f, 0.0f, 0.0f, 0.55f);
 
     sceneUniformBufferObject.sceneLights.push_back(directionalLight);
 
     // TODO: light matrices do not need to be updated every frame.
     // TODO: proper variable names.
     float sizePerDepth = (atan(glm::radians(cameraFOV / 2.0f) * 2.0f));
-    float distance = glm::length(glm::vec3(0, 0, 0) - mainCamera.eye);
+    float distance = glm::length(glm::vec3(0, 0, 0) - uniformBuffersUpdatePackage.mainCamera.eye);
     float sizeX = (sizePerDepth * distance);
     float sizeY = (sizePerDepth * distance * aspectRatio);
     
@@ -87,11 +95,11 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     
     sceneUniformBufferObject.lightSpaceMatrix = (lightProjectionMatrix * lightViewMatrix);
 
-    sceneUniformBufferObject.viewingPosition = mainCamera.eye;
+    sceneUniformBufferObject.viewingPosition = uniformBuffersUpdatePackage.mainCamera.eye;
     
     sceneUniformBufferObject.ambientLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
     
-    memcpy(mappedSceneUniformBuffersMemory[currentImage], &sceneUniformBufferObject, sizeof(Uniform::SceneUniformBufferObject));
+    memcpy(uniformBuffersUpdatePackage.mappedSceneUniformBufferMemory, &sceneUniformBufferObject, sizeof(Uniform::SceneUniformBufferObject));
 
     
     Uniform::SceneNormalsUniformBufferObject sceneNormalsUniformBufferObject{};
@@ -101,7 +109,7 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     sceneNormalsUniformBufferObject.modelMatrix = sceneUniformBufferObject.modelMatrix;
     sceneNormalsUniformBufferObject.normalMatrix = glm::mat4(glm::mat3(glm::transpose(glm::inverse(sceneUniformBufferObject.viewMatrix * sceneUniformBufferObject.modelMatrix))));
     
-    memcpy(mappedSceneNormalsUniformBuffersMemory[currentImage], &sceneNormalsUniformBufferObject, sizeof(Uniform::SceneNormalsUniformBufferObject));
+    memcpy(uniformBuffersUpdatePackage.mappedSceneNormalsUniformBufferMemory, &sceneNormalsUniformBufferObject, sizeof(Uniform::SceneNormalsUniformBufferObject));
 
 
     Uniform::CubemapUniformBufferObject cubemapUniformBufferObject{};
@@ -109,7 +117,7 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     cubemapUniformBufferObject.projectionMatrix = sceneUniformBufferObject.projectionMatrix;
     cubemapUniformBufferObject.viewMatrix = sceneUniformBufferObject.viewMatrix;
 
-    memcpy(mappedCubemapUniformBuffersMemory[currentImage], &cubemapUniformBufferObject, sizeof(Uniform::CubemapUniformBufferObject));
+    memcpy(uniformBuffersUpdatePackage.mappedCubemapUniformBufferMemory, &cubemapUniformBufferObject, sizeof(Uniform::CubemapUniformBufferObject));
 
     
     Uniform::DirectionalShadowUniformBufferObject directionalShadowUniformBufferObject{};
@@ -117,5 +125,21 @@ void Uniform::updateFrameUniformBuffers(Camera::ArcballCamera& mainCamera, glm::
     directionalShadowUniformBufferObject.lightSpaceMatrix = sceneUniformBufferObject.lightSpaceMatrix;
     directionalShadowUniformBufferObject.modelMatrix = sceneUniformBufferObject.modelMatrix;
     
-    memcpy(mappedDirectionalShadowUniformBuffersMemory[currentImage], &directionalShadowUniformBufferObject, sizeof(Uniform::DirectionalShadowUniformBufferObject));
+    memcpy(uniformBuffersUpdatePackage.mappedDirectionalShadowUniformBufferMemory, &directionalShadowUniformBufferObject, sizeof(Uniform::DirectionalShadowUniformBufferObject));
+
+
+    Uniform::PointShadowUniformBufferObject pointShadowUniformBufferObject{};
+
+    glm::mat4 shadowProjectionMatrix = glm::perspective(glm::radians(90.0f), aspectRatio, nearPlane, farPlane);
+    glm::vec3 correctedPointLightPosition = glm::vec3(pointLight.lightProperties);
+
+    std::vector<glm::vec3> shadowCenterPositions = {glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f)};
+    std::vector<glm::vec3> shadowUpPositions = {glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)};
+    for (size_t i = 0; i < shadowCenterPositions.size(); i++) {
+        pointShadowUniformBufferObject.shadowTransforms[i] = (shadowProjectionMatrix * glm::lookAt(correctedPointLightPosition, (correctedPointLightPosition + shadowCenterPositions[i]), shadowUpPositions[i]));
+    }
+
+    pointShadowUniformBufferObject.modelMatrix = sceneUniformBufferObject.modelMatrix;
+
+    memcpy(uniformBuffersUpdatePackage.mappedPointShadowUniformBufferMemory, &pointShadowUniformBufferObject, sizeof(Uniform::PointShadowUniformBufferObject));
 }

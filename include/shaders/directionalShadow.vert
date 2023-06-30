@@ -1,13 +1,13 @@
 #version 450
 
-layout(binding = 0) uniform OffscreenUniformBufferObject {
+layout(binding = 0) uniform DirectionalShadowUniformBufferObject {
     mat4 lightSpaceMatrix;
     mat4 modelMatrix;
-} offscreenUniformBufferObject;
+} uniformBufferObject;
 
 layout(location = 0) in vec3 positionAttribute;
 
 void main()
 {
-    gl_Position = (offscreenUniformBufferObject.lightSpaceMatrix * offscreenUniformBufferObject.modelMatrix * vec4(positionAttribute, 1.0));
+    gl_Position = (uniformBufferObject.lightSpaceMatrix * uniformBufferObject.modelMatrix * vec4(positionAttribute, 1.0));
 }

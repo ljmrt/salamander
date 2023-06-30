@@ -59,6 +59,15 @@ void ResourceDescriptor::fetchSceneNormalsAttributeDescriptions(std::vector<VkVe
     attributeDescriptions = {positionAttributeDescription, normalAttributeDescription};
 }
 
+void ResourceDescriptor::fetchShadowAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
+{
+    // currently the same as the cubemap attribute descriptions, but want to avoid a direct call.
+    VkVertexInputAttributeDescription positionAttributeDescription{};
+    ResourceDescriptor::populateVertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(ModelHandler::CubemapVertexData, position), positionAttributeDescription);
+    
+    attributeDescriptions = {positionAttributeDescription};
+}
+
 void ResourceDescriptor::populateDescriptorSetLayoutBinding(uint32_t binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkDescriptorSetLayoutBinding& descriptorSetLayoutBinding)
 {
     descriptorSetLayoutBinding.binding = binding;
