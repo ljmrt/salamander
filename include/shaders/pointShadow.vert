@@ -1,8 +1,8 @@
 #version 450
 
 layout(binding = 0) uniform PointShadowUniformBufferObject {
-    glm::mat4 shadowTransforms[6];
-    glm::mat4 modelMatrix;
+    mat4 shadowTransforms[6];
+    mat4 modelMatrix;
 } uniformBufferObject;
 
 layout(location = 0) in vec3 positionAttribute;

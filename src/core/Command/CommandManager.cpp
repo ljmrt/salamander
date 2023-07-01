@@ -126,29 +126,29 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
     // attachment clear values are used in load operation clearing.
     VkClearValue colorAttachmentClearValue = {{{1.0f, 1.0f, 1.0f, 1.0f}}};  // clear to white.
     VkClearValue depthAttachmentClearValue = {1.0f, 0};
-    std::array<VkClearValue, 1> offscreenAttachmentClearValues = {depthAttachmentClearValue};
+    std::array<VkClearValue, 1> directionalShadowAttachmentClearValues = {depthAttachmentClearValue};
+    std::array<VkClearValue, 1> pointShadowAttachmentClearValues = {depthAttachmentClearValue};
     std::array<VkClearValue, 2> mainAttachmentClearValues = {colorAttachmentClearValue, depthAttachmentClearValue};
 
     
-    VkRenderPassBeginInfo offscreenRenderPassBeginInfo{};
-    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.directionalShadowOperation.renderPass, graphicsRecordingPackage.directionalShadowOperation.framebuffers[graphicsRecordingPackage.currentFrame], graphicsRecordingPackage.directionalShadowOperation.offscreenExtent, static_cast<uint32_t>(offscreenAttachmentClearValues.size()), offscreenAttachmentClearValues.data(), offscreenRenderPassBeginInfo);
+    VkRenderPassBeginInfo directionalShadowRenderPassBeginInfo{};
+    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.directionalShadowOperation.renderPass, graphicsRecordingPackage.directionalShadowOperation.framebuffers[graphicsRecordingPackage.currentFrame], graphicsRecordingPackage.directionalShadowOperation.offscreenExtent, static_cast<uint32_t>(directionalShadowAttachmentClearValues.size()), directionalShadowAttachmentClearValues.data(), directionalShadowRenderPassBeginInfo);
 
-    vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &offscreenRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &directionalShadowRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    // TODO: is this necessary for an offsceen operation?
     // set our dynamic pipeline states.
-    VkViewport offscreenDynamicViewport{};
-    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.directionalShadowOperation.offscreenExtent.width), static_cast<float>(graphicsRecordingPackage.directionalShadowOperation.offscreenExtent.height), 0.0f, 1.0f, offscreenDynamicViewport);
-    vkCmdSetViewport(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &offscreenDynamicViewport);
+    VkViewport directionalShadowDynamicViewport{};
+    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.directionalShadowOperation.offscreenExtent.width), static_cast<float>(graphicsRecordingPackage.directionalShadowOperation.offscreenExtent.height), 0.0f, 1.0f, directionalShadowDynamicViewport);
+    vkCmdSetViewport(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &directionalShadowDynamicViewport);
 
-    VkRect2D offscreenDynamicScissor{};
-    CommandManager::populateRect2DInfo(graphicsRecordingPackage.directionalShadowOperation.offscreenExtent, offscreenDynamicScissor);
-    vkCmdSetScissor(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &offscreenDynamicScissor);
+    VkRect2D directionalShadowDynamicScissor{};
+    CommandManager::populateRect2DInfo(graphicsRecordingPackage.directionalShadowOperation.offscreenExtent, directionalShadowDynamicScissor);
+    vkCmdSetScissor(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &directionalShadowDynamicScissor);
 
-    VkDeviceSize offscreenOffsets[] = {0};
+    VkDeviceSize directionalShadowOffsets[] = {0};
 
     // draw/populate the depth map.
-    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.directionalShadowShaderBufferComponents.vertexBuffer, offscreenOffsets);
+    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.directionalShadowShaderBufferComponents.vertexBuffer, directionalShadowOffsets);
 
     vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.directionalShadowOperation.pipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.directionalShadowOperation.pipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
     vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.directionalShadowOperation.pipelineComponents.pipeline);
@@ -159,6 +159,39 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
         vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.directionalShadowShaderBufferComponents.indiceCount, 1, 0, 0, 0);
     } else if ((graphicsRecordingPackage.directionalShadowShaderBufferComponents.indiceCount == -1) && (graphicsRecordingPackage.directionalShadowShaderBufferComponents.verticeCount != -1)) {
         vkCmdDraw(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.directionalShadowShaderBufferComponents.verticeCount, 1, 0, 0);
+    }
+
+    vkCmdEndRenderPass(graphicsRecordingPackage.graphicsCommandBuffer);
+
+
+    VkRenderPassBeginInfo pointShadowRenderPassBeginInfo{};
+    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.pointShadowOperation.renderPass, graphicsRecordingPackage.pointShadowOperation.framebuffers[graphicsRecordingPackage.currentFrame], graphicsRecordingPackage.pointShadowOperation.offscreenExtent, static_cast<uint32_t>(pointShadowAttachmentClearValues.size()), pointShadowAttachmentClearValues.data(), pointShadowRenderPassBeginInfo);
+
+    vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &pointShadowRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    // set our dynamic pipeline states.
+    VkViewport pointShadowDynamicViewport{};
+    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.pointShadowOperation.offscreenExtent.width), static_cast<float>(graphicsRecordingPackage.pointShadowOperation.offscreenExtent.height), 0.0f, 1.0f, pointShadowDynamicViewport);
+    vkCmdSetViewport(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &pointShadowDynamicViewport);
+
+    VkRect2D pointShadowDynamicScissor{};
+    CommandManager::populateRect2DInfo(graphicsRecordingPackage.pointShadowOperation.offscreenExtent, pointShadowDynamicScissor);
+    vkCmdSetScissor(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &pointShadowDynamicScissor);
+
+    VkDeviceSize pointShadowOffsets[] = {0};
+
+    // draw/populate the depth map.
+    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.pointShadowShaderBufferComponents.vertexBuffer, pointShadowOffsets);
+
+    vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.pointShadowOperation.pipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.pointShadowOperation.pipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
+    vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.pointShadowOperation.pipelineComponents.pipeline);
+
+    if ((graphicsRecordingPackage.pointShadowShaderBufferComponents.indiceCount != -1) && (graphicsRecordingPackage.pointShadowShaderBufferComponents.verticeCount == -1)) {
+        vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.pointShadowShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+        vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.pointShadowShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+    } else if ((graphicsRecordingPackage.pointShadowShaderBufferComponents.indiceCount == -1) && (graphicsRecordingPackage.pointShadowShaderBufferComponents.verticeCount != -1)) {
+        vkCmdDraw(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.pointShadowShaderBufferComponents.verticeCount, 1, 0, 0);
     }
 
     vkCmdEndRenderPass(graphicsRecordingPackage.graphicsCommandBuffer);

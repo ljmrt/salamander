@@ -97,6 +97,14 @@ namespace ModelHandler
         // @param vulkanDevices Vulkan logical and physical device to use in model buffers creation.
         void populateShaderBufferComponents(std::vector<ModelHandler::CubemapVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
 
+        // populate the shader buffer components for this model.
+        //
+        // @param vertexData the vertex data to pass into the vertex buffer.
+        // @param commandPool command pool to allocate necessary command buffers on.
+        // @param commandQueue queue to submit necessary commands on.
+        // @param vulkanDevices Vulkan logical and physical device to use in model buffers creation.
+        void populateShaderBufferComponents(std::vector<ModelHandler::ShadowVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
+
         // cleanup the model.
         //
         // @param preserveTextureDetails if the model's texture details should be preserved(not destroyed).

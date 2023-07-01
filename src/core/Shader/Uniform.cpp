@@ -39,25 +39,25 @@ void Uniform::updateFrameUniformBuffers(Uniform::UniformBuffersUpdatePackage& un
     Uniform::SceneUniformBufferObject sceneUniformBufferObject{};
 
     sceneUniformBufferObject.modelMatrix = glm::mat4(1.0f);  // glm::rotate(glm::mat4(1.0f), passedTime * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));  // rotate around the y-axis over time.
-    sceneUniformBufferObject.modelMatrix *= glm::mat4_cast(uniformBuffersUpdatePackage.meshQuaternion);
+    sceneUniformBufferObject.modelMatrix *= glm::mat4_cast(uniformBuffersUpdatePackage.mainMeshQuaternion);
     sceneUniformBufferObject.modelMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
     sceneUniformBufferObject.modelMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, -0.5f, -0.5f));  // centers the object as we normalized the vertice position coordinates to 0..1.
 
-    glm::quat rotationQuaternion = uniformBuffersUpdatePackage.mainCamera.baseQuaternion;
-    if (uniformBuffersUpdatePackage.mainCamera.arcballEnabled == true) {
+    glm::quat rotationQuaternion = uniformBuffersUpdatePackage.mainCamera->baseQuaternion;
+    if (uniformBuffersUpdatePackage.mainCamera->arcballEnabled == true) {
         float NDCX;
         float NDCY;
         Camera::glfwGetCursorNDCPosition(uniformBuffersUpdatePackage.glfwWindow, uniformBuffersUpdatePackage.swapchainImageExtent, NDCX, NDCY);
         
         glm::vec3 currentPoint = Camera::NDCPointOnSphere(NDCX, NDCY);
-        glm::quat dragQuaternion = glm::quat(glm::dot(uniformBuffersUpdatePackage.mainCamera.initialPoint, currentPoint), glm::cross(uniformBuffersUpdatePackage.mainCamera.initialPoint, currentPoint));  // glm::quat's are stored as [w, x, y, z].
-        uniformBuffersUpdatePackage.mainCamera.volatileQuaternion = dragQuaternion * uniformBuffersUpdatePackage.mainCamera.baseQuaternion;
-        rotationQuaternion = uniformBuffersUpdatePackage.mainCamera.volatileQuaternion;
+        glm::quat dragQuaternion = glm::quat(glm::dot(uniformBuffersUpdatePackage.mainCamera->initialPoint, currentPoint), glm::cross(uniformBuffersUpdatePackage.mainCamera->initialPoint, currentPoint));  // glm::quat's are stored as [w, x, y, z].
+        uniformBuffersUpdatePackage.mainCamera->volatileQuaternion = dragQuaternion * uniformBuffersUpdatePackage.mainCamera->baseQuaternion;
+        rotationQuaternion = uniformBuffersUpdatePackage.mainCamera->volatileQuaternion;
     }
 
-    sceneUniformBufferObject.viewMatrix = glm::lookAt(uniformBuffersUpdatePackage.mainCamera.eye, uniformBuffersUpdatePackage.mainCamera.center, uniformBuffersUpdatePackage.mainCamera.up);  // look at the geometry head-on 3 units backwards from it's center.
-    sceneUniformBufferObject.viewMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -uniformBuffersUpdatePackage.mainCamera.zoomAmount));
-    sceneUniformBufferObject.viewMatrix *= glm::mat4_cast(uniformBuffersUpdatePackage.rotationQuaternion);
+    sceneUniformBufferObject.viewMatrix = glm::lookAt(uniformBuffersUpdatePackage.mainCamera->eye, uniformBuffersUpdatePackage.mainCamera->center, uniformBuffersUpdatePackage.mainCamera->up);  // look at the geometry head-on 3 units backwards from it's center.
+    sceneUniformBufferObject.viewMatrix *= glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -uniformBuffersUpdatePackage.mainCamera->zoomAmount));
+    sceneUniformBufferObject.viewMatrix *= glm::mat4_cast(rotationQuaternion);
 
     float aspectRatio = (uniformBuffersUpdatePackage.swapchainImageExtent.width / (float)(uniformBuffersUpdatePackage.swapchainImageExtent.height));
 
@@ -72,30 +72,32 @@ void Uniform::updateFrameUniformBuffers(Uniform::UniformBuffersUpdatePackage& un
     directionalLight.lightProperties = glm::vec4(2.0f, 2.0f, 5.0f, 0.0f);
     directionalLight.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.55f);
 
-    sceneUniformBufferObject.sceneLights.push_back(directionalLight);
+    sceneUniformBufferObject.sceneLights[0] = directionalLight;
 
     Uniform::SceneLight pointLight;
-    directionalLight.lightID = 1;  // point light.
-    directionalLight.lightProperties = glm::vec4(-2.0f, -2.0f, 0.0f, 1.0f);
-    directionalLight.lightColor = glm::vec4(1.0f, 0.0f, 0.0f, 0.55f);
+    pointLight.lightID = 1;  // point light.
+    pointLight.lightProperties = glm::vec4(-2.0f, -2.0f, 0.0f, 1.0f);
+    pointLight.lightColor = glm::vec4(1.0f, 0.0f, 0.0f, 0.55f);
 
-    sceneUniformBufferObject.sceneLights.push_back(directionalLight);
+    sceneUniformBufferObject.sceneLights[1] = pointLight;
+
+    sceneUniformBufferObject.sceneLightCount = 2;
 
     // TODO: light matrices do not need to be updated every frame.
     // TODO: proper variable names.
     float sizePerDepth = (atan(glm::radians(cameraFOV / 2.0f) * 2.0f));
-    float distance = glm::length(glm::vec3(0, 0, 0) - uniformBuffersUpdatePackage.mainCamera.eye);
+    float distance = glm::length(glm::vec3(0, 0, 0) - uniformBuffersUpdatePackage.mainCamera->eye);
     float sizeX = (sizePerDepth * distance);
     float sizeY = (sizePerDepth * distance * aspectRatio);
     
     glm::mat4 lightProjectionMatrix = glm::ortho(-sizeX, sizeX, -sizeY, sizeY, 0.0f, (2.0f * distance));
     lightProjectionMatrix[1][1] *= -1;  // compensate for GLM's OpenGL design, invert the y-axis.
     
-    glm::mat4 lightViewMatrix = glm::lookAt(glm::vec3(directionalLight.lightProperties), mainCamera.center, mainCamera.up);
+    glm::mat4 lightViewMatrix = glm::lookAt(glm::vec3(directionalLight.lightProperties), uniformBuffersUpdatePackage.mainCamera->center, uniformBuffersUpdatePackage.mainCamera->up);
     
     sceneUniformBufferObject.lightSpaceMatrix = (lightProjectionMatrix * lightViewMatrix);
 
-    sceneUniformBufferObject.viewingPosition = uniformBuffersUpdatePackage.mainCamera.eye;
+    sceneUniformBufferObject.viewingPosition = uniformBuffersUpdatePackage.mainCamera->eye;
     
     sceneUniformBufferObject.ambientLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
     
@@ -133,11 +135,33 @@ void Uniform::updateFrameUniformBuffers(Uniform::UniformBuffersUpdatePackage& un
     glm::mat4 shadowProjectionMatrix = glm::perspective(glm::radians(90.0f), aspectRatio, nearPlane, farPlane);
     glm::vec3 correctedPointLightPosition = glm::vec3(pointLight.lightProperties);
 
-    std::vector<glm::vec3> shadowCenterPositions = {glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f)};
-    std::vector<glm::vec3> shadowUpPositions = {glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)};
-    for (size_t i = 0; i < shadowCenterPositions.size(); i++) {
+    // std::vector<glm::vec3> shadowCenterPositions = {glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f)};
+    // std::vector<glm::vec3> shadowUpPositions = {glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)};
+
+    glm::mat4 shadowTransform = glm::mat4(1.0f);
+    
+    shadowTransform = glm::rotate(shadowTransform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    pointShadowUniformBufferObject.shadowTransforms[0] = shadowTransform;
+
+    shadowTransform = glm::rotate(shadowTransform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    pointShadowUniformBufferObject.shadowTransforms[1] = shadowTransform;
+
+    shadowTransform = glm::rotate(shadowTransform, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    pointShadowUniformBufferObject.shadowTransforms[2] = shadowTransform;
+
+    shadowTransform = glm::rotate(shadowTransform, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    pointShadowUniformBufferObject.shadowTransforms[3] = shadowTransform;
+
+    shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    pointShadowUniformBufferObject.shadowTransforms[4] = shadowTransform;
+
+    shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    pointShadowUniformBufferObject.shadowTransforms[5] = shadowTransform;
+    /*for (size_t i = 0; i < shadowCenterPositions.size(); i++) {
         pointShadowUniformBufferObject.shadowTransforms[i] = (shadowProjectionMatrix * glm::lookAt(correctedPointLightPosition, (correctedPointLightPosition + shadowCenterPositions[i]), shadowUpPositions[i]));
-    }
+    }*/
 
     pointShadowUniformBufferObject.modelMatrix = sceneUniformBufferObject.modelMatrix;
 

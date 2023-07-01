@@ -23,9 +23,11 @@ void Depth::populateDepthImageDetails(VkExtent2D swapchainImageExtent, VkSampleC
     
     VkCommandBuffer disposableCommandBuffer;
     CommandManager::beginRecordingSingleSubmitCommands(commandPool, vulkanDevices.logicalDevice, disposableCommandBuffer);
+
+    VkImageLayout targetImageLayout = (additionalImageUsage == VK_IMAGE_USAGE_SAMPLED_BIT ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
     
-    Image::transitionImageLayout(depthImageDetails.image, depthImageDetails.imageFormat, 1, layerCount, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, disposableCommandBuffer);
-    depthImageDetails.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    Image::transitionImageLayout(depthImageDetails.image, depthImageDetails.imageFormat, 1, layerCount, VK_IMAGE_LAYOUT_UNDEFINED, targetImageLayout, disposableCommandBuffer);
+    depthImageDetails.imageLayout = targetImageLayout;
     
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
 }

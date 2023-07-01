@@ -485,7 +485,7 @@ void RendererDetails::createDirectionalShadowPipeline(VkRenderPass renderPass, V
     directionalShadowPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/directionalShadowFragment.spv");
 
     // uses the same vertex data stride and similar as the cubemap pipeline.
-    directionalShadowPipelineData.vertexDataStride = sizeof(ModelHandler::DirectionalShadowVertexData);
+    directionalShadowPipelineData.vertexDataStride = sizeof(ModelHandler::ShadowVertexData);
     directionalShadowPipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchShadowAttributeDescriptions;
 
     directionalShadowPipelineData.inputAssemblyTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -526,7 +526,7 @@ void RendererDetails::createPointShadowPipeline(VkRenderPass renderPass, VkDevic
     pointShadowPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/pointShadowFragment.spv");
 
     // uses the same vertex data stride and similar as the cubemap pipeline.
-    pointShadowPipelineData.vertexDataStride = sizeof(ModelHandler::PointShadowVertexData);
+    pointShadowPipelineData.vertexDataStride = sizeof(ModelHandler::ShadowVertexData);
     pointShadowPipelineData.fetchAttributeDescriptions = ResourceDescriptor::fetchShadowAttributeDescriptions;
 
     pointShadowPipelineData.inputAssemblyTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -631,7 +631,7 @@ void RendererDetails::Renderer::drawFrame(DisplayManager::DisplayDetails& displa
 
 
     Uniform::UniformBuffersUpdatePackage uniformBuffersUpdatePackage{};
-    uniformBuffersUpdatePackage.mainCamera = m_mainCamera;
+    uniformBuffersUpdatePackage.mainCamera = &m_mainCamera;
     uniformBuffersUpdatePackage.mainMeshQuaternion = m_mainModel.meshQuaternion;
     
     uniformBuffersUpdatePackage.swapchainImageExtent = displayDetails.swapchainImageExtent;
@@ -740,6 +740,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     
     createMemberScenePipeline(displayDetails.msaaSampleCount);
 
+    
     VkDescriptorSetLayoutBinding sceneNormalsUniformBufferLayoutBinding{};
     ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT), sceneNormalsUniformBufferLayoutBinding);
     
@@ -748,11 +749,20 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     
     createMemberSceneNormalsPipeline(displayDetails.msaaSampleCount);
 
+    
     VkDescriptorSetLayoutBinding directionalShadowUniformBufferLayoutBinding{};
     ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT), directionalShadowUniformBufferLayoutBinding);
     
     std::vector<VkDescriptorSetLayoutBinding> directionalShadowDescriptorSetLayoutBindings = {directionalShadowUniformBufferLayoutBinding};
     ResourceDescriptor::createDescriptorSetLayout(directionalShadowDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_directionalShadowOperation.pipelineComponents.descriptorSetLayout);
+
+    
+    VkDescriptorSetLayoutBinding pointShadowUniformBufferLayoutBinding{};
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT), pointShadowUniformBufferLayoutBinding);
+    
+    std::vector<VkDescriptorSetLayoutBinding> pointShadowDescriptorSetLayoutBindings = {pointShadowUniformBufferLayoutBinding};
+    ResourceDescriptor::createDescriptorSetLayout(pointShadowDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_pointShadowOperation.pipelineComponents.descriptorSetLayout);
+
     
     CommandManager::createGraphicsCommandPool(graphicsFamilyIndex, *m_vulkanLogicalDevice, displayDetails.graphicsCommandPool);
 
@@ -856,6 +866,14 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 
     std::vector<VkWriteDescriptorSet> directionalShadowWriteDescriptorSets;
     ResourceDescriptor::populateDescriptorSets(m_directionalShadowOperation.pipelineComponents.uniformBuffers, directionalShadowWriteDescriptorSets, *m_vulkanLogicalDevice, m_directionalShadowOperation.pipelineComponents.descriptorSets);
+
+
+    Uniform::createUniformBuffers(sizeof(Uniform::PointShadowUniformBufferObject), temporaryVulkanDevices, m_pointShadowOperation.pipelineComponents.uniformBuffers, m_pointShadowOperation.pipelineComponents.uniformBuffersMemory, m_pointShadowOperation.pipelineComponents.mappedUniformBuffersMemory);
+    ResourceDescriptor::createDescriptorPool(0, *m_vulkanLogicalDevice, m_pointShadowOperation.pipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorSets(m_pointShadowOperation.pipelineComponents.descriptorSetLayout, m_pointShadowOperation.pipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_pointShadowOperation.pipelineComponents.descriptorSets);
+
+    std::vector<VkWriteDescriptorSet> pointShadowWriteDescriptorSets;
+    ResourceDescriptor::populateDescriptorSets(m_pointShadowOperation.pipelineComponents.uniformBuffers, pointShadowWriteDescriptorSets, *m_vulkanLogicalDevice, m_pointShadowOperation.pipelineComponents.descriptorSets);
     
 
     CommandManager::allocateChildCommandBuffers(displayDetails.graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, displayDetails.graphicsCommandBuffers);
@@ -878,6 +896,7 @@ void RendererDetails::Renderer::cleanupRenderer()
     m_dummySceneNormalsModel.cleanupModel(true, *m_vulkanLogicalDevice);
     m_cubemapModel.cleanupModel(false, *m_vulkanLogicalDevice);
     m_dummyDirectionalShadowModel.cleanupModel(true, *m_vulkanLogicalDevice);
+    m_dummyPointShadowModel.cleanupModel(true, *m_vulkanLogicalDevice);
     
     for (size_t i = 0; i < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; i += 1) {
         vkDestroySemaphore(*m_vulkanLogicalDevice, m_imageAvailibleSemaphores[i], nullptr);
@@ -890,6 +909,7 @@ void RendererDetails::Renderer::cleanupRenderer()
     m_sceneNormalsPipelineComponents.cleanupPipelineComponents(*m_vulkanLogicalDevice);
     
     m_directionalShadowOperation.cleanupOffscreenOperation(*m_vulkanLogicalDevice);
+    m_pointShadowOperation.cleanupOffscreenOperation(*m_vulkanLogicalDevice);
 
     vkDestroyRenderPass(*m_vulkanLogicalDevice, m_renderPass, nullptr);
 }

@@ -42,11 +42,11 @@ namespace RendererDetails
     // @param depthAttachmentReference populated depth attachment reference.
     void populateDepthAttachmentComponents(VkSampleCountFlagBits msaaSampleCount, VkAttachmentStoreOp storeOp, uint32_t attachment, VkPhysicalDevice vulkanPhysicalDevice, VkAttachmentDescription& depthAttachmentDescription, VkAttachmentReference& depthAttachmentReference);
 
-    // create a render pass for the directional shadow offscreen operation.
+    // create a render pass for the a shadow offscreen operation.
     //
     // @param vulkanDevices Vulkan physical and logical device to use in the directional shadow render pass creation.
-    // @param renderPass created directional shadow render pass.
-    void createDirectionalShadowRenderPass(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass& renderPass);
+    // @param renderPass created shadow render pass.
+    void createShadowRenderPass(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass& renderPass);
 
     // populate a viewport's create info.
     //
@@ -110,6 +110,13 @@ namespace RendererDetails
     // @param vulkanLogicalDevice Vulkan logical device to use in directional shadow pipeline creation.
     // @param pipelineComponents reference to the pipeline components to use and create the pipeline in.
     void createDirectionalShadowPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, Pipeline::PipelineComponents& pipelineComponents);
+
+    // create point shadow pipeline.
+    //
+    // @param renderPass render pass to use in point shadow pipeline creation.
+    // @param vulkanLogicalDevice Vulkan logical device to use in point shadow pipeline creation.
+    // @param pipelineComponents reference to the pipeline components to use and create the pipeline in.
+    void createPointShadowPipeline(VkRenderPass renderPass, VkDevice vulkanLogicalDevice, Pipeline::PipelineComponents& pipelineComponents);
     
     class Renderer
     {

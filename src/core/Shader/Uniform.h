@@ -17,7 +17,7 @@ namespace Uniform
 {
     struct SceneLight {
         uint32_t lightID;  // 0: directional, 1: point, 2: spotlight(not implemented, yet).
-        glm::vec4 lightProperties;  // used as a direction/position distinguished by the light ID.
+        alignas(16) glm::vec4 lightProperties;  // used as a direction/position distinguished by the light ID.
         glm::vec4 lightColor;  // structured as [R, G, B, light intensity].
     };
     struct CubemapUniformBufferObject {  // identical to the cubemap shader structs.
@@ -37,7 +37,7 @@ namespace Uniform
         alignas(16) glm::vec4 ambientLightColor;  // structered as [R, G, B, light intensity].
 
         // TODO: implement a spotlight light-caster.
-        std::vector<Uniform::SceneLight> sceneLights;
+        Uniform::SceneLight sceneLights[128];
         uint32_t sceneLightCount;
     };
 
@@ -59,7 +59,7 @@ namespace Uniform
     };
     
     struct UniformBuffersUpdatePackage {
-        Camera::ArcballCamera& mainCamera;  // the scene's main camera.
+        Camera::ArcballCamera *mainCamera;  // the scene's main camera.
         glm::quat mainMeshQuaternion;  // the main mesh's provided optional quaternion.
 
         VkExtent2D swapchainImageExtent;  // Vulkan swapchain image extent.        

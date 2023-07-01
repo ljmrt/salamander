@@ -202,6 +202,21 @@ void ModelHandler::Model::populateShaderBufferComponents(std::vector<ModelHandle
     }
 }
 
+void ModelHandler::Model::populateShaderBufferComponents(std::vector<ModelHandler::ShadowVertexData> vertexData, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
+{
+    Buffer::createDataBufferComponents(vertexData.data(), (sizeof(vertexData[0]) * vertexData.size()), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.vertexBuffer, this->shaderBufferComponents.vertexBufferMemory);
+
+    if (this->meshIndices.empty() == false) {
+        Buffer::createDataBufferComponents(this->meshIndices.data(), (sizeof(this->meshIndices[0]) * this->meshIndices.size()), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, commandPool, commandQueue, vulkanDevices, this->shaderBufferComponents.indexBuffer, this->shaderBufferComponents.indexBufferMemory);
+        
+        shaderBufferComponents.verticeCount = -1;
+        shaderBufferComponents.indiceCount = static_cast<uint32_t>(this->meshIndices.size());
+    } else {
+        shaderBufferComponents.verticeCount = static_cast<uint32_t>(this->meshVertices.size());
+        shaderBufferComponents.indiceCount = -1;
+    }
+}
+
 void ModelHandler::Model::cleanupModel(bool preserveTextureDetails, VkDevice vulkanLogicalDevice)
 {
     vkDestroyBuffer(vulkanLogicalDevice, this->shaderBufferComponents.vertexBuffer, nullptr);

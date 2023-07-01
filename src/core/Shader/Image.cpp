@@ -355,7 +355,7 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, uint32_t mipma
 
     imageMemoryBarrier.image = image;
     
-    if (targetImageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {  // image is a depth/stencil attachment.
+    if (targetImageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || targetImageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) {  // image is a depth/stencil attachment.
         imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         
         if (Depth::depthImageFormatHasStencilComponent(format)) {  // include stencil aspect mask if supported by the image format.
@@ -386,6 +386,12 @@ void Image::transitionImageLayout(VkImage image, VkFormat format, uint32_t mipma
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     } else if (initialImageLayout == VK_IMAGE_LAYOUT_UNDEFINED && targetImageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {  // transitioning to use as a depth/stencil attachment.
+        imageMemoryBarrier.srcAccessMask = 0;
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    } else if (initialImageLayout == VK_IMAGE_LAYOUT_UNDEFINED && targetImageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) {  // transitioning to use as a depth/stencil attachment.
         imageMemoryBarrier.srcAccessMask = 0;
         imageMemoryBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 

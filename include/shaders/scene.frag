@@ -34,7 +34,7 @@ layout(location = 0) in VS_OUT {
 
 layout(location = 0) out vec4 outputColor;
 
-vec3 calculateSceneLightImpact(SceneLight sceneLight, vec3 fragmentPosition, vec3 fragmentNormal, vec3 viewingDirection, vec3 ambientLighting);
+vec3 calculateSceneLightImpact(SceneLight sceneLight, vec3 fragmentPosition, vec3 fragmentNormal, vec3 viewingDirection);
 float calculateDirectionalShadowObscurity(vec4 fragmentPositionLightSpace, float shadowBias);
 float calculatePointShadowObscurity(vec3 fragmentPosition, SceneLight sceneLight, float shadowBias);
 
@@ -43,16 +43,17 @@ void main()
     outputColor = vec4(0.0, 0.0, 0.0, 1.0);
 
     vec3 ambientLighting = (uniformBufferObject.ambientLightColor.xyz * uniformBufferObject.ambientLightColor.w);
+    outputColor += vec4(ambientLighting, 1.0);
 
     vec3 viewingDirection = normalize(uniformBufferObject.viewingPosition - vsOut.fragmentPositionWorldSpace);
     for (int i = 0; i < uniformBufferObject.sceneLightCount; i++) {
-        outputColor += vec4(calculateSceneLightImpact(uniformBufferObject.sceneLights[i], vsOut.fragmentPositionWorldSpace, vsOut.fragmentNormalWorldSpace, viewingDirection, ambientLighting), 0.0);
+        outputColor += vec4(calculateSceneLightImpact(uniformBufferObject.sceneLights[i], vsOut.fragmentPositionWorldSpace, vsOut.fragmentNormalWorldSpace, viewingDirection), 0.0);
     }
 
     outputColor *= texture(textureSampler, vsOut.fragmentUVCoordinates);
 }
 
-vec3 calculateSceneLightImpact(SceneLight sceneLight, vec3 fragmentPosition, vec3 fragmentNormal, vec3 viewingDirection, vec3 ambientLighting)
+vec3 calculateSceneLightImpact(SceneLight sceneLight, vec3 fragmentPosition, vec3 fragmentNormal, vec3 viewingDirection)
 {
     vec3 lightRayDirection = (sceneLight.lightProperties.xyz - (fragmentPosition * sceneLight.lightProperties.w));  // selectively change the direction if the light is point or directional.
 
@@ -80,7 +81,7 @@ vec3 calculateSceneLightImpact(SceneLight sceneLight, vec3 fragmentPosition, vec
     float shadowBias = max((0.05 * (1.0 - dot(fragmentNormal, lightRayDirection))), 0.005);
     float isObscured = (sceneLight.lightID == 1 ? calculatePointShadowObscurity(fragmentPosition, sceneLight, shadowBias) : calculateDirectionalShadowObscurity(vsOut.fragmentPositionLightSpace, shadowBias));
 
-    return vec3((ambientLighting + ((diffuseLighting + specularLighting) * (1.0 - isObscured))));
+    return vec3(((diffuseLighting + specularLighting) * (1.0 - isObscured)));
 }
 
 float calculateDirectionalShadowObscurity(vec4 fragmentPositionLightSpace, float shadowBias)

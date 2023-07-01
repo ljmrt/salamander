@@ -51,7 +51,7 @@ bool DeviceHandler::deviceSuitable(VkPhysicalDevice physicalDevice, VkSurfaceKHR
 
     VkPhysicalDeviceFeatures supportedPhysicalDeviceFeatures;
     vkGetPhysicalDeviceFeatures(physicalDevice, &supportedPhysicalDeviceFeatures);
-    bool allDeviceFeaturesSupported = supportedPhysicalDeviceFeatures.samplerAnisotropy && supportedPhysicalDeviceFeatures.geometryShader;
+    bool allDeviceFeaturesSupported = supportedPhysicalDeviceFeatures.samplerAnisotropy && supportedPhysicalDeviceFeatures.geometryShader && supportedPhysicalDeviceFeatures.vertexPipelineStoresAndAtomics;
     
     return extensionsSupported && swapchainDetailsComplete && queueFamiliesSupported && allDeviceFeaturesSupported;
 }
@@ -81,6 +81,7 @@ void DeviceHandler::createLogicalDevice(VkPhysicalDevice physicalDevice, Queue::
     deviceFeatures.samplerAnisotropy = VK_TRUE;
     deviceFeatures.geometryShader = VK_TRUE;
     deviceFeatures.sampleRateShading = VK_TRUE;
+    deviceFeatures.vertexPipelineStoresAndAtomics = VK_TRUE;
 
     VkDeviceCreateInfo logicalCreateInfo{};
     logicalCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
