@@ -91,6 +91,19 @@ namespace Image
     // @param vulkanDevices Vulkan logical and physical device to use in mipmap levels generation.
     void generateMipmapLevels(Image::ImageDetails& imageDetails, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices);
 
+    // populate a image view create info struct.
+    //
+    // @param image see VkImageViewCreateInfo documentation.
+    // @param viewType see VkImageViewCreateInfo documentation.
+    // @param format see VkImageViewCreateInfo documentation.
+    // @param aspectMask see VkImageSubresourceRange documentation.
+    // @param baseMipLevel see VkImageSubresourceRange documentation.
+    // @param levelCount see VkImageSubresourceRange documentation.
+    // @param baseArrayLevel see VkImageSubresourceRange documentation.
+    // @param layerCount see VkImageSubresourceRange documentation.
+    // @param imageViewCreateInfo populated image view create info.
+    void populateImageViewCreateInfo(VkImage image, VkImageViewType viewType, VkFormat format, VkImageAspectFlags aspectMask, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLevel, uint32_t layerCount, VkImageViewCreateInfo& imageViewCreateInfo);
+
     // create an Vulkan image view.
     //
     // @param baseImage image to base the image view off of.

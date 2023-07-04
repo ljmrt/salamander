@@ -7,6 +7,7 @@
 
 #include <vector>
 
+glm::mat4 Shader::shadowTransforms[6];
 
 void Shader::createShaderModule(std::vector<char> shaderBytecode, VkDevice vulkanLogicalDevice, VkShaderModule& createdShaderModule)
 {

@@ -166,6 +166,7 @@ void Image::generateSwapchainImageDetails(DisplayManager::DisplayDetails& displa
     Image::createImageView(displayDetails.colorImageDetails.image, displayDetails.colorImageDetails.imageFormat, 1, 1, VK_IMAGE_ASPECT_COLOR_BIT, vulkanDevices.logicalDevice, displayDetails.colorImageDetails.imageView);
 
     Depth::populateDepthImageDetails(displayDetails.swapchainImageExtent, displayDetails.msaaSampleCount, 1, (VkImageUsageFlagBits)(0), displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, vulkanDevices, displayDetails.depthImageDetails);
+    Image::createImageView(displayDetails.depthImageDetails.image, displayDetails.depthImageDetails.imageFormat, 1, 1, VK_IMAGE_ASPECT_DEPTH_BIT, vulkanDevices.logicalDevice, displayDetails.depthImageDetails.imageView);
 }
 
 void Image::generateMipmapLevels(Image::ImageDetails& imageDetails, VkCommandPool commandPool, VkQueue commandQueue, DeviceHandler::VulkanDevices vulkanDevices)
@@ -265,20 +266,25 @@ void Image::generateMipmapLevels(Image::ImageDetails& imageDetails, VkCommandPoo
     CommandManager::submitSingleSubmitCommands(disposableCommandBuffer, commandPool, commandQueue, vulkanDevices.logicalDevice);
 }
 
+void Image::populateImageViewCreateInfo(VkImage image, VkImageViewType viewType, VkFormat format, VkImageAspectFlags aspectMask, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLevel, uint32_t layerCount, VkImageViewCreateInfo& imageViewCreateInfo)
+{
+    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+
+    imageViewCreateInfo.image = image;
+    imageViewCreateInfo.viewType = viewType;
+    imageViewCreateInfo.format = format;
+
+    imageViewCreateInfo.subresourceRange.aspectMask = aspectMask;
+    imageViewCreateInfo.subresourceRange.baseMipLevel = baseMipLevel;
+    imageViewCreateInfo.subresourceRange.levelCount = levelCount;
+    imageViewCreateInfo.subresourceRange.baseArrayLayer = baseArrayLevel;
+    imageViewCreateInfo.subresourceRange.layerCount = layerCount;
+}
+
 void Image::createImageView(VkImage baseImage, VkFormat baseFormat, uint32_t mipmapLevels, uint32_t layerCount, VkImageAspectFlags imageAspectFlags, VkDevice vulkanLogicalDevice, VkImageView& imageView)
 {
     VkImageViewCreateInfo imageViewCreateInfo{};
-    imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-
-    imageViewCreateInfo.image = baseImage;
-    imageViewCreateInfo.viewType = (layerCount == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D);
-    imageViewCreateInfo.format = baseFormat;
-
-    imageViewCreateInfo.subresourceRange.aspectMask = imageAspectFlags;
-    imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-    imageViewCreateInfo.subresourceRange.levelCount = mipmapLevels;
-    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    imageViewCreateInfo.subresourceRange.layerCount = layerCount;
+    Image::populateImageViewCreateInfo(baseImage, (layerCount == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D), baseFormat, imageAspectFlags, 0, mipmapLevels, 0, layerCount, imageViewCreateInfo);
 
     VkResult imageViewCreationResult = vkCreateImageView(vulkanLogicalDevice, &imageViewCreateInfo, nullptr, &imageView);
     if (imageViewCreationResult != VK_SUCCESS) {

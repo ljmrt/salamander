@@ -18,7 +18,6 @@ void Depth::populateDepthImageDetails(VkExtent2D swapchainImageExtent, VkSampleC
 {
     Depth::selectDepthImageFormat(vulkanDevices.physicalDevice, depthImageDetails.imageFormat);
     Image::populateImageDetails(swapchainImageExtent.width, swapchainImageExtent.height, 1, layerCount, msaaSampleCount, depthImageDetails.imageFormat, VK_IMAGE_TILING_OPTIMAL, (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | additionalImageUsage), VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vulkanDevices, depthImageDetails);
-    Image::createImageView(depthImageDetails.image, depthImageDetails.imageFormat, 1, layerCount, VK_IMAGE_ASPECT_DEPTH_BIT, vulkanDevices.logicalDevice, depthImageDetails.imageView);
 
     
     VkCommandBuffer disposableCommandBuffer;

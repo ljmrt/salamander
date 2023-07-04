@@ -69,7 +69,7 @@ void Pipeline::PipelineComponents::createMemberPipeline(Pipeline::PipelineData& 
     RendererDetails::populateDynamicStatesCreateInfo(pipelineData.dynamicStatesDynamicStates, dynamicStatesCreateInfo);
 
 
-    RendererDetails::createPipelineLayout(pipelineData.vulkanLogicalDevice, this->descriptorSetLayout, this->pipelineLayout);
+    RendererDetails::createPipelineLayout(pipelineData.vulkanLogicalDevice, this->descriptorSetLayout, pipelineData.pushConstant, this->pipelineLayout);
 
 
     VkGraphicsPipelineCreateInfo pipelineCreateInfo{};

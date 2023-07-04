@@ -335,7 +335,7 @@ void RendererDetails::populateDynamicStatesCreateInfo(std::vector<VkDynamicState
     dynamicStatesCreateInfo.pDynamicStates = dynamicStates.data();    
 }
 
-void RendererDetails::createPipelineLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& pipelineLayout)
+void RendererDetails::createPipelineLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout, std::optional<VkPushConstantRange *> pushConstant, VkPipelineLayout& pipelineLayout)
 {
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -345,8 +345,8 @@ void RendererDetails::createPipelineLayout(VkDevice vulkanLogicalDevice, VkDescr
     pipelineLayoutCreateInfo.setLayoutCount = 1;
     pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
     
-    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutCreateInfo.pushConstantRangeCount = (pushConstant.has_value() ? 1 : 0);
+    pipelineLayoutCreateInfo.pPushConstantRanges = pushConstant.value_or(nullptr);
 
     VkResult pipelineLayoutCreationResult = vkCreatePipelineLayout(vulkanLogicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
     if (pipelineLayoutCreationResult != VK_SUCCESS) {
@@ -522,7 +522,7 @@ void RendererDetails::createPointShadowPipeline(VkRenderPass renderPass, VkDevic
     pointShadowPipelineData.vulkanLogicalDevice = vulkanLogicalDevice;
     
     pointShadowPipelineData.vertexShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/pointShadowVertex.spv");
-    pointShadowPipelineData.geometryShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/pointShadowGeometry.spv");
+    pointShadowPipelineData.geometryShaderBytecodeAbsolutePath = "*NA*";
     pointShadowPipelineData.fragmentShaderBytecodeAbsolutePath = (Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/build/pointShadowFragment.spv");
 
     // uses the same vertex data stride and similar as the cubemap pipeline.
@@ -551,6 +551,9 @@ void RendererDetails::createPointShadowPipeline(VkRenderPass renderPass, VkDevic
     pointShadowPipelineData.dynamicStatesDynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
     pointShadowPipelineData.pipelineRenderPass = renderPass;
+    VkPushConstantRange pushConstant{};
+    Uniform::populatePushConstant(0, sizeof(Uniform::PointShadowPushConstants), VK_SHADER_STAGE_VERTEX_BIT, pushConstant);
+    pointShadowPipelineData.pushConstant = &pushConstant;
 
     
     pipelineComponents.createMemberPipeline(pointShadowPipelineData);

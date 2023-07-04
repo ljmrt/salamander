@@ -54,8 +54,12 @@ namespace Uniform
     };
 
     struct PointShadowUniformBufferObject {
-        glm::mat4 shadowTransforms[6];  // "shadow transforms" for all the 6 faces of a cubemap.
+        glm::mat4 projectionMatrix;
         glm::mat4 modelMatrix;        
+    };
+
+    struct PointShadowPushConstants {
+        glm::mat4 viewMatrix;
     };
     
     struct UniformBuffersUpdatePackage {
@@ -87,6 +91,14 @@ namespace Uniform
     //
     // @param uniformBuffersUpdatePackage the uniform buffers update data to use in this function.
     void updateFrameUniformBuffers(Uniform::UniformBuffersUpdatePackage& uniformBuffersUpdatePackage);
+
+    // populate a push constant struct.
+    //
+    // @param offset see VkPushConstantRange documentation.
+    // @param size see VkPushConstantRange documentation.
+    // @param stageFlags see VkPushConstantRange documentation.
+    // @param pushConstant populated push constant.
+    void populatePushConstant(uint32_t offset, VkDeviceSize size, VkShaderStageFlags stageFlags, VkPushConstantRange& pushConstant);
 }
 
 

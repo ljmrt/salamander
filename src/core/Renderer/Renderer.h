@@ -101,8 +101,9 @@ namespace RendererDetails
     //
     // @param vulkanLogicalDevice Vulkan logical device to use in pipeline layout creation.
     // @param descriptorSetLayout the descriptor set layout to use within the pipeline layout.
+    // @param pushConstant a optional supplied push constant to use within the pipeline layout.
     // @param pipelineLayout the created pipeline layout.
-    void createPipelineLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout, VkPipelineLayout& pipelineLayout);
+    void createPipelineLayout(VkDevice vulkanLogicalDevice, VkDescriptorSetLayout& descriptorSetLayout, std::optional<VkPushConstantRange *> pushConstant, VkPipelineLayout& pipelineLayout);
 
     // create directional shadow pipeline.
     //

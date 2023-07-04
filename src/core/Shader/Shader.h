@@ -4,6 +4,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+
 #include <string>
 #include <vector>
 
@@ -21,6 +23,8 @@ namespace Shader
         Shader geometryShader;  // optional.
         Shader fragmentShader;
     };
+
+    extern glm::mat4 shadowTransforms[6];
     
     
     // create a shader module using the supplied bytecode.

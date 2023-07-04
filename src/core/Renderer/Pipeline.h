@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <functional>
+#include <optional>
 
 
 namespace Pipeline
@@ -56,6 +57,7 @@ namespace Pipeline
 
         // misc. pipeline data.
         VkRenderPass pipelineRenderPass;
+        std::optional<VkPushConstantRange *> pushConstant;  // does not have to be assigned.
     };
     
     struct PipelineComponents {        

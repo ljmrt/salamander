@@ -16,8 +16,24 @@ void Offscreen::OffscreenOperation::generateMemberComponents(int32_t offscreenWi
     this->offscreenExtent.width = offscreenWidth;
     this->offscreenExtent.height = offscreenWidth;  // must be equal for cubemap depth map/point shadow mapping.
 
+    this->imageViews.resize(layerCount);
+
     
     Depth::populateDepthImageDetails(this->offscreenExtent, VK_SAMPLE_COUNT_1_BIT, layerCount, VK_IMAGE_USAGE_SAMPLED_BIT, graphicsCommandPool, graphicsQueue, vulkanDevices, this->depthTextureDetails.textureImageDetails);
+    Image::createImageView(this->depthTextureDetails.textureImageDetails.image, this->depthTextureDetails.textureImageDetails.imageFormat, 1, layerCount, VK_IMAGE_ASPECT_DEPTH_BIT, vulkanDevices.logicalDevice, this->depthTextureDetails.textureImageDetails.imageView);
+
+    VkImageViewCreateInfo imageViewCreateInfo{};
+    Image::populateImageViewCreateInfo(this->depthTextureDetails.textureImageDetails.image, VK_IMAGE_VIEW_TYPE_2D, this->depthTextureDetails.textureImageDetails.imageFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, -1, 1, imageViewCreateInfo);
+    if (layerCount == 6) {
+        for (size_t i = 0; i < layerCount; i += 1) {
+            imageViewCreateInfo.subresourceRange.baseArrayLayer = i;
+
+            VkResult imageViewCreationResult = vkCreateImageView(vulkanDevices.logicalDevice, &imageViewCreateInfo, nullptr, &this->imageViews[i]);
+            if (imageViewCreationResult != VK_SUCCESS) {
+                throwDebugException("Failed to create a offscreen image view.");
+            }
+        }
+    }
     Image::createTextureSampler(vulkanDevices, 1, this->depthTextureDetails.textureSampler);
 
 
@@ -26,15 +42,18 @@ void Offscreen::OffscreenOperation::generateMemberComponents(int32_t offscreenWi
 
 
     // similar to SwapchainHandler::createSwapchainFramebuffers.
-    this->framebuffers.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT);
-    for (size_t i = 0; i < framebuffers.size(); i += 1) {
-        std::array<VkImageView, 1> framebufferAttachments = {this->depthTextureDetails.textureImageDetails.imageView};
+    this->framebuffers.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT * layerCount);
+
+    for (size_t i = 0; i < layerCount; i += 1) {
+        std::array<VkImageView, 1> framebufferAttachments = {(layerCount == 6 ? this->imageViews[i] : this->depthTextureDetails.textureImageDetails.imageView)};
 
         VkFramebufferCreateInfo framebufferCreateInfo{};
         SwapchainHandler::populateFramebufferCreateInfo(this->renderPass, framebufferAttachments.data(), static_cast<uint32_t>(framebufferAttachments.size()), this->offscreenExtent.width, this->offscreenExtent.height, framebufferCreateInfo);
-        VkResult framebufferCreationResult = vkCreateFramebuffer(vulkanDevices.logicalDevice, &framebufferCreateInfo, nullptr, &this->framebuffers[i]);
-        if (framebufferCreationResult != VK_SUCCESS) {
-            throwDebugException("Failed to create a offscreen operation framebuffer.");
+        for (size_t j = 0; j < Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT; j += 1) {
+            VkResult framebufferCreationResult = vkCreateFramebuffer(vulkanDevices.logicalDevice, &framebufferCreateInfo, nullptr, &this->framebuffers[j + (i * Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT)]);
+            if (framebufferCreationResult != VK_SUCCESS) {
+                throwDebugException("Failed to create a offscreen operation framebuffer.");
+            }
         }
     }
 }
@@ -43,6 +62,12 @@ void Offscreen::OffscreenOperation::cleanupOffscreenOperation(VkDevice vulkanLog
 {
     for (VkFramebuffer framebuffer : this->framebuffers) {
         vkDestroyFramebuffer(vulkanLogicalDevice, framebuffer, nullptr);
+    }
+
+    if (this->imageViews.size() == 6) {
+        for (VkImageView imageView : this->imageViews) {
+            vkDestroyImageView(vulkanLogicalDevice, imageView, nullptr);
+        }
     }
 
     this->depthTextureDetails.cleanupTextureDetails(vulkanLogicalDevice);

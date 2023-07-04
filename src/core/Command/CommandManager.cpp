@@ -3,8 +3,11 @@
 
 #include <core/Command/CommandManager.h>
 #include <core/Renderer/Renderer.h>
+#include <core/Shader/Shader.h>
+#include <core/Shader/Uniform.h>
 #include <core/Logging/ErrorLogger.h>
 #include <core/Model/ModelHandler.h>
+#include <core/Defaults/Defaults.h>
 
 #include <vector>
 
@@ -165,9 +168,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
 
 
     VkRenderPassBeginInfo pointShadowRenderPassBeginInfo{};
-    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.pointShadowOperation.renderPass, graphicsRecordingPackage.pointShadowOperation.framebuffers[graphicsRecordingPackage.currentFrame], graphicsRecordingPackage.pointShadowOperation.offscreenExtent, static_cast<uint32_t>(pointShadowAttachmentClearValues.size()), pointShadowAttachmentClearValues.data(), pointShadowRenderPassBeginInfo);
-
-    vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &pointShadowRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    CommandManager::populateRenderPassBeginInfo(graphicsRecordingPackage.pointShadowOperation.renderPass, {}, graphicsRecordingPackage.pointShadowOperation.offscreenExtent, static_cast<uint32_t>(pointShadowAttachmentClearValues.size()), pointShadowAttachmentClearValues.data(), pointShadowRenderPassBeginInfo);
 
     // set our dynamic pipeline states.
     VkViewport pointShadowDynamicViewport{};
@@ -180,21 +181,32 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
 
     VkDeviceSize pointShadowOffsets[] = {0};
 
-    // draw/populate the depth map.
-    vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.pointShadowShaderBufferComponents.vertexBuffer, pointShadowOffsets);
+    for (size_t i = 0; i < 6; i++) {
+        uint32_t framebufferIndex = (graphicsRecordingPackage.currentFrame + (Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT * i));
+        pointShadowRenderPassBeginInfo.framebuffer = graphicsRecordingPackage.pointShadowOperation.framebuffers[framebufferIndex];
+        
+        vkCmdBeginRenderPass(graphicsRecordingPackage.graphicsCommandBuffer, &pointShadowRenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        
 
-    vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.pointShadowOperation.pipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.pointShadowOperation.pipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
-    vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.pointShadowOperation.pipelineComponents.pipeline);
+        vkCmdPushConstants(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.pointShadowOperation.pipelineComponents.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Uniform::PointShadowPushConstants), &Shader::shadowTransforms[i]);
 
-    if ((graphicsRecordingPackage.pointShadowShaderBufferComponents.indiceCount != -1) && (graphicsRecordingPackage.pointShadowShaderBufferComponents.verticeCount == -1)) {
-        vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.pointShadowShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        // draw/populate the depth map.
+        vkCmdBindVertexBuffers(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &graphicsRecordingPackage.pointShadowShaderBufferComponents.vertexBuffer, pointShadowOffsets);
 
-        vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.pointShadowShaderBufferComponents.indiceCount, 1, 0, 0, 0);
-    } else if ((graphicsRecordingPackage.pointShadowShaderBufferComponents.indiceCount == -1) && (graphicsRecordingPackage.pointShadowShaderBufferComponents.verticeCount != -1)) {
-        vkCmdDraw(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.pointShadowShaderBufferComponents.verticeCount, 1, 0, 0);
+        vkCmdBindDescriptorSets(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.pointShadowOperation.pipelineComponents.pipelineLayout, 0, 1, &graphicsRecordingPackage.pointShadowOperation.pipelineComponents.descriptorSets[graphicsRecordingPackage.currentFrame], 0, nullptr);
+        vkCmdBindPipeline(graphicsRecordingPackage.graphicsCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsRecordingPackage.pointShadowOperation.pipelineComponents.pipeline);
+
+        if ((graphicsRecordingPackage.pointShadowShaderBufferComponents.indiceCount != -1) && (graphicsRecordingPackage.pointShadowShaderBufferComponents.verticeCount == -1)) {
+            vkCmdBindIndexBuffer(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.pointShadowShaderBufferComponents.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+            vkCmdDrawIndexed(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.pointShadowShaderBufferComponents.indiceCount, 1, 0, 0, 0);
+        } else if ((graphicsRecordingPackage.pointShadowShaderBufferComponents.indiceCount == -1) && (graphicsRecordingPackage.pointShadowShaderBufferComponents.verticeCount != -1)) {
+            vkCmdDraw(graphicsRecordingPackage.graphicsCommandBuffer, graphicsRecordingPackage.pointShadowShaderBufferComponents.verticeCount, 1, 0, 0);
+        }
+
+        
+        vkCmdEndRenderPass(graphicsRecordingPackage.graphicsCommandBuffer);   
     }
-
-    vkCmdEndRenderPass(graphicsRecordingPackage.graphicsCommandBuffer);
     
     
     VkRenderPassBeginInfo mainRenderPassBeginInfo{};

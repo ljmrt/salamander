@@ -7,6 +7,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include <core/Shader/Uniform.h>
+#include <core/Shader/Shader.h>
 #include <core/DisplayManager/Camera.h>
 #include <core/Buffer/Buffer.h>
 #include <core/Defaults/Defaults.h>
@@ -130,40 +131,40 @@ void Uniform::updateFrameUniformBuffers(Uniform::UniformBuffersUpdatePackage& un
     memcpy(uniformBuffersUpdatePackage.mappedDirectionalShadowUniformBufferMemory, &directionalShadowUniformBufferObject, sizeof(Uniform::DirectionalShadowUniformBufferObject));
 
 
-    Uniform::PointShadowUniformBufferObject pointShadowUniformBufferObject{};
-
-    glm::mat4 shadowProjectionMatrix = glm::perspective(glm::radians(90.0f), aspectRatio, nearPlane, farPlane);
-    glm::vec3 correctedPointLightPosition = glm::vec3(pointLight.lightProperties);
-
-    // std::vector<glm::vec3> shadowCenterPositions = {glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f)};
-    // std::vector<glm::vec3> shadowUpPositions = {glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)};
-
     glm::mat4 shadowTransform = glm::mat4(1.0f);
     
     shadowTransform = glm::rotate(shadowTransform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    pointShadowUniformBufferObject.shadowTransforms[0] = shadowTransform;
+    Shader::shadowTransforms[0] = shadowTransform;
 
     shadowTransform = glm::rotate(shadowTransform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    pointShadowUniformBufferObject.shadowTransforms[1] = shadowTransform;
+    Shader::shadowTransforms[1] = shadowTransform;
 
     shadowTransform = glm::rotate(shadowTransform, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    pointShadowUniformBufferObject.shadowTransforms[2] = shadowTransform;
+    Shader::shadowTransforms[2] = shadowTransform;
 
     shadowTransform = glm::rotate(shadowTransform, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    pointShadowUniformBufferObject.shadowTransforms[3] = shadowTransform;
+    Shader::shadowTransforms[3] = shadowTransform;
 
     shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    pointShadowUniformBufferObject.shadowTransforms[4] = shadowTransform;
+    Shader::shadowTransforms[4] = shadowTransform;
 
     shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    pointShadowUniformBufferObject.shadowTransforms[5] = shadowTransform;
-    /*for (size_t i = 0; i < shadowCenterPositions.size(); i++) {
-        pointShadowUniformBufferObject.shadowTransforms[i] = (shadowProjectionMatrix * glm::lookAt(correctedPointLightPosition, (correctedPointLightPosition + shadowCenterPositions[i]), shadowUpPositions[i]));
-    }*/
+    Shader::shadowTransforms[5] = shadowTransform;
+    
 
+    Uniform::PointShadowUniformBufferObject pointShadowUniformBufferObject{};
+
+    pointShadowUniformBufferObject.projectionMatrix = sceneUniformBufferObject.projectionMatrix;
     pointShadowUniformBufferObject.modelMatrix = sceneUniformBufferObject.modelMatrix;
 
     memcpy(uniformBuffersUpdatePackage.mappedPointShadowUniformBufferMemory, &pointShadowUniformBufferObject, sizeof(Uniform::PointShadowUniformBufferObject));
+}
+
+void Uniform::populatePushConstant(uint32_t offset, VkDeviceSize size, VkShaderStageFlags stageFlags, VkPushConstantRange& pushConstant)
+{
+    pushConstant.offset = offset;
+    pushConstant.size = size;
+    pushConstant.stageFlags = stageFlags;
 }

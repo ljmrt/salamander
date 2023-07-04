@@ -20,6 +20,8 @@ namespace Offscreen
 
         Image::TextureDetails depthTextureDetails;  // framebuffer depth attachment.
 
+        std::vector<VkImageView> imageViews;
+
         Pipeline::PipelineComponents pipelineComponents;
         VkRenderPass renderPass;
 
