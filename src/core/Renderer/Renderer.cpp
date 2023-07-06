@@ -598,7 +598,7 @@ void RendererDetails::Renderer::drawFrame(DisplayManager::DisplayDetails& displa
     VkResult imageAcquisitionResult = vkAcquireNextImageKHR(*m_vulkanLogicalDevice, displayDetails.swapchain, UINT64_MAX, m_imageAvailibleSemaphores[m_currentFrame], VK_NULL_HANDLE, &swapchainImageIndex);  // get the index of an availbile swapchain image.
 
     if (imageAcquisitionResult == VK_ERROR_OUT_OF_DATE_KHR) {
-        SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices{vulkanPhysicalDevice, *m_vulkanLogicalDevice}, m_renderPass, displayDetails);
+        SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices{vulkanPhysicalDevice, *m_vulkanLogicalDevice}, m_renderPass, m_directionalShadowOperation, m_pointShadowOperation, displayDetails);
         m_mainCamera.swapchainImageExtent = displayDetails.swapchainImageExtent;
         return;
     } else if (imageAcquisitionResult != VK_SUCCESS && imageAcquisitionResult != VK_SUBOPTIMAL_KHR) {
@@ -706,7 +706,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 
     Defaults::callbacksVariables.MAIN_CAMERA = &m_mainCamera;
     m_mainCamera.up = glm::vec3(0.0f, 1.0f, 0.0f);
-    m_mainCamera.eye = glm::vec3(0.0f, 0.0f, -3.0f);
+    m_mainCamera.eye = glm::vec3(0.0f, 0.0f, -6.0f);
     m_mainCamera.center = glm::vec3(0.0f, 0.0f, 0.0f);
     m_mainCamera.swapchainImageExtent = displayDetails.swapchainImageExtent;
 
@@ -761,7 +761,7 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 
     
     VkDescriptorSetLayoutBinding pointShadowUniformBufferLayoutBinding{};
-    ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT), pointShadowUniformBufferLayoutBinding);
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), pointShadowUniformBufferLayoutBinding);
     
     std::vector<VkDescriptorSetLayoutBinding> pointShadowDescriptorSetLayoutBindings = {pointShadowUniformBufferLayoutBinding};
     ResourceDescriptor::createDescriptorSetLayout(pointShadowDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_pointShadowOperation.pipelineComponents.descriptorSetLayout);

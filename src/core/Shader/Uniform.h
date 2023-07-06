@@ -15,6 +15,10 @@
 
 namespace Uniform
 {
+    // TODO: PCF on directional and point lights.
+    // TODO: scene builder.
+    // TODO: check correctness of shadow mapping.
+    // TODO: fix strange point light intensities.
     struct SceneLight {
         uint32_t lightID;  // 0: directional, 1: point, 2: spotlight(not implemented, yet).
         alignas(16) glm::vec4 lightProperties;  // used as a direction/position distinguished by the light ID.
@@ -39,6 +43,8 @@ namespace Uniform
         // TODO: implement a spotlight light-caster.
         Uniform::SceneLight sceneLights[128];
         uint32_t sceneLightCount;
+
+        uint32_t farPlane;
     };
 
     struct SceneNormalsUniformBufferObject {
@@ -55,7 +61,10 @@ namespace Uniform
 
     struct PointShadowUniformBufferObject {
         glm::mat4 projectionMatrix;
-        glm::mat4 modelMatrix;        
+        glm::mat4 modelMatrix;
+        
+        glm::vec3 pointLightPosition;
+        uint32_t farPlane;
     };
 
     struct PointShadowPushConstants {

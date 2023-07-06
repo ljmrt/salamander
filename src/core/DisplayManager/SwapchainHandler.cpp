@@ -4,6 +4,7 @@
 #include <core/DisplayManager/SwapchainHandler.h>
 #include <core/DisplayManager/DisplayManager.h>
 #include <core/Renderer/Renderer.h>
+#include <core/Renderer/Offscreen.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 #include <core/Shader/Image.h>
 #include <core/Shader/Depth.h>
@@ -191,7 +192,7 @@ void SwapchainHandler::createSwapchainFramebuffers(std::vector<VkImageView> swap
     }
 }
 
-void SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, DisplayManager::DisplayDetails& displayDetails)
+void SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, Offscreen::OffscreenOperation& directionalShadowOperation, Offscreen::OffscreenOperation& pointShadowOperation, DisplayManager::DisplayDetails& displayDetails)
 {
     // stall window if minimized.
     // prefer to use size_t, but complying with GLFW is better.
@@ -215,6 +216,11 @@ void SwapchainHandler::recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevi
     Image::generateSwapchainImageDetails(displayDetails, vulkanDevices);
 
     createSwapchainFramebuffers(displayDetails.swapchainImageViews, displayDetails.swapchainImageExtent, displayDetails.colorImageDetails.imageView, displayDetails.depthImageDetails.imageView, renderPass, vulkanDevices.logicalDevice, displayDetails.swapchainFramebuffers);
+    
+
+    directionalShadowOperation.generateMemberComponents((displayDetails.swapchainImageExtent.width / 1), (displayDetails.swapchainImageExtent.height / 1), 1, nullptr, nullptr, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, vulkanDevices);
+
+    pointShadowOperation.generateMemberComponents((displayDetails.swapchainImageExtent.width / 1), (displayDetails.swapchainImageExtent.height / 1), 6, nullptr, nullptr, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, vulkanDevices);
 }
 
 void SwapchainHandler::cleanupSwapchain(DisplayManager::DisplayDetails displayDetails, VkDevice vulkanLogicalDevice)

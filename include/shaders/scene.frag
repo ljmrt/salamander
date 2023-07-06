@@ -19,6 +19,8 @@ layout(binding = 0) uniform UniformBufferObject {
 
     SceneLight sceneLights[128];
     uint sceneLightCount;
+
+    uint farPlane;
 } uniformBufferObject;
 
 layout(binding = 1) uniform sampler2D textureSampler;
@@ -57,7 +59,8 @@ vec3 calculateSceneLightImpact(SceneLight sceneLight, vec3 fragmentPosition, vec
 {
     vec3 lightRayDirection = (sceneLight.lightProperties.xyz - (fragmentPosition * sceneLight.lightProperties.w));  // selectively change the direction if the light is point or directional.
 
-    float attenuation = (1.0 / dot(lightRayDirection, lightRayDirection));
+    float distance = length(lightRayDirection);
+    float attenuation = (1.0 / (1.0 + (0.09 * distance) + (0.032 * (distance * distance))));  // dot(lightRayDirection, lightRayDirection));
     attenuation = (sceneLight.lightID == 1 ? attenuation : 1);  // selectively disable attenuation depending on the light type.
 
     lightRayDirection = normalize(lightRayDirection);
@@ -70,7 +73,7 @@ vec3 calculateSceneLightImpact(SceneLight sceneLight, vec3 fragmentPosition, vec
 
 
     float shininessValue = 16;
-    float specularExponent = (sceneLight.lightID == 1 ? 2 : 0);  // selectively disable specular lighting depending on the light type.
+    float specularExponent = (sceneLight.lightID == 1 ? 4 : 0);  // selectively disable specular lighting depending on the light type.
 
     vec3 reflectionDirection = reflect(lightRayDirection, fragmentNormal);
     vec3 halfwayDirection = normalize(lightRayDirection + viewingDirection);
@@ -89,22 +92,21 @@ float calculateDirectionalShadowObscurity(vec4 fragmentPositionLightSpace, float
     vec3 projectedCoordinates = (fragmentPositionLightSpace.xyz / fragmentPositionLightSpace.w);
     projectedCoordinates = ((projectedCoordinates * 0.5) + 0.5);  // transform coordinates from -1..1 to 0..1.
 
-    float closestDepthAtCoordinates = texture(directionalShadowSampler, projectedCoordinates.xy).r;
-    float currentDepthAtCoordinates = projectedCoordinates.z;
+    float sampledDepthAtCoordinates = texture(directionalShadowSampler, projectedCoordinates.xy).r;
+    float actualDepthAtCoordinates = projectedCoordinates.z;
 
-    currentDepthAtCoordinates -= (gl_FrontFacing ? shadowBias : 0.0);
-
-    return ((closestDepthAtCoordinates < currentDepthAtCoordinates) ? 1.0 : 0.0);
+    return ((sampledDepthAtCoordinates < actualDepthAtCoordinates - shadowBias) ? 1.0 : 0.0);
 }
 
 float calculatePointShadowObscurity(vec3 fragmentPosition, SceneLight sceneLight, float shadowBias)
 {
     vec3 shadowSampleDirection = (fragmentPosition - sceneLight.lightProperties.xyz);
 
-    float closestDepthAtCoordinates = texture(pointShadowSampler, shadowSampleDirection).r;
-    float currentDepthAtCoordinates = length(shadowSampleDirection);
+    float sampledDepthAtCoordinates = texture(pointShadowSampler, shadowSampleDirection).r;
+    sampledDepthAtCoordinates *= uniformBufferObject.farPlane;
 
-    currentDepthAtCoordinates -= (gl_FrontFacing ? shadowBias : 0.0);
+    float actualDepthAtCoordinates = length(shadowSampleDirection);
+    actualDepthAtCoordinates -= (gl_FrontFacing ? shadowBias : 0.0);
 
-    return ((closestDepthAtCoordinates < currentDepthAtCoordinates) ? 1.0 : 0.0);
+    return ((sampledDepthAtCoordinates < actualDepthAtCoordinates) ? 1.0 : 0.0);
 }

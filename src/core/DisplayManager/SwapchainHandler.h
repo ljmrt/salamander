@@ -6,6 +6,7 @@
 
 #include <core/DisplayManager/DisplayManager.h>
 #include <core/Renderer/Renderer.h>
+#include <core/Renderer/Offscreen.h>
 #include <core/VulkanInstance/DeviceHandler.h>
 
 #include <vector>
@@ -101,8 +102,10 @@ namespace SwapchainHandler
     //
     // @param vulkanDevices Vulkan logical and physical devices.
     // @param renderPass render pass to use in swapchain recreation.
+    // @param directionalShadowOperation the directional shadow offscreen operation.
+    // @param pointShadowOperation the point shadow offscreen operation.
     // @param displayDetails display details to use and store recreated components in.
-    void recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, DisplayManager::DisplayDetails& displayDetails);
+    void recreateSwapchain(DeviceHandler::VulkanDevices vulkanDevices, VkRenderPass renderPass, Offscreen::OffscreenOperation& directionalShadowOperation, Offscreen::OffscreenOperation& pointShadowOperation, DisplayManager::DisplayDetails& displayDetails);
 
     // clean up a swapchain.
     //

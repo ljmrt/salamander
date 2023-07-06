@@ -38,100 +38,101 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
         std::cout << loaderErrors << std::endl;
         throwDebugException("Failed to load model/parse glTF.");
     }
-    
-    for (tinygltf::Primitive meshPrimitive : loadedModel.meshes[0].primitives) {  // TODO: dynamic mesh selection.
-        const tinygltf::Accessor& positionAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["POSITION"]];
-        const tinygltf::BufferView& positionAttributeBufferView = loadedModel.bufferViews[positionAttributeAccessor.bufferView];
-        const tinygltf::Buffer& positionAttributeBuffer = loadedModel.buffers[positionAttributeBufferView.buffer];
+    for (tinygltf::Mesh selectedMesh : loadedModel.meshes) {
+        for (tinygltf::Primitive meshPrimitive : selectedMesh.primitives) {
+            const tinygltf::Accessor& positionAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["POSITION"]];
+            const tinygltf::BufferView& positionAttributeBufferView = loadedModel.bufferViews[positionAttributeAccessor.bufferView];
+            const tinygltf::Buffer& positionAttributeBuffer = loadedModel.buffers[positionAttributeBufferView.buffer];
 
-        if ((positionAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && positionAttributeAccessor.type == TINYGLTF_TYPE_VEC3) == false) {
-            throwDebugException("Model vertices position data is in an incorrect component type or type.");
-        }
-        const float *positionAttributes = reinterpret_cast<const float *>(&positionAttributeBuffer.data[positionAttributeBufferView.byteOffset + positionAttributeAccessor.byteOffset]);  // get the position attribute data from the buffer starting at the actual data offset to the end of the buffer(position attributes are only up to positionAttributeAccessor.count multiplied by the entire data type stride).
-        const uint32_t POSITION_STRIDE = 3;  // positions are vec3 components.
-
-        const tinygltf::Accessor& normalAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["NORMAL"]];
-        const tinygltf::BufferView& normalAttributeBufferView = loadedModel.bufferViews[normalAttributeAccessor.bufferView];
-        const tinygltf::Buffer& normalAttributeBuffer = loadedModel.buffers[normalAttributeBufferView.buffer];
-        
-        if ((normalAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && normalAttributeAccessor.type == TINYGLTF_TYPE_VEC3) == false) {
-            throwDebugException("Model vertices normal data is in an incorrect component type or type.");
-        }
-        const float *normalAttributes = reinterpret_cast<const float *>(&normalAttributeBuffer.data[normalAttributeBufferView.byteOffset + normalAttributeAccessor.byteOffset]);
-        const uint32_t NORMAL_STRIDE = 3;  // normals are vec3 components.
-
-        const tinygltf::Accessor& UVCoordinateAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["TEXCOORD_0"]];
-        const tinygltf::BufferView& UVCoordinateAttributeBufferView = loadedModel.bufferViews[UVCoordinateAttributeAccessor.bufferView];
-        const tinygltf::Buffer& UVCoordinateAttributeBuffer = loadedModel.buffers[UVCoordinateAttributeBufferView.buffer];
-        
-        if ((UVCoordinateAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && UVCoordinateAttributeAccessor.type == TINYGLTF_TYPE_VEC2) == false) {
-            std::cout << UVCoordinateAttributeAccessor.componentType << " : " << UVCoordinateAttributeAccessor.type << std::endl;
-            throwDebugException("Model vertices UV coordinate data is in an incorrect component type or type.");
-        }
-        const float *UVCoordinateAttributes = reinterpret_cast<const float *>(&UVCoordinateAttributeBuffer.data[UVCoordinateAttributeBufferView.byteOffset + UVCoordinateAttributeAccessor.byteOffset]);
-        const uint32_t UV_COORDINATES_STRIDE = 2;  // UV coordinates are vec2 components.
-
-        std::vector<ModelHandler::SceneVertexData> primitiveVertices(positionAttributeAccessor.count);  // the amount of vertices is equivalent to the amount of positions in a primitive.
-        for (size_t vertexIndex = 0; vertexIndex < positionAttributeAccessor.count; vertexIndex += 1) {
-            const uint32_t VERTEX_INDEX_POSITION_OFFSET = (vertexIndex * POSITION_STRIDE);
-            const float rawXPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 0];
-            const float rawYPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 1];
-            float rawZPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 2];
-            if (rawZPosition > -1 && rawZPosition < -0.999) {  // correct strange values.
-                rawZPosition = -1;
+            if ((positionAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && positionAttributeAccessor.type == TINYGLTF_TYPE_VEC3) == false) {
+                throwDebugException("Model vertices position data is in an incorrect component type or type.");
             }
+            const float *positionAttributes = reinterpret_cast<const float *>(&positionAttributeBuffer.data[positionAttributeBufferView.byteOffset + positionAttributeAccessor.byteOffset]);  // get the position attribute data from the buffer starting at the actual data offset to the end of the buffer(position attributes are only up to positionAttributeAccessor.count multiplied by the entire data type stride).
+            const uint32_t POSITION_STRIDE = 3;  // positions are vec3 components.
 
-            // uses the X position minimum and maximum coordinates to get a general scaling factor, as individual factors would cause models to be squished into a cube.
-            const float generalMinimumPositionCoordinate = positionAttributeAccessor.minValues[0];
-            const float generalMaximumPositionCoordinate = positionAttributeAccessor.maxValues[0];
-            primitiveVertices[vertexIndex].position.x = MathUtils::normalizeValueToRanges(rawXPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
-            primitiveVertices[vertexIndex].position.y = MathUtils::normalizeValueToRanges(rawYPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
-            primitiveVertices[vertexIndex].position.z = MathUtils::normalizeValueToRanges(rawZPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
-            if (strcmp(loadedModel.nodes[0].name.c_str(), "Cube") == 0) {  // if the model's first node's name is "Cube".
-                // this is the cubemap model, scale all positions up.
-                primitiveVertices[vertexIndex].position.x = rawXPosition * 256;
-                primitiveVertices[vertexIndex].position.y = rawYPosition * 256;
-                primitiveVertices[vertexIndex].position.z = rawZPosition * 256;
+            const tinygltf::Accessor& normalAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["NORMAL"]];
+            const tinygltf::BufferView& normalAttributeBufferView = loadedModel.bufferViews[normalAttributeAccessor.bufferView];
+            const tinygltf::Buffer& normalAttributeBuffer = loadedModel.buffers[normalAttributeBufferView.buffer];
+        
+            if ((normalAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && normalAttributeAccessor.type == TINYGLTF_TYPE_VEC3) == false) {
+                throwDebugException("Model normal normal data is in an incorrect component type or type.");
             }
+            const float *normalAttributes = reinterpret_cast<const float *>(&normalAttributeBuffer.data[normalAttributeBufferView.byteOffset + normalAttributeAccessor.byteOffset]);
+            const uint32_t NORMAL_STRIDE = 3;  // normals are vec3 components.
+
+            const tinygltf::Accessor& UVCoordinateAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["TEXCOORD_0"]];
+            const tinygltf::BufferView& UVCoordinateAttributeBufferView = loadedModel.bufferViews[UVCoordinateAttributeAccessor.bufferView];
+            const tinygltf::Buffer& UVCoordinateAttributeBuffer = loadedModel.buffers[UVCoordinateAttributeBufferView.buffer];
+        
+            if ((UVCoordinateAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && UVCoordinateAttributeAccessor.type == TINYGLTF_TYPE_VEC2) == false) {
+                std::cout << UVCoordinateAttributeAccessor.componentType << " : " << UVCoordinateAttributeAccessor.type << std::endl;
+                throwDebugException("Model vertices UV coordinate data is in an incorrect component type or type.");
+            }
+            const float *UVCoordinateAttributes = reinterpret_cast<const float *>(&UVCoordinateAttributeBuffer.data[UVCoordinateAttributeBufferView.byteOffset + UVCoordinateAttributeAccessor.byteOffset]);
+            const uint32_t UV_COORDINATES_STRIDE = 2;  // UV coordinates are vec2 components.
+
+            std::vector<ModelHandler::SceneVertexData> primitiveVertices(positionAttributeAccessor.count);  // the amount of vertices is equivalent to the amount of positions in a primitive.
+            for (size_t vertexIndex = 0; vertexIndex < positionAttributeAccessor.count; vertexIndex += 1) {
+                const uint32_t VERTEX_INDEX_POSITION_OFFSET = (vertexIndex * POSITION_STRIDE);
+                const float rawXPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 0];
+                const float rawYPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 1];
+                float rawZPosition = positionAttributes[VERTEX_INDEX_POSITION_OFFSET + 2];
+                if (rawZPosition > -1 && rawZPosition < -0.999) {  // correct strange values.
+                    rawZPosition = -1;
+                }
+
+                // uses the X position minimum and maximum coordinates to get a general scaling factor, as individual factors would cause models to be squished into a cube.
+                const float generalMinimumPositionCoordinate = positionAttributeAccessor.minValues[0];
+                const float generalMaximumPositionCoordinate = positionAttributeAccessor.maxValues[0];
+                primitiveVertices[vertexIndex].position.x = MathUtils::normalizeValueToRanges(rawXPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
+                primitiveVertices[vertexIndex].position.y = MathUtils::normalizeValueToRanges(rawYPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
+                primitiveVertices[vertexIndex].position.z = MathUtils::normalizeValueToRanges(rawZPosition, generalMinimumPositionCoordinate, generalMaximumPositionCoordinate, 0, 1);
+                if (strcmp(loadedModel.nodes[0].name.c_str(), "Cube") == 0) {  // if the model's first node's name is "Cube".
+                    // this is the cubemap model, scale all positions up.
+                    primitiveVertices[vertexIndex].position.x = rawXPosition * 256;
+                    primitiveVertices[vertexIndex].position.y = rawYPosition * 256;
+                    primitiveVertices[vertexIndex].position.z = rawZPosition * 256;
+                }
             
 
-            const uint32_t VERTEX_INDEX_NORMAL_OFFSET = (vertexIndex * NORMAL_STRIDE);
-            primitiveVertices[vertexIndex].normal.x = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 1];
-            primitiveVertices[vertexIndex].normal.y = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 1];
-            primitiveVertices[vertexIndex].normal.z = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 2];
+                const uint32_t VERTEX_INDEX_NORMAL_OFFSET = (vertexIndex * NORMAL_STRIDE);
+                primitiveVertices[vertexIndex].normal.x = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 1];
+                primitiveVertices[vertexIndex].normal.y = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 1];
+                primitiveVertices[vertexIndex].normal.z = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 2];
             
 
-            const uint32_t VERTEX_INDEX_UV_COORDINATES_OFFSET = (vertexIndex * UV_COORDINATES_STRIDE);
-            primitiveVertices[vertexIndex].UVCoordinates.x = UVCoordinateAttributes[VERTEX_INDEX_UV_COORDINATES_OFFSET + 0];
-            primitiveVertices[vertexIndex].UVCoordinates.y = UVCoordinateAttributes[VERTEX_INDEX_UV_COORDINATES_OFFSET + 1];
-        }
+                const uint32_t VERTEX_INDEX_UV_COORDINATES_OFFSET = (vertexIndex * UV_COORDINATES_STRIDE);
+                primitiveVertices[vertexIndex].UVCoordinates.x = UVCoordinateAttributes[VERTEX_INDEX_UV_COORDINATES_OFFSET + 0];
+                primitiveVertices[vertexIndex].UVCoordinates.y = UVCoordinateAttributes[VERTEX_INDEX_UV_COORDINATES_OFFSET + 1];
+            }
 
-        this->meshVertices.insert(this->meshVertices.end(), primitiveVertices.begin(), primitiveVertices.end());
+            this->meshVertices.insert(this->meshVertices.end(), primitiveVertices.begin(), primitiveVertices.end());
         
 
-        if (meshPrimitive.indices != -1) {  // -1 indicates that there is no indices.
-            const tinygltf::Accessor& indicesAccessor = loadedModel.accessors[meshPrimitive.indices];
-            const tinygltf::BufferView& indicesBufferView = loadedModel.bufferViews[indicesAccessor.bufferView];
-            const tinygltf::Buffer& indicesBuffer = loadedModel.buffers[indicesBufferView.buffer];
+            if (meshPrimitive.indices != -1) {  // -1 indicates that there is no indices.
+                const tinygltf::Accessor& indicesAccessor = loadedModel.accessors[meshPrimitive.indices];
+                const tinygltf::BufferView& indicesBufferView = loadedModel.bufferViews[indicesAccessor.bufferView];
+                const tinygltf::Buffer& indicesBuffer = loadedModel.buffers[indicesBufferView.buffer];
 
-            if ((indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT && indicesAccessor.type == TINYGLTF_TYPE_SCALAR) == false) {
-                throwDebugException("Model indices data is in an incorrect component type or type.");
+                if (((indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT || indicesAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT) && indicesAccessor.type == TINYGLTF_TYPE_SCALAR) == false) {
+                    throwDebugException("Model indices data is in an incorrect component type or type.");
+                }
+                const uint16_t *indices = reinterpret_cast<const uint16_t *>(&indicesBuffer.data[indicesBufferView.byteOffset + indicesAccessor.byteOffset]);
+                std::vector<uint32_t> primitiveIndices(indices, (indices + indicesAccessor.count));
+
+                this->meshIndices.insert(this->meshIndices.end(), primitiveIndices.begin(), primitiveIndices.end());
             }
-            const uint16_t *indices = reinterpret_cast<const uint16_t *>(&indicesBuffer.data[indicesBufferView.byteOffset + indicesAccessor.byteOffset]);
-            std::vector<uint32_t> primitiveIndices(indices, (indices + indicesAccessor.count));
-
-            this->meshIndices.insert(this->meshIndices.end(), primitiveIndices.begin(), primitiveIndices.end());
-        }
 
 
-        const tinygltf::Material modelMaterial = loadedModel.materials[0];
-        const tinygltf::TextureInfo baseColorTextureInfo = modelMaterial.pbrMetallicRoughness.baseColorTexture;
-        if (baseColorTextureInfo.index != -1) {  // -1 indicates there is no base color texture.
-            const tinygltf::Texture baseColorTexture = loadedModel.textures[baseColorTextureInfo.index];
-            const tinygltf::Image baseColorTextureImage = loadedModel.images[baseColorTexture.source];
-            this->absoluteTextureImagePath = (this->absoluteModelDirectory + "/" + baseColorTextureImage.uri);
-        } else {
-            this->absoluteTextureImagePath = "NOT AVAILIBLE";
+            const tinygltf::Material modelMaterial = loadedModel.materials[0];
+            const tinygltf::TextureInfo baseColorTextureInfo = modelMaterial.pbrMetallicRoughness.baseColorTexture;
+            if (baseColorTextureInfo.index != -1) {  // -1 indicates there is no base color texture.
+                const tinygltf::Texture baseColorTexture = loadedModel.textures[baseColorTextureInfo.index];
+                const tinygltf::Image baseColorTextureImage = loadedModel.images[baseColorTexture.source];
+                this->absoluteTextureImagePath = (this->absoluteModelDirectory + "/" + baseColorTextureImage.uri);
+            } else {
+                this->absoluteTextureImagePath = "NOT AVAILIBLE";
+            }
         }
     }
 }

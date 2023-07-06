@@ -128,7 +128,7 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
 
     // attachment clear values are used in load operation clearing.
     VkClearValue colorAttachmentClearValue = {{{1.0f, 1.0f, 1.0f, 1.0f}}};  // clear to white.
-    VkClearValue depthAttachmentClearValue = {1.0f, 0};
+    VkClearValue depthAttachmentClearValue = {1.0f, 0.0f};
     std::array<VkClearValue, 1> directionalShadowAttachmentClearValues = {depthAttachmentClearValue};
     std::array<VkClearValue, 1> pointShadowAttachmentClearValues = {depthAttachmentClearValue};
     std::array<VkClearValue, 2> mainAttachmentClearValues = {colorAttachmentClearValue, depthAttachmentClearValue};
@@ -172,11 +172,11 @@ void CommandManager::recordGraphicsCommandBufferCommands(CommandManager::Graphic
 
     // set our dynamic pipeline states.
     VkViewport pointShadowDynamicViewport{};
-    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.pointShadowOperation.offscreenExtent.width), static_cast<float>(graphicsRecordingPackage.pointShadowOperation.offscreenExtent.height), 0.0f, 1.0f, pointShadowDynamicViewport);
+    CommandManager::populateViewportInfo(0.0f, 0.0f, static_cast<float>(graphicsRecordingPackage.pointShadowOperation.renderExtent.width), static_cast<float>(graphicsRecordingPackage.pointShadowOperation.renderExtent.height), 0.0f, 1.0f, pointShadowDynamicViewport);
     vkCmdSetViewport(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &pointShadowDynamicViewport);
 
     VkRect2D pointShadowDynamicScissor{};
-    CommandManager::populateRect2DInfo(graphicsRecordingPackage.pointShadowOperation.offscreenExtent, pointShadowDynamicScissor);
+    CommandManager::populateRect2DInfo(graphicsRecordingPackage.pointShadowOperation.renderExtent, pointShadowDynamicScissor);
     vkCmdSetScissor(graphicsRecordingPackage.graphicsCommandBuffer, 0, 1, &pointShadowDynamicScissor);
 
     VkDeviceSize pointShadowOffsets[] = {0};

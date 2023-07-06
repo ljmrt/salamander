@@ -71,14 +71,14 @@ void Uniform::updateFrameUniformBuffers(Uniform::UniformBuffersUpdatePackage& un
     Uniform::SceneLight directionalLight;
     directionalLight.lightID = 0;  // directional light.
     directionalLight.lightProperties = glm::vec4(2.0f, 2.0f, 5.0f, 0.0f);
-    directionalLight.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.55f);
+    directionalLight.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.0f);
 
     sceneUniformBufferObject.sceneLights[0] = directionalLight;
 
     Uniform::SceneLight pointLight;
     pointLight.lightID = 1;  // point light.
-    pointLight.lightProperties = glm::vec4(-2.0f, -2.0f, 0.0f, 1.0f);
-    pointLight.lightColor = glm::vec4(1.0f, 0.0f, 0.0f, 0.55f);
+    pointLight.lightProperties = glm::vec4(0.0f, 0.0f, -6.0f, 1.0f);
+    pointLight.lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.55f);
 
     sceneUniformBufferObject.sceneLights[1] = pointLight;
 
@@ -101,6 +101,8 @@ void Uniform::updateFrameUniformBuffers(Uniform::UniformBuffersUpdatePackage& un
     sceneUniformBufferObject.viewingPosition = uniformBuffersUpdatePackage.mainCamera->eye;
     
     sceneUniformBufferObject.ambientLightColor = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
+
+    sceneUniformBufferObject.farPlane = farPlane;
     
     memcpy(uniformBuffersUpdatePackage.mappedSceneUniformBufferMemory, &sceneUniformBufferObject, sizeof(Uniform::SceneUniformBufferObject));
 
@@ -131,33 +133,25 @@ void Uniform::updateFrameUniformBuffers(Uniform::UniformBuffersUpdatePackage& un
     memcpy(uniformBuffersUpdatePackage.mappedDirectionalShadowUniformBufferMemory, &directionalShadowUniformBufferObject, sizeof(Uniform::DirectionalShadowUniformBufferObject));
 
 
-    glm::mat4 shadowTransform = glm::mat4(1.0f);
+    glm::vec3 pointLightPosition = glm::vec3(pointLight.lightProperties);
+    Shader::shadowTransforms[0] = glm::lookAt(pointLightPosition, (pointLightPosition + glm::vec3(1.0f, 0.0f, 0.0f)), glm::vec3(0.0f, -1.0f, 0.0f));  // +X
+    Shader::shadowTransforms[1] = glm::lookAt(pointLightPosition, (pointLightPosition + glm::vec3(-1.0f, 0.0f, 0.0f)), glm::vec3(0.0f, -1.0f, 0.0f));  // -X
     
-    shadowTransform = glm::rotate(shadowTransform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    Shader::shadowTransforms[0] = shadowTransform;
-
-    shadowTransform = glm::rotate(shadowTransform, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    Shader::shadowTransforms[1] = shadowTransform;
-
-    shadowTransform = glm::rotate(shadowTransform, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    Shader::shadowTransforms[2] = shadowTransform;
-
-    shadowTransform = glm::rotate(shadowTransform, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    Shader::shadowTransforms[3] = shadowTransform;
-
-    shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    Shader::shadowTransforms[4] = shadowTransform;
-
-    shadowTransform = glm::rotate(shadowTransform, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    Shader::shadowTransforms[5] = shadowTransform;
+    Shader::shadowTransforms[2] = glm::lookAt(pointLightPosition, (pointLightPosition + glm::vec3(0.0f, 1.0f, 0.0f)), glm::vec3(0.0f, 0.0f, 1.0f));  // Y+
+    Shader::shadowTransforms[3] = glm::lookAt(pointLightPosition, (pointLightPosition + glm::vec3(0.0f, -1.0f, 0.0f)), glm::vec3(0.0f, 0.0f, -1.0f));  // Y-
+    
+    Shader::shadowTransforms[4] = glm::lookAt(pointLightPosition, (pointLightPosition + glm::vec3(0.0f, 0.0f, 1.0f)), glm::vec3(0.0f, -1.0f, 0.0f));  // Z+
+    Shader::shadowTransforms[5] = glm::lookAt(pointLightPosition, (pointLightPosition + glm::vec3(0.0f, 0.0f, -1.0f)), glm::vec3(0.0f, -1.0f, 0.0f));  // Z-
     
 
     Uniform::PointShadowUniformBufferObject pointShadowUniformBufferObject{};
 
-    pointShadowUniformBufferObject.projectionMatrix = sceneUniformBufferObject.projectionMatrix;
+    pointShadowUniformBufferObject.projectionMatrix = glm::perspective(glm::radians(90.0f), aspectRatio, nearPlane, farPlane);
+    // pointShadowUniformBufferObject.projectionMatrix[1][1] *= -1;
     pointShadowUniformBufferObject.modelMatrix = sceneUniformBufferObject.modelMatrix;
+
+    pointShadowUniformBufferObject.pointLightPosition = pointLightPosition;
+    pointShadowUniformBufferObject.farPlane = farPlane;
 
     memcpy(uniformBuffersUpdatePackage.mappedPointShadowUniformBufferMemory, &pointShadowUniformBufferObject, sizeof(Uniform::PointShadowUniformBufferObject));
 }

@@ -13,18 +13,48 @@
 
 void Offscreen::OffscreenOperation::generateMemberComponents(int32_t offscreenWidth, int32_t offscreenHeight, uint32_t layerCount, void (*createSpecializedRenderPass)(DeviceHandler::VulkanDevices, VkRenderPass&), void (*createSpecializedPipeline)(VkRenderPass, VkDevice, Pipeline::PipelineComponents&), VkCommandPool graphicsCommandPool, VkQueue graphicsQueue, DeviceHandler::VulkanDevices vulkanDevices)
 {
-    this->offscreenExtent.width = offscreenWidth;
-    this->offscreenExtent.height = offscreenWidth;  // must be equal for cubemap depth map/point shadow mapping.
+    if (layerCount == 6) {
+        uint32_t offscreenArea = std::max(offscreenWidth, offscreenHeight);
+        this->offscreenExtent.width = offscreenArea;
+        this->offscreenExtent.height = offscreenArea;  // must be equal for cubemap depth map/point shadow mapping.
+    } else {
+        this->offscreenExtent.width = offscreenWidth;
+        this->offscreenExtent.height = offscreenHeight;
+    }
+    this->renderExtent.width = offscreenWidth;
+    this->renderExtent.height = offscreenHeight;
 
     this->imageViews.resize(layerCount);
 
     
+    if (this->beenGenerated == false) {  // if this is the first time this operation is being generated.        
+        Image::createTextureSampler(vulkanDevices, 1, this->depthTextureDetails.textureSampler);
+
+        createSpecializedRenderPass(vulkanDevices, this->renderPass);
+        createSpecializedPipeline(this->renderPass, vulkanDevices.logicalDevice, this->pipelineComponents);
+
+        this->beenGenerated = true;
+    } else {
+        for (VkFramebuffer framebuffer : this->framebuffers) {
+            vkDestroyFramebuffer(vulkanDevices.logicalDevice, framebuffer, nullptr);
+        }
+        
+        if (this->imageViews.size() == 6) {
+            for (VkImageView imageView : this->imageViews) {
+                vkDestroyImageView(vulkanDevices.logicalDevice, imageView, nullptr);
+            }
+        }
+    }
+
+    
     Depth::populateDepthImageDetails(this->offscreenExtent, VK_SAMPLE_COUNT_1_BIT, layerCount, VK_IMAGE_USAGE_SAMPLED_BIT, graphicsCommandPool, graphicsQueue, vulkanDevices, this->depthTextureDetails.textureImageDetails);
     Image::createImageView(this->depthTextureDetails.textureImageDetails.image, this->depthTextureDetails.textureImageDetails.imageFormat, 1, layerCount, VK_IMAGE_ASPECT_DEPTH_BIT, vulkanDevices.logicalDevice, this->depthTextureDetails.textureImageDetails.imageView);
-
-    VkImageViewCreateInfo imageViewCreateInfo{};
-    Image::populateImageViewCreateInfo(this->depthTextureDetails.textureImageDetails.image, VK_IMAGE_VIEW_TYPE_2D, this->depthTextureDetails.textureImageDetails.imageFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, -1, 1, imageViewCreateInfo);
+        
     if (layerCount == 6) {
+        VkImageViewCreateInfo imageViewCreateInfo{};
+        Image::populateImageViewCreateInfo(this->depthTextureDetails.textureImageDetails.image, VK_IMAGE_VIEW_TYPE_2D, this->depthTextureDetails.textureImageDetails.imageFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, -1, 1, imageViewCreateInfo);
+            
+        Image::createImageView(this->depthTextureDetails.textureImageDetails.image, this->depthTextureDetails.textureImageDetails.imageFormat, 1, layerCount, VK_IMAGE_ASPECT_DEPTH_BIT, vulkanDevices.logicalDevice, this->depthTextureDetails.textureImageDetails.imageView);
         for (size_t i = 0; i < layerCount; i += 1) {
             imageViewCreateInfo.subresourceRange.baseArrayLayer = i;
 
@@ -34,13 +64,7 @@ void Offscreen::OffscreenOperation::generateMemberComponents(int32_t offscreenWi
             }
         }
     }
-    Image::createTextureSampler(vulkanDevices, 1, this->depthTextureDetails.textureSampler);
-
-
-    createSpecializedRenderPass(vulkanDevices, this->renderPass);
-    createSpecializedPipeline(this->renderPass, vulkanDevices.logicalDevice, this->pipelineComponents);
-
-
+    
     // similar to SwapchainHandler::createSwapchainFramebuffers.
     this->framebuffers.resize(Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT * layerCount);
 

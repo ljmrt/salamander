@@ -15,7 +15,8 @@
 namespace Offscreen
 {
     struct OffscreenOperation {  // currently used for shadow mapping.
-        VkExtent2D offscreenExtent;
+        VkExtent2D offscreenExtent;  // the extent of the framebuffer(differs from render extent when using a cubemap).
+        VkExtent2D renderExtent;  // the extent of the area to render in.
         std::vector<VkFramebuffer> framebuffers;  // multiple frames-in-flight.
 
         Image::TextureDetails depthTextureDetails;  // framebuffer depth attachment.
@@ -24,6 +25,8 @@ namespace Offscreen
 
         Pipeline::PipelineComponents pipelineComponents;
         VkRenderPass renderPass;
+
+        bool beenGenerated = false;  // if the components have been generated before.
 
 
         // generate the member offscreen operation components.

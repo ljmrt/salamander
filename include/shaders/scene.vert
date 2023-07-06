@@ -19,6 +19,8 @@ layout(binding = 0) uniform UniformBufferObject {
 
     SceneLight sceneLights[];
     uint sceneLightCount;
+
+    uint farPlane;
 } uniformBufferObject;
 
 // TODO: can we make this a struct(VS_IN)?
