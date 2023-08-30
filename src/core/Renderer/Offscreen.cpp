@@ -88,10 +88,8 @@ void Offscreen::OffscreenOperation::cleanupOffscreenOperation(VkDevice vulkanLog
         vkDestroyFramebuffer(vulkanLogicalDevice, framebuffer, nullptr);
     }
 
-    if (this->imageViews.size() == 6) {
-        for (VkImageView imageView : this->imageViews) {
-            vkDestroyImageView(vulkanLogicalDevice, imageView, nullptr);
-        }
+    for (VkImageView imageView : this->imageViews) {
+        vkDestroyImageView(vulkanLogicalDevice, imageView, nullptr);
     }
 
     this->depthTextureDetails.cleanupTextureDetails(vulkanLogicalDevice);

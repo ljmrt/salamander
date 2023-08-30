@@ -729,16 +729,19 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     VkDescriptorSetLayoutBinding sceneUniformBufferLayoutBinding{};
     ResourceDescriptor::populateDescriptorSetLayoutBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), sceneUniformBufferLayoutBinding);
     
-    VkDescriptorSetLayoutBinding sceneMainModelLayoutBinding{};  // main model albedo texture sampler.
-    ResourceDescriptor::populateDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, sceneMainModelLayoutBinding);
+    VkDescriptorSetLayoutBinding sceneMainModelAlbedoLayoutBinding{};  // main model albedo texture sampler.
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, sceneMainModelAlbedoLayoutBinding);
+
+    VkDescriptorSetLayoutBinding sceneMainModelNormalLayoutBinding{};  // main model normal map/texture sampler.
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, sceneMainModelNormalLayoutBinding);
 
     VkDescriptorSetLayoutBinding sceneDirectionalShadowLayoutBinding{};
-    ResourceDescriptor::populateDescriptorSetLayoutBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, sceneDirectionalShadowLayoutBinding);
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, sceneDirectionalShadowLayoutBinding);
 
     VkDescriptorSetLayoutBinding scenePointShadowLayoutBinding{};
-    ResourceDescriptor::populateDescriptorSetLayoutBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, scenePointShadowLayoutBinding);
+    ResourceDescriptor::populateDescriptorSetLayoutBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, scenePointShadowLayoutBinding);
 
-    std::vector<VkDescriptorSetLayoutBinding> sceneDescriptorSetLayoutBindings = {sceneUniformBufferLayoutBinding, sceneMainModelLayoutBinding, sceneDirectionalShadowLayoutBinding, scenePointShadowLayoutBinding};
+    std::vector<VkDescriptorSetLayoutBinding> sceneDescriptorSetLayoutBindings = {sceneUniformBufferLayoutBinding, sceneMainModelAlbedoLayoutBinding, sceneMainModelNormalLayoutBinding, sceneDirectionalShadowLayoutBinding, scenePointShadowLayoutBinding};
     ResourceDescriptor::createDescriptorSetLayout(sceneDescriptorSetLayoutBindings, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSetLayout);
     
     createMemberScenePipeline(displayDetails.msaaSampleCount);
@@ -777,11 +780,11 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
 
     m_pointShadowOperation.generateMemberComponents((displayDetails.swapchainImageExtent.width / 1), (displayDetails.swapchainImageExtent.height / 1), 6, &RendererDetails::createShadowRenderPass, &RendererDetails::createPointShadowPipeline, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
 
-    m_mainModel.loadModelFromAbsolutePath((Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Fox/glTF/Fox.gltf"));
-    // m_mainModel.normalizeNormalValues();
+    m_mainModel.loadModelFromAbsolutePath((Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/models/Avocado/Avocado.gltf"));
     // TODO: add seperate "transfer" queue(see vulkan-tutorial page).
     m_mainModel.populateShaderBufferComponents(m_mainModel.meshVertices, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices);
     Image::populateTextureDetails(m_mainModel.absoluteTextureImagePath, false, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_mainModel.textureDetails);
+    Image::populateTextureDetails(m_mainModel.absoluteNormalImagePath, false, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_mainModel.normalTextureDetails);
 
     m_dummySceneNormalsModel.meshVertices = m_mainModel.meshVertices;
     m_dummySceneNormalsModel.meshIndices = m_mainModel.meshIndices;
@@ -820,25 +823,30 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     Image::populateTextureDetails((Defaults::applicationDefaults.SALAMANDER_ROOT_DIRECTORY + "/assets/skyboxes/field"), true, displayDetails.graphicsCommandPool, displayDetails.graphicsQueue, temporaryVulkanDevices, m_cubemapModel.textureDetails);
 
     Uniform::createUniformBuffers(sizeof(Uniform::SceneUniformBufferObject), temporaryVulkanDevices, m_scenePipelineComponents.uniformBuffers, m_scenePipelineComponents.uniformBuffersMemory, m_scenePipelineComponents.mappedUniformBuffersMemory);
-    ResourceDescriptor::createDescriptorPool(3, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);
+    ResourceDescriptor::createDescriptorPool(4, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorPool);
     ResourceDescriptor::createDescriptorSets(m_scenePipelineComponents.descriptorSetLayout, m_scenePipelineComponents.descriptorPool, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
     
-    VkDescriptorImageInfo mainModelTextureDescriptorImageInfo{};
-    ResourceDescriptor::populateDescriptorImageInfo(m_mainModel.textureDetails.textureSampler, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureImageDetails.imageLayout, mainModelTextureDescriptorImageInfo);
-    VkWriteDescriptorSet mainModelTextureWriteDescriptorSet{};
-    ResourceDescriptor::populateWriteDescriptorSet(nullptr, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &mainModelTextureDescriptorImageInfo, nullptr, mainModelTextureWriteDescriptorSet);
+    VkDescriptorImageInfo mainModelAlbedoDescriptorImageInfo{};
+    ResourceDescriptor::populateDescriptorImageInfo(m_mainModel.textureDetails.textureSampler, m_mainModel.textureDetails.textureImageDetails.imageView, m_mainModel.textureDetails.textureImageDetails.imageLayout, mainModelAlbedoDescriptorImageInfo);
+    VkWriteDescriptorSet mainModelAlbedoWriteDescriptorSet{};
+    ResourceDescriptor::populateWriteDescriptorSet(nullptr, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &mainModelAlbedoDescriptorImageInfo, nullptr, mainModelAlbedoWriteDescriptorSet);
+
+    VkDescriptorImageInfo mainModelNormalMapDescriptorImageInfo{};
+    ResourceDescriptor::populateDescriptorImageInfo(m_mainModel.normalTextureDetails.textureSampler, m_mainModel.normalTextureDetails.textureImageDetails.imageView, m_mainModel.normalTextureDetails.textureImageDetails.imageLayout, mainModelNormalMapDescriptorImageInfo);
+    VkWriteDescriptorSet mainModelNormalMapWriteDescriptorSet{};
+    ResourceDescriptor::populateWriteDescriptorSet(nullptr, 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &mainModelNormalMapDescriptorImageInfo, nullptr, mainModelNormalMapWriteDescriptorSet);
 
     VkDescriptorImageInfo directionalShadowDescriptorImageInfo{};
     ResourceDescriptor::populateDescriptorImageInfo(m_directionalShadowOperation.depthTextureDetails.textureSampler, m_directionalShadowOperation.depthTextureDetails.textureImageDetails.imageView, m_directionalShadowOperation.depthTextureDetails.textureImageDetails.imageLayout, directionalShadowDescriptorImageInfo);
     VkWriteDescriptorSet directionalShadowWriteDescriptorSet{};
-    ResourceDescriptor::populateWriteDescriptorSet(nullptr, 2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &directionalShadowDescriptorImageInfo, nullptr, directionalShadowWriteDescriptorSet);
+    ResourceDescriptor::populateWriteDescriptorSet(nullptr, 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &directionalShadowDescriptorImageInfo, nullptr, directionalShadowWriteDescriptorSet);
 
     VkDescriptorImageInfo pointShadowDescriptorImageInfo{};
     ResourceDescriptor::populateDescriptorImageInfo(m_pointShadowOperation.depthTextureDetails.textureSampler, m_pointShadowOperation.depthTextureDetails.textureImageDetails.imageView, m_pointShadowOperation.depthTextureDetails.textureImageDetails.imageLayout, pointShadowDescriptorImageInfo);
     VkWriteDescriptorSet pointShadowWriteDescriptorSet{};
-    ResourceDescriptor::populateWriteDescriptorSet(nullptr, 3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &pointShadowDescriptorImageInfo, nullptr, pointShadowWriteDescriptorSet);
+    ResourceDescriptor::populateWriteDescriptorSet(nullptr, 4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &pointShadowDescriptorImageInfo, nullptr, pointShadowWriteDescriptorSet);
 
-    std::vector sceneWriteDescriptorSets = {mainModelTextureWriteDescriptorSet, directionalShadowWriteDescriptorSet, pointShadowWriteDescriptorSet};
+    std::vector sceneWriteDescriptorSets = {mainModelAlbedoWriteDescriptorSet, mainModelNormalMapWriteDescriptorSet, directionalShadowWriteDescriptorSet, pointShadowWriteDescriptorSet};
     ResourceDescriptor::populateDescriptorSets(m_scenePipelineComponents.uniformBuffers, sceneWriteDescriptorSets, *m_vulkanLogicalDevice, m_scenePipelineComponents.descriptorSets);
     
 

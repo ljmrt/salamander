@@ -26,6 +26,7 @@ namespace ModelHandler
     struct SceneVertexData {
         glm::vec3 position;
         glm::vec3 normal;
+        glm::vec3 tangent;
         glm::vec2 UVCoordinates;
     };
 
@@ -59,7 +60,9 @@ namespace ModelHandler
 
         // TODO: support for URI-encoded textures.
         std::string absoluteTextureImagePath;  // the absolute path of the texture image.
-        Image::TextureDetails textureDetails;
+        std::string absoluteNormalImagePath;  // the absolute path of the normal image.
+        Image::TextureDetails textureDetails;  // texture details for the "base" albedo texture.
+        Image::TextureDetails normalTextureDetails;  // image details for the normal map/texture.
 
         // shader buffer components personally created for the model.
         // TODO: what do we do if the model doesn't support/have indices?

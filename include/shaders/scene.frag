@@ -17,18 +17,22 @@ layout(binding = 0) uniform UniformBufferObject {
     
     vec4 ambientLightColor;
 
-    SceneLight sceneLights[128];
+    SceneLight sceneLights[10];
     uint sceneLightCount;
 
     uint farPlane;
 } uniformBufferObject;
 
 layout(binding = 1) uniform sampler2D textureSampler;
-layout(binding = 2) uniform sampler2D directionalShadowSampler;
-layout(binding = 3) uniform samplerCube pointShadowSampler;
+layout(binding = 2) uniform sampler2D normalImageSampler;
+layout(binding = 3) uniform sampler2D directionalShadowSampler;
+layout(binding = 4) uniform samplerCube pointShadowSampler;
 
 layout(location = 0) in VS_OUT {
-   vec3 fragmentPositionWorldSpace;
+   vec3 fragmentPositionTangentSpace;
+   vec3 viewingPositionTangentSpace;   
+   vec3 sceneLightPositionsTangentSpace[10];
+
    vec4 fragmentPositionLightSpace;
    vec3 fragmentNormalWorldSpace;
    vec2 fragmentUVCoordinates;
@@ -40,16 +44,25 @@ vec3 calculateSceneLightImpact(SceneLight sceneLight, vec3 fragmentPosition, vec
 float calculateDirectionalShadowObscurity(vec4 fragmentPositionLightSpace, float shadowBias);
 float calculatePointShadowObscurity(vec3 fragmentPosition, SceneLight sceneLight, float shadowBias);
 
+vec3 normalMappedFragmentNormal;
+
 void main()
 {
+    // this normal is in tangent space.
+    vec3 normalMappedFragmentNormal = texture(normalImageSampler, vsOut.fragmentUVCoordinates).rgb;
+    normalMappedFragmentNormal = normalize((normalMappedFragmentNormal * 2.0) - 1.0);
+
     outputColor = vec4(0.0, 0.0, 0.0, 1.0);
 
     vec3 ambientLighting = (uniformBufferObject.ambientLightColor.xyz * uniformBufferObject.ambientLightColor.w);
     outputColor += vec4(ambientLighting, 1.0);
 
-    vec3 viewingDirection = normalize(uniformBufferObject.viewingPosition - vsOut.fragmentPositionWorldSpace);
+    vec3 viewingDirection = normalize(vsOut.viewingPositionTangentSpace - vsOut.fragmentPositionTangentSpace);
     for (int i = 0; i < uniformBufferObject.sceneLightCount; i++) {
-        outputColor += vec4(calculateSceneLightImpact(uniformBufferObject.sceneLights[i], vsOut.fragmentPositionWorldSpace, vsOut.fragmentNormalWorldSpace, viewingDirection), 0.0);
+        SceneLight updatedSceneLight = uniformBufferObject.sceneLights[i];
+        updatedSceneLight.lightProperties.xyz = vsOut.sceneLightPositionsTangentSpace[i];
+        
+        outputColor += vec4(calculateSceneLightImpact(updatedSceneLight, vsOut.fragmentPositionTangentSpace, normalMappedFragmentNormal, viewingDirection), 0.0);
     }
 
     outputColor *= texture(textureSampler, vsOut.fragmentUVCoordinates);

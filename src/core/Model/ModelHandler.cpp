@@ -55,10 +55,20 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
             const tinygltf::Buffer& normalAttributeBuffer = loadedModel.buffers[normalAttributeBufferView.buffer];
         
             if ((normalAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && normalAttributeAccessor.type == TINYGLTF_TYPE_VEC3) == false) {
-                throwDebugException("Model normal normal data is in an incorrect component type or type.");
+                throwDebugException("Model normal data is in an incorrect component type or type.");
             }
             const float *normalAttributes = reinterpret_cast<const float *>(&normalAttributeBuffer.data[normalAttributeBufferView.byteOffset + normalAttributeAccessor.byteOffset]);
             const uint32_t NORMAL_STRIDE = 3;  // normals are vec3 components.
+
+            const tinygltf::Accessor& tangentAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["TANGENT"]];
+            const tinygltf::BufferView& tangentAttributeBufferView = loadedModel.bufferViews[tangentAttributeAccessor.bufferView];
+            const tinygltf::Buffer& tangentAttributeBuffer = loadedModel.buffers[tangentAttributeBufferView.buffer];
+        
+            if ((tangentAttributeAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT && (tangentAttributeAccessor.type == TINYGLTF_TYPE_VEC3 || tangentAttributeAccessor.type == TINYGLTF_TYPE_VEC4)) == false) {
+                throwDebugException("Model tangent normal data is in an incorrect component type or type.");
+            }
+            const float *tangentAttributes = reinterpret_cast<const float *>(&tangentAttributeBuffer.data[tangentAttributeBufferView.byteOffset + tangentAttributeAccessor.byteOffset]);
+            const uint32_t TANGENT_STRIDE = 3;  // tangents are vec3 components.
 
             const tinygltf::Accessor& UVCoordinateAttributeAccessor = loadedModel.accessors[meshPrimitive.attributes["TEXCOORD_0"]];
             const tinygltf::BufferView& UVCoordinateAttributeBufferView = loadedModel.bufferViews[UVCoordinateAttributeAccessor.bufferView];
@@ -99,7 +109,19 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
                 primitiveVertices[vertexIndex].normal.x = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 1];
                 primitiveVertices[vertexIndex].normal.y = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 1];
                 primitiveVertices[vertexIndex].normal.z = normalAttributes[VERTEX_INDEX_NORMAL_OFFSET + 2];
-            
+
+
+                const uint32_t VERTEX_INDEX_TANGENT_OFFSET = (vertexIndex * TANGENT_STRIDE);
+                float extractedTangentX = tangentAttributes[VERTEX_INDEX_TANGENT_OFFSET + 1];
+                float extractedTangentY = tangentAttributes[VERTEX_INDEX_TANGENT_OFFSET + 1];
+                float extractedTangentZ = tangentAttributes[VERTEX_INDEX_TANGENT_OFFSET + 2];
+                float extractedTangentW = 1;  // Only modified under the case in which the tangents are specified as vec4's.
+                
+                if (tangentAttributeAccessor.type == TINYGLTF_TYPE_VEC4) {
+                    extractedTangentW = tangentAttributes[VERTEX_INDEX_TANGENT_OFFSET + 3];
+                }
+                primitiveVertices[vertexIndex].tangent = glm::vec3((extractedTangentX / extractedTangentW), (extractedTangentY / extractedTangentW), (extractedTangentZ / extractedTangentW));
+
 
                 const uint32_t VERTEX_INDEX_UV_COORDINATES_OFFSET = (vertexIndex * UV_COORDINATES_STRIDE);
                 primitiveVertices[vertexIndex].UVCoordinates.x = UVCoordinateAttributes[VERTEX_INDEX_UV_COORDINATES_OFFSET + 0];
@@ -125,13 +147,23 @@ void ModelHandler::Model::loadModelFromAbsolutePath(std::string absoluteModelPat
 
 
             const tinygltf::Material modelMaterial = loadedModel.materials[0];
-            const tinygltf::TextureInfo baseColorTextureInfo = modelMaterial.pbrMetallicRoughness.baseColorTexture;
-            if (baseColorTextureInfo.index != -1) {  // -1 indicates there is no base color texture.
-                const tinygltf::Texture baseColorTexture = loadedModel.textures[baseColorTextureInfo.index];
+            
+            const int32_t baseColorTextureIndex = modelMaterial.pbrMetallicRoughness.baseColorTexture.index;
+            if (baseColorTextureIndex != -1) {  // -1 indicates there is no base color texture.
+                const tinygltf::Texture baseColorTexture = loadedModel.textures[baseColorTextureIndex];
                 const tinygltf::Image baseColorTextureImage = loadedModel.images[baseColorTexture.source];
                 this->absoluteTextureImagePath = (this->absoluteModelDirectory + "/" + baseColorTextureImage.uri);
             } else {
                 this->absoluteTextureImagePath = "NOT AVAILIBLE";
+            }
+
+            const int32_t normalTextureIndex = modelMaterial.normalTexture.index;
+            if (normalTextureIndex != -1) {  // if there is a normal texture index supplied.
+                const tinygltf::Texture normalTexture = loadedModel.textures[normalTextureIndex];
+                const tinygltf::Image normalTextureImage = loadedModel.images[normalTexture.source];
+                this->absoluteNormalImagePath = (this->absoluteModelDirectory + "/" + normalTextureImage.uri);
+            } else {
+                this->absoluteNormalImagePath = "NOT AVAILABLE";
             }
         }
     }

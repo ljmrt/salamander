@@ -41,7 +41,8 @@ namespace Uniform
         alignas(16) glm::vec4 ambientLightColor;  // structered as [R, G, B, light intensity].
 
         // TODO: implement a spotlight light-caster.
-        Uniform::SceneLight sceneLights[128];
+        // TODO: get around shader input/output limit with scene lights.
+        Uniform::SceneLight sceneLights[10];
         uint32_t sceneLightCount;
 
         uint32_t farPlane;
