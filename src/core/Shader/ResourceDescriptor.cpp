@@ -48,7 +48,7 @@ void ResourceDescriptor::fetchSceneAttributeDescriptions(std::vector<VkVertexInp
     VkVertexInputAttributeDescription UVCoordinatesAttributeDescription{};
     ResourceDescriptor::populateVertexInputAttributeDescription(3, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ModelHandler::SceneVertexData, UVCoordinates), UVCoordinatesAttributeDescription);
 
-    attributeDescriptions = {positionAttributeDescription, normalAttributeDescription, UVCoordinatesAttributeDescription};
+    attributeDescriptions = {positionAttributeDescription, normalAttributeDescription, tangentAttributeDescription, UVCoordinatesAttributeDescription};
 }
 
 void ResourceDescriptor::fetchSceneNormalsAttributeDescriptions(std::vector<VkVertexInputAttributeDescription>& attributeDescriptions)
