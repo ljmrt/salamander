@@ -8,25 +8,18 @@
 class Application
 {
 private:
-    RendererDetails::Renderer m_renderer;
+	// this order is important! member initializer lists initialize in order of declaration.
     VulkanInstance m_instance;
+    RendererDetails::Renderer m_renderer;
     
     DisplayManager::DisplayDetails m_displayDetails;
     
-    
-    // initializate the application and its dependencies.
-    void initialize();
+public:
+	Application();
+    ~Application();
 
     // run the application and its dependencies.
     void run();
-    
-    // terminate the application and its dependencies.
-    void terminate();
-public:
-    // launch the application.
-    void launch();
-
-    Application();
 };
 
 

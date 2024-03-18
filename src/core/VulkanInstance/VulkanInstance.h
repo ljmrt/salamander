@@ -29,14 +29,11 @@ public:
 
     DeviceHandler::VulkanDevices m_devices;  // selected physical device and created logical device.
 
+	DisplayManager::DisplayDetails& m_displayDetails;
 
-    // clean up this class/instance.
-    //
-    // @param displayDetails display details.to use in clean up.
-    void cleanupInstance(DisplayManager::DisplayDetails displayDetails);
 
-    VulkanInstance();
     VulkanInstance(std::string instanceApplicationName, DisplayManager::DisplayDetails& displayDetails);
+	~VulkanInstance();
 };
 
 

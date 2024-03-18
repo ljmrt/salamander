@@ -184,19 +184,22 @@ namespace RendererDetails
         //
         // @param vulkanLogicalDevice pointer to set personal pointer to.
         void setVulkanLogicalDevice(VkDevice *vulkanLogicalDevice);
+
+		// run the renderer's main loop(draw frames).
+		//
+        // @param displayDetails the display details to use in creation.
+		// @param vulkanPhysicalDevice the Vulkan instance's physical device.
+		void run(DisplayManager::DisplayDetails& displayDetails, VkPhysicalDevice vulkanPhysicalDevice);
     
-        // render/main loop.
-        //
-        // @param displayDetails the display details to use in rendering.
-        // @param graphicsFamilyIndex index of the graphics queue family.
-        // @param vulkanPhysicalDevice the Vulkan instance's physical device to use in frame drawing.
-        void render(DisplayManager::DisplayDetails& displayDetails, uint32_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice);
-
-        // terminates/destroys renderer and its members.
-        void cleanupRenderer();
-
         // Renderer constructor.
-        Renderer();
+		//
+        // @param displayDetails the display details to use in creation.
+        // @param graphicsFamilyIndex index of the graphics queue family.
+		// @param vulkanPhysicalDevice the Vulkan instance's physical device.
+		Renderer(DisplayManager::DisplayDetails& displayDetails, uint32_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice);
+		
+		// Renderer destructor.
+		~Renderer();
     };
 }
 

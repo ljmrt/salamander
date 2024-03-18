@@ -10,7 +10,7 @@ int main()
     Application salamanderEngine;
 
     try {
-        salamanderEngine.launch();
+		salamanderEngine.run();
     } catch (const std::exception& e) {
         // std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;

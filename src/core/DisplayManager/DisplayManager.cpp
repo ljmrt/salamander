@@ -1,6 +1,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 
 #include <core/DisplayManager/DisplayManager.h>
@@ -48,7 +49,7 @@ void DisplayManager::createWindowSurface(VkInstance vkInstance, GLFWwindow *glfw
 
 void DisplayManager::processWindowInput(GLFWwindow *glfwWindow)
 {
-    if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_ESCAPE)) {  // close window on "espace" key press.
+    if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_ESCAPE)) {  // close window on "escape" key press.
         glfwSetWindowShouldClose(glfwWindow, true);
     }
     if (GLFW_PRESS == glfwGetKey(glfwWindow, GLFW_KEY_R)) {  // reset model orientation on "R" key press.

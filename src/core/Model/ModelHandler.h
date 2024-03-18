@@ -5,6 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 
@@ -18,7 +19,7 @@
 
 namespace ModelHandler
 {
-    // different vertex data structs to populate the vertex buffer with, dependent on what pipeline is in use.
+    // different vertex data structs to populate the vertex buffer with, dependent on what pipeline is in use. each pipeline gets only what data is needed.
     struct CubemapVertexData {
         glm::vec3 position;
     };
@@ -52,11 +53,13 @@ namespace ModelHandler
     struct Model
     {
         std::string absoluteModelDirectory;  // the absolute directory of the model.
-        
-        std::vector<ModelHandler::SceneVertexData> meshVertices;  // vertice compenets are normalized to a 0..1 range, expected to "reinterpet" this into the desired vertex data(see above structs).
+
+        // vertice compenets are normalized to a 0..1 range, expected to "reinterpet" this into the desired vertex data(see above structs).
+        std::vector<ModelHandler::SceneVertexData> meshVertices; 
         std::vector<uint32_t> meshIndices;  // can be empty.
 
-        glm::quat meshQuaternion = glm::identity<glm::quat>();  // the stored quaternion to rotate the mesh using.
+		// the stored quaternion to rotate the mesh using.
+        glm::quat meshQuaternion = glm::identity<glm::quat>(); 
 
         // TODO: support for URI-encoded textures.
         std::string absoluteTextureImagePath;  // the absolute path of the texture image.

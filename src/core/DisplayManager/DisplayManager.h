@@ -1,6 +1,7 @@
 #ifndef DISPLAYMANAGER_H
 #define DISPLAYMANAGER_H
 
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -12,7 +13,8 @@
 
 namespace DisplayManager
 {
-    struct DisplayDetails {
+	// this can be a struct for now, as it simply just is data.
+	struct DisplayDetails {
         GLFWwindow *glfwWindow;
 
         VkQueue graphicsQueue;

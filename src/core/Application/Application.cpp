@@ -4,7 +4,7 @@
 #include <core/Callbacks/Callbacks.h>
 
 
-void Application::initialize()
+Application::Application() : m_instance(Defaults::windowDefaults.MAIN_WINDOW_NAME, m_displayDetails), m_renderer(m_displayDetails, m_instance.m_familyIndices.graphicsFamily.value(), m_instance.m_devices.physicalDevice)
 {
     Defaults::initializeDefaults();
 
@@ -15,35 +15,21 @@ void Application::initialize()
     glfwSetMouseButtonCallback(m_displayDetails.glfwWindow, Callbacks::glfwMouseButtonCallback);
     glfwSetScrollCallback(m_displayDetails.glfwWindow, Callbacks::glfwMouseScrollCallback);
 
-    m_instance = VulkanInstance(Defaults::windowDefaults.MAIN_WINDOW_NAME, m_displayDetails);
     m_renderer.setVulkanLogicalDevice(&m_instance.m_devices.logicalDevice);
 }
 
 void Application::run()
 {
-    m_renderer.render(m_displayDetails, m_instance.m_familyIndices.graphicsFamily.value(), m_instance.m_devices.physicalDevice);
+    m_renderer.run(m_displayDetails, m_instance.m_devices.physicalDevice);
 }
 
-void Application::terminate()
+Application::~Application()
 {
-    m_renderer.cleanupRenderer();
-    m_instance.cleanupInstance(m_displayDetails);
-    DisplayManager::cleanupGLFW(m_displayDetails.glfwWindow);
-
+	DisplayManager::cleanupGLFW(m_displayDetails.glfwWindow);
     // cleanup variables specified in Defaults::ApplicationCleanup.
     for (VkVertexInputBindingDescription *bindingDescriptionPointer : Defaults::applicationCleanup.vertexInputBindingDescriptionsMemory) {
         delete bindingDescriptionPointer;
     }
-}
 
-void Application::launch()
-{
-    this->initialize();
-    this->run();
-    this->terminate();
-}
-
-Application::Application()
-{
-
+	// rest of the variables destructed automatically.
 }

@@ -13,7 +13,7 @@ set(PROJECT_SOURCE_DIR ${CMAKE_SOURCE_DIR}/src)
 set(PROJECT_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(PROJECT_LIBRARIES_DIR ${CMAKE_SOURCE_DIR}/libs)
 
-set(CMAKE_SKIP_INSTALL_RULES True)
+#set(CMAKE_SKIP_INSTALL_RULES True)
 
 if (!UNIX)
    message("WARNING: Salamander is only supported on Linux!")

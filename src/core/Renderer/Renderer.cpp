@@ -22,6 +22,18 @@
 #include <vector>
 
 
+void RendererDetails::Renderer::run(DisplayManager::DisplayDetails& displayDetails, VkPhysicalDevice vulkanPhysicalDevice)
+{
+    while (!glfwWindowShouldClose(displayDetails.glfwWindow)) {  // "main loop"
+        DisplayManager::processWindowInput(displayDetails.glfwWindow);
+        glfwPollEvents();
+
+        drawFrame(displayDetails, vulkanPhysicalDevice, displayDetails.graphicsQueue, displayDetails.presentationQueue);
+    }
+
+    vkDeviceWaitIdle(*m_vulkanLogicalDevice);  // wait for the logical device to finish all operations before termination.
+}
+
 void RendererDetails::populateColorAttachmentComponents(VkFormat swapchainImageFormat, VkSampleCountFlagBits msaaSampleCount, VkAttachmentDescription& colorAttachmentDescription, VkAttachmentReference& colorAttachmentReference, VkAttachmentDescription& colorAttachmentResolveDescription, VkAttachmentReference& colorAttachmentResolveReference)
 {
     colorAttachmentDescription.format = swapchainImageFormat;
@@ -236,7 +248,7 @@ void RendererDetails::fetchMaximumUsableSampleCount(VkPhysicalDevice vulkanPhysi
 
     VkSampleCountFlags sampleCountFlags = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
 
-    // is there no more efficient way to do this?
+    // TODO:is there no more efficient way to do this?
     if (sampleCountFlags & VK_SAMPLE_COUNT_64_BIT) {
         maximumUsableSampleCount = VK_SAMPLE_COUNT_64_BIT;
         return;
@@ -697,8 +709,9 @@ void RendererDetails::Renderer::setVulkanLogicalDevice(VkDevice *vulkanLogicalDe
     m_vulkanLogicalDevice = vulkanLogicalDevice;
 }
 
-void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDetails, uint32_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice)
+RendererDetails::Renderer::Renderer(DisplayManager::DisplayDetails& displayDetails, uint32_t graphicsFamilyIndex, VkPhysicalDevice vulkanPhysicalDevice)
 {
+	// passed into functions requiring both devices.
     DeviceHandler::VulkanDevices temporaryVulkanDevices{};
     temporaryVulkanDevices.physicalDevice = vulkanPhysicalDevice;
     temporaryVulkanDevices.logicalDevice = *m_vulkanLogicalDevice;
@@ -890,20 +903,12 @@ void RendererDetails::Renderer::render(DisplayManager::DisplayDetails& displayDe
     CommandManager::allocateChildCommandBuffers(displayDetails.graphicsCommandPool, Defaults::rendererDefaults.MAX_FRAMES_IN_FLIGHT, *m_vulkanLogicalDevice, displayDetails.graphicsCommandBuffers);
 
     createMemberSynchronizationObjects();
-
-    while (!glfwWindowShouldClose(displayDetails.glfwWindow)) {  // "main loop"
-        DisplayManager::processWindowInput(displayDetails.glfwWindow);
-        glfwPollEvents();
-
-        drawFrame(displayDetails, vulkanPhysicalDevice, displayDetails.graphicsQueue, displayDetails.presentationQueue);
-    }
-
-    vkDeviceWaitIdle(*m_vulkanLogicalDevice);  // wait for the logical device to finish all operations before termination.
 }
 
-void RendererDetails::Renderer::cleanupRenderer()
+RendererDetails::Renderer::~Renderer()
 {
     m_mainModel.cleanupModel(false, *m_vulkanLogicalDevice);
+
     m_dummySceneNormalsModel.cleanupModel(true, *m_vulkanLogicalDevice);
     m_cubemapModel.cleanupModel(false, *m_vulkanLogicalDevice);
     m_dummyDirectionalShadowModel.cleanupModel(true, *m_vulkanLogicalDevice);
@@ -925,7 +930,3 @@ void RendererDetails::Renderer::cleanupRenderer()
     vkDestroyRenderPass(*m_vulkanLogicalDevice, m_renderPass, nullptr);
 }
 
-RendererDetails::Renderer::Renderer()
-{
-    
-}
